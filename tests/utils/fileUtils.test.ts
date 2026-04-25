@@ -1,7 +1,14 @@
-import { describe, it, expect } from 'vitest';
-import { formatFileSize, getFileExtension, validatePDFFile } from '../../src/utils/fileUtils';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { formatFileSize, getFileExtension, validatePDFFile, validateImageFile, createObjectURL, revokeObjectURL } from '../../src/utils/fileUtils';
 
 describe('fileUtils', () => {
+  beforeEach(() => {
+    vi.stubGlobal('URL', {
+      createObjectURL: vi.fn().mockReturnValue('blob:test-url'),
+      revokeObjectURL: vi.fn()
+    });
+  });
+
   describe('formatFileSize', () => {
     it('formats bytes', () => {
       expect(formatFileSize(500)).toBe('500 B');
@@ -52,6 +59,43 @@ describe('fileUtils', () => {
     it('returns false for non-PDF files', () => {
       const file = new File([], 'test.txt', { type: 'text/plain' });
       expect(validatePDFFile(file)).toBe(false);
+    });
+  });
+
+  describe('validateImageFile', () => {
+    it('returns true for PNG files', () => {
+      const file = new File([], 'test.png', { type: 'image/png' });
+      expect(validateImageFile(file)).toBe(true);
+    });
+
+    it('returns true for JPEG files', () => {
+      const file = new File([], 'test.jpg', { type: 'image/jpeg' });
+      expect(validateImageFile(file)).toBe(true);
+    });
+
+    it('returns false for GIF files', () => {
+      const file = new File([], 'test.gif', { type: 'image/gif' });
+      expect(validateImageFile(file)).toBe(false);
+    });
+
+    it('returns false for files with image type but unsupported format', () => {
+      const file = new File([], 'test.bmp', { type: 'image/bmp' });
+      expect(validateImageFile(file)).toBe(false);
+    });
+  });
+
+  describe('createObjectURL', () => {
+    it('creates object URL from blob', () => {
+      const blob = new Blob(['test'], { type: 'text/plain' });
+      const url = createObjectURL(blob);
+      expect(url).toBe('blob:test-url');
+    });
+  });
+
+  describe('revokeObjectURL', () => {
+    it('revokes object URL', () => {
+      revokeObjectURL('blob:test-url');
+      expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:test-url');
     });
   });
 });

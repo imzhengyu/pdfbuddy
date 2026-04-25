@@ -1,1 +1,11 @@
 export * from './types';
+export * from './pdfValidation';
+export * from './pdfOperations';
+export * from './pdfFallback';
+export * from './mergeOperation';
+export * from './splitOperation';
+export * from './compressOperation';
+export * from './rotateOperation';
+export * from './convertOperation';
+export * from './reorganizeOperation';
+export { ClientPDFService } from './ClientPDFService';

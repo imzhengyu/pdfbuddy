@@ -3,6 +3,7 @@ import { DropZone } from '../../common/DropZone/DropZone';
 import { Button } from '../../common/Button/Button';
 import { ProgressBar } from '../../common/ProgressBar/ProgressBar';
 import { PageThumbnails } from '../../common/PageThumbnails/PageThumbnails';
+import { PreviewModal } from '../../common/PreviewModal/PreviewModal';
 import { useSplit } from '../../../hooks/useSplit';
 import { downloadBlob, downloadBlobsAsZip } from '../../../utils/downloadUtils';
 import { PageRange } from '../../../services/pdf/types';
@@ -11,6 +12,7 @@ import styles from './SplitView.module.css';
 export function SplitView() {
   const [file, setFile] = useState<File | null>(null);
   const [pageRanges, setPageRanges] = useState<string>('');
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const { split, isProcessing, progress, error, clearError } = useSplit();
 
   const handleFileDropped = useCallback((files: File[]) => {
@@ -67,6 +69,14 @@ export function SplitView() {
 
           <PageThumbnails file={file} />
 
+          <div className={styles.actions}>
+            <Button
+              label="Preview Pages"
+              variant="outline"
+              onClick={() => setIsPreviewOpen(true)}
+            />
+          </div>
+
           <div className={styles.inputGroup}>
             <label htmlFor="pageRanges">Page Ranges:</label>
             <input
@@ -99,6 +109,13 @@ export function SplitView() {
           </div>
         </div>
       )}
+
+      <PreviewModal
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        file={file}
+        title="Preview"
+      />
     </div>
   );
 }

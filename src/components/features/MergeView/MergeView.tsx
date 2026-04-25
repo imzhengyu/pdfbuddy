@@ -1,10 +1,10 @@
 import { useState, useCallback } from 'react';
 import { DropZone } from '../../common/DropZone/DropZone';
-import { FileList } from '../../common/FileList/FileList';
 import { Button } from '../../common/Button/Button';
 import { ProgressBar } from '../../common/ProgressBar/ProgressBar';
 import { useMerge } from '../../../hooks/useMerge';
 import { downloadBlob } from '../../../utils/downloadUtils';
+import { formatFileSize } from '../../../utils/fileUtils';
 import styles from './MergeView.module.css';
 
 interface FileItem {
@@ -15,6 +15,8 @@ interface FileItem {
 export function MergeView() {
   const [files, setFiles] = useState<FileItem[]>([]);
   const [isAddingMore, setIsAddingMore] = useState(false);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const { merge, isProcessing, progress, error, clearError } = useMerge();
 
   const handleFilesDropped = useCallback((droppedFiles: File[]) => {
@@ -46,6 +48,30 @@ export function MergeView() {
     clearError();
   }, [clearError]);
 
+  const handleDragStart = useCallback((index: number) => {
+    setDragIndex(index);
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (dragIndex !== null && dragIndex !== index) {
+      setDragOverIndex(index);
+    }
+  }, [dragIndex]);
+
+  const handleDragEnd = useCallback(() => {
+    if (dragIndex !== null && dragOverIndex !== null && dragIndex !== dragOverIndex) {
+      setFiles(prev => {
+        const newFiles = [...prev];
+        const [removed] = newFiles.splice(dragIndex, 1);
+        newFiles.splice(dragOverIndex, 0, removed);
+        return newFiles;
+      });
+    }
+    setDragIndex(null);
+    setDragOverIndex(null);
+  }, [dragIndex, dragOverIndex]);
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -62,11 +88,29 @@ export function MergeView() {
         />
       ) : (
         <div className={styles.workspace}>
-          <FileList
-            files={files}
-            onRemove={handleRemoveFile}
-            showPageCount={false}
-          />
+          <div className={styles.fileList}>
+            {files.map((fileItem, index) => (
+              <div
+                key={fileItem.id}
+                className={`${styles.fileItem} ${dragIndex === index ? styles.dragging : ''} ${dragOverIndex === index ? styles.dragOver : ''}`}
+                draggable
+                onDragStart={() => handleDragStart(index)}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDragEnd={handleDragEnd}
+              >
+                <span className={styles.dragHandle}>⋮⋮</span>
+                <span className={styles.index}>{index + 1}</span>
+                <span className={styles.name}>{fileItem.file.name}</span>
+                <span className={styles.size}>{formatFileSize(fileItem.file.size)}</span>
+                <Button
+                  label="Remove"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleRemoveFile(fileItem.id)}
+                />
+              </div>
+            ))}
+          </div>
 
           {isProcessing && progress && (
             <ProgressBar progress={progress} />

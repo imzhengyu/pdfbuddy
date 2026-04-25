@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { DropZone } from '../../common/DropZone/DropZone';
 import { Button } from '../../common/Button/Button';
 import { ProgressBar } from '../../common/ProgressBar/ProgressBar';
+import { PreviewModal } from '../../common/PreviewModal/PreviewModal';
 import { useCompress } from '../../../hooks/useCompress';
 import { downloadBlob } from '../../../utils/downloadUtils';
 import { formatFileSize } from '../../../utils/fileUtils';
@@ -11,6 +12,7 @@ import styles from './CompressView.module.css';
 export function CompressView() {
   const [file, setFile] = useState<File | null>(null);
   const [quality, setQuality] = useState<CompressionQuality>('medium');
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const { compress, isProcessing, progress, error, clearError } = useCompress();
 
   const handleFileDropped = useCallback((files: File[]) => {
@@ -45,6 +47,7 @@ export function CompressView() {
         <div className={styles.workspace}>
           <div className={styles.fileInfo}>
             <span><strong>{file.name}</strong> ({formatFileSize(file.size)})</span>
+            <Button label="Preview" variant="outline" size="sm" onClick={() => setIsPreviewOpen(true)} />
           </div>
 
           <div className={styles.qualityOptions}>
@@ -73,6 +76,13 @@ export function CompressView() {
           </div>
         </div>
       )}
+
+      <PreviewModal
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        file={file}
+        title="Preview"
+      />
     </div>
   );
 }

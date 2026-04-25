@@ -3,6 +3,7 @@ import { DropZone } from '../../common/DropZone/DropZone';
 import { PageThumbnails } from '../../common/PageThumbnails/PageThumbnails';
 import { Button } from '../../common/Button/Button';
 import { ProgressBar } from '../../common/ProgressBar/ProgressBar';
+import { PreviewModal } from '../../common/PreviewModal/PreviewModal';
 import { useOrganize } from '../../../hooks/useOrganize';
 import { downloadBlob } from '../../../utils/downloadUtils';
 import { getPageCount } from '../../../utils/fileUtils';
@@ -13,6 +14,7 @@ export function OrganizeView() {
   const [file, setFile] = useState<File | null>(null);
   const [selectedPages, setSelectedPages] = useState<number[]>([]);
   const [pageCount, setPageCount] = useState<number>(0);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const { reorganize, isProcessing, progress, error, clearError } = useOrganize();
 
   const handleFileDropped = useCallback(async (files: File[]) => {
@@ -70,6 +72,10 @@ export function OrganizeView() {
 
           <PageThumbnails file={file} onSelect={handlePageSelect} selectedPages={selectedPages} />
 
+          <div className={styles.actions}>
+            <Button label="Preview PDF" variant="outline" onClick={() => setIsPreviewOpen(true)} />
+          </div>
+
           {selectedPages.length > 0 && (
             <p className={styles.hint}>{selectedPages.length} page(s) selected - they will be deleted</p>
           )}
@@ -88,6 +94,13 @@ export function OrganizeView() {
           </div>
         </div>
       )}
+
+      <PreviewModal
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        file={file}
+        title="Preview"
+      />
     </div>
   );
 }

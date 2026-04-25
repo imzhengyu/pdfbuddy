@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from 'vitest';
-import { downloadBlob } from '../../src/utils/downloadUtils';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { downloadBlob, downloadBlobsAsZip } from '../../src/utils/downloadUtils';
 
 describe('downloadUtils', () => {
   beforeEach(() => {
@@ -40,6 +40,28 @@ describe('downloadUtils', () => {
       expect(mockBody.appendChild).toHaveBeenCalledWith(mockLink);
       expect(mockClick).toHaveBeenCalled();
       expect(mockRemove).toHaveBeenCalled();
+    });
+  });
+
+  describe('downloadBlobsAsZip', () => {
+    it('downloads multiple blobs as a zip file', async () => {
+      const mockZip = {
+        file: vi.fn(),
+        generateAsync: vi.fn().mockResolvedValue(new Blob(['zip content']))
+      };
+      vi.doMock('jszip', () => ({ default: vi.fn(() => mockZip) }), { virtual: true });
+
+      const blobs = [
+        { name: 'file1.pdf', blob: new Blob(['content1'], { type: 'application/pdf' }) },
+        { name: 'file2.pdf', blob: new Blob(['content2'], { type: 'application/pdf' }) }
+      ];
+
+      const downloadBlobSpy = vi.spyOn(await import('../../src/utils/downloadUtils'), 'downloadBlob');
+
+      await downloadBlobsAsZip(blobs, 'output.zip');
+
+      expect(mockZip.file).toHaveBeenCalledTimes(2);
+      expect(mockZip.generateAsync).toHaveBeenCalled();
     });
   });
 });

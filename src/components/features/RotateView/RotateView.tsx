@@ -3,6 +3,7 @@ import { DropZone } from '../../common/DropZone/DropZone';
 import { PageThumbnails } from '../../common/PageThumbnails/PageThumbnails';
 import { Button } from '../../common/Button/Button';
 import { ProgressBar } from '../../common/ProgressBar/ProgressBar';
+import { PreviewModal } from '../../common/PreviewModal/PreviewModal';
 import { useRotate } from '../../../hooks/useRotate';
 import { downloadBlob } from '../../../utils/downloadUtils';
 import { PageRotation } from '../../../services/pdf/types';
@@ -11,6 +12,7 @@ import styles from './RotateView.module.css';
 export function RotateView() {
   const [file, setFile] = useState<File | null>(null);
   const [selectedPages, setSelectedPages] = useState<number[]>([]);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const { rotate, isProcessing, progress, error, clearError } = useRotate();
 
   const handleFileDropped = useCallback((files: File[]) => {
@@ -53,6 +55,10 @@ export function RotateView() {
 
           <PageThumbnails file={file} onSelect={handlePageSelect} selectedPages={selectedPages} />
 
+          <div className={styles.actions}>
+            <Button label="Preview PDF" variant="outline" onClick={() => setIsPreviewOpen(true)} />
+          </div>
+
           <p className={styles.hint}>
             {selectedPages.length === 0 ? 'Click pages to select them' : `${selectedPages.length} page(s) selected`}
           </p>
@@ -71,6 +77,13 @@ export function RotateView() {
           </div>
         </div>
       )}
+
+      <PreviewModal
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        file={file}
+        title="Preview"
+      />
     </div>
   );
 }

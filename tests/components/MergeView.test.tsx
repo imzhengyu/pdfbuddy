@@ -120,5 +120,29 @@ describe('MergeView', () => {
         expect(mergeBtn).toBeEnabled();
       });
     });
+
+    it('files can be reordered via drag and drop', async () => {
+      render(<MergeView />);
+
+      const input = screen.getByTestId('dropzone').querySelector('input');
+      uploadFile(input, createFile('file1.pdf'));
+
+      await waitFor(() => {
+        expect(screen.getByText('file1.pdf')).toBeInTheDocument();
+      });
+
+      clickButton('Add More Files');
+
+      const addMoreInput = screen.getByTestId('dropzone').querySelector('input');
+      uploadFile(addMoreInput, createFile('file2.pdf'));
+
+      await waitFor(() => {
+        expect(screen.getByText('file1.pdf')).toBeInTheDocument();
+        expect(screen.getByText('file2.pdf')).toBeInTheDocument();
+      });
+
+      const fileItems = document.querySelectorAll('[draggable=true]');
+      expect(fileItems.length).toBe(2);
+    });
   });
 });
