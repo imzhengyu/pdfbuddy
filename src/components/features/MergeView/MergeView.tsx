@@ -14,6 +14,7 @@ interface FileItem {
 
 export function MergeView() {
   const [files, setFiles] = useState<FileItem[]>([]);
+  const [isAddingMore, setIsAddingMore] = useState(false);
   const { merge, isProcessing, progress, error, clearError } = useMerge();
 
   const handleFilesDropped = useCallback((droppedFiles: File[]) => {
@@ -22,6 +23,7 @@ export function MergeView() {
       file
     }));
     setFiles(prev => [...prev, ...newFiles]);
+    setIsAddingMore(false);
   }, []);
 
   const handleRemoveFile = useCallback((id: string) => {
@@ -78,11 +80,18 @@ export function MergeView() {
           )}
 
           <div className={styles.actions}>
-            <Button
-              label="Add More Files"
-              variant="outline"
-              onClick={() => {}}
-            />
+            {isAddingMore ? (
+              <DropZone
+                onFilesDropped={handleFilesDropped}
+                message="Add more PDF files"
+              />
+            ) : (
+              <Button
+                label="Add More Files"
+                variant="outline"
+                onClick={() => setIsAddingMore(true)}
+              />
+            )}
             <Button
               label="Clear All"
               variant="outline"
