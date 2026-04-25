@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { PDFDocument } from '../../../services/pdf/types';
 import styles from './PageThumbnails.module.css';
 
 interface PageThumbnailsProps {
@@ -9,17 +8,16 @@ interface PageThumbnailsProps {
 }
 
 export function PageThumbnails({ file, onSelect, selectedPages = [] }: PageThumbnailsProps) {
-  const [pageCount, setPageCount] = useState<number>(0);
   const [thumbnails, setThumbnails] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadThumbnails() {
       try {
+        const { PDFDocument } = await import('pdf-lib');
         const arrayBuffer = await file.arrayBuffer();
         const pdf = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
         const count = pdf.getPageCount();
-        setPageCount(count);
         const placeholders = Array.from({ length: count }, (_, i) => `Page ${i + 1}`);
         setThumbnails(placeholders);
       } catch {

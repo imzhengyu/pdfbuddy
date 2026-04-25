@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { useDropzone } from 'react-dropzone';
+import { useDropzone, FileRejection } from 'react-dropzone';
 import { PDFProcessingError } from '../../../services/pdf/types';
 import styles from './DropZone.module.css';
 
@@ -23,7 +23,7 @@ export function DropZone({
   const [isDragOver, setIsDragOver] = useState(false);
 
   const onDrop = useCallback(
-    (acceptedFiles: File[], rejectedFiles: { file: File; errors: Error[] }[]) => {
+    (acceptedFiles: File[], rejectedFiles: FileRejection[]) => {
       if (rejectedFiles.length > 0) {
         const error = new PDFProcessingError(
           `File type not accepted or file too large`,

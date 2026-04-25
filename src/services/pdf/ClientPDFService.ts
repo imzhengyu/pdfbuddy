@@ -34,7 +34,7 @@ export class ClientPDFService implements IPDFService {
     }
 
     const pdfBytes = await mergedPdf.save();
-    return new Blob([pdfBytes], { type: 'application/pdf' });
+    return new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' });
   }
 
   async split(file: File, pageRanges: PageRange[], onProgress?: (progress: ProcessingProgress) => void): Promise<Blob[]> {
@@ -78,7 +78,7 @@ export class ClientPDFService implements IPDFService {
       }
 
       const pdfBytes = await newPdf.save();
-      results.push(new Blob([pdfBytes], { type: 'application/pdf' }));
+      results.push(new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' }));
 
       onProgress?.({
         current: i + 1,
@@ -90,7 +90,7 @@ export class ClientPDFService implements IPDFService {
     return results;
   }
 
-  async compress(file: File, quality: CompressionQuality, onProgress?: (progress: ProcessingProgress) => void): Promise<Blob> {
+  async compress(file: File, _quality: CompressionQuality, onProgress?: (progress: ProcessingProgress) => void): Promise<Blob> {
     if (file.type !== 'application/pdf') {
       throw new PDFProcessingError(
         `${file.name} is not a valid PDF file`,
@@ -110,7 +110,7 @@ export class ClientPDFService implements IPDFService {
 
     onProgress?.({ current: 1, total: 1, percent: 100 });
 
-    return new Blob([pdfBytes], { type: 'application/pdf' });
+    return new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' });
   }
 
   async rotate(file: File, rotations: PageRotation[], onProgress?: (progress: ProcessingProgress) => void): Promise<Blob> {
@@ -121,7 +121,7 @@ export class ClientPDFService implements IPDFService {
       );
     }
 
-    const { PDFDocument } = await import('pdf-lib');
+    const { PDFDocument, degrees } = await import('pdf-lib');
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await PDFDocument.load(arrayBuffer);
     const pages = pdf.getPages();
@@ -137,7 +137,7 @@ export class ClientPDFService implements IPDFService {
       const page = pages[rotation.pageIndex];
       const currentRotation = page.getRotation().angle;
       const newRotation = (currentRotation + rotation.degrees) % 360;
-      page.setRotation(newRotation);
+      page.setRotation(degrees(newRotation));
 
       onProgress?.({
         current: rotation.pageIndex + 1,
@@ -147,10 +147,10 @@ export class ClientPDFService implements IPDFService {
     }
 
     const pdfBytes = await pdf.save();
-    return new Blob([pdfBytes], { type: 'application/pdf' });
+    return new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' });
   }
 
-  async convertToImages(file: File, options: ConversionOptions, onProgress?: (progress: ProcessingProgress) => void): Promise<Blob[]> {
+  async convertToImages(_file: File, _options: ConversionOptions, _onProgress?: (progress: ProcessingProgress) => void): Promise<Blob[]> {
     // PDF to image conversion requires canvas/pdf.js which is heavy
     // For MVP, this throws an error indicating backend is needed
     throw new PDFProcessingError(
@@ -203,7 +203,7 @@ export class ClientPDFService implements IPDFService {
     }
 
     const pdfBytes = await mergedPdf.save();
-    return new Blob([pdfBytes], { type: 'application/pdf' });
+    return new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' });
   }
 
   async reorganize(file: File, newOrder: PageOrder[], onProgress?: (progress: ProcessingProgress) => void): Promise<Blob> {
@@ -252,6 +252,6 @@ export class ClientPDFService implements IPDFService {
     }
 
     const pdfBytes = await newPdf.save();
-    return new Blob([pdfBytes], { type: 'application/pdf' });
+    return new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' });
   }
 }
