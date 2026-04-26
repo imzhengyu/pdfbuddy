@@ -29,6 +29,13 @@
   justify-content: center;
   box-shadow: var(--shadow-sm);
   transition: all var(--transition-fast);
+  overflow: hidden;
+}
+
+.thumbnailImage {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .thumbnail:hover .box {

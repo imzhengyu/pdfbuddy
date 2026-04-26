@@ -48,13 +48,13 @@ export function PreviewModal({ isOpen, onClose, file, title }: PreviewModalProps
       setPdfDoc(null);
 
       try {
-        const pdfjs = await import('pdfjs-dist');
+        const pdfjsLib = await import('pdfjs-dist');
 
-        // Use legacy build which doesn't need external worker
-        pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        // Set worker using CDN URL - only needed for standard build
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
         const arrayBuffer = await file.arrayBuffer();
-        const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
+        const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
         const pdf = await loadingTask.promise;
         const numPages = pdf.numPages;
         setTotalPages(numPages);
@@ -72,13 +72,16 @@ export function PreviewModal({ isOpen, onClose, file, title }: PreviewModalProps
           canvas.height = viewport.height;
           const ctx = canvas.getContext('2d');
 
-          if (ctx) {
-            await page.render({
-              canvasContext: ctx,
-              viewport: viewport,
-            }).promise;
-            images.push(canvas.toDataURL('image/png'));
+          if (!ctx) {
+            console.error('Failed to get canvas 2d context for page', i);
+            continue;
           }
+
+          await page.render({
+            canvasContext: ctx,
+            viewport: viewport,
+          }).promise;
+          images.push(canvas.toDataURL('image/png'));
         }
         setPageImages(images);
       } catch (err: any) {

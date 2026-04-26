@@ -14,13 +14,36 @@ export function PageThumbnails({ file, onSelect, selectedPages = [] }: PageThumb
   useEffect(() => {
     async function loadThumbnails() {
       try {
-        const { PDFDocument } = await import('pdf-lib');
+        const pdfjsLib = await import('pdfjs-dist');
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
         const arrayBuffer = await file.arrayBuffer();
-        const pdf = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
-        const count = pdf.getPageCount();
-        const placeholders = Array.from({ length: count }, (_, i) => `Page ${i + 1}`);
-        setThumbnails(placeholders);
-      } catch {
+        const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+        const pdf = await loadingTask.promise;
+        const count = pdf.numPages;
+
+        const images: string[] = [];
+        for (let i = 1; i <= count; i++) {
+          const page = await pdf.getPage(i);
+          const scale = 0.5; // Smaller scale for thumbnails
+          const viewport = page.getViewport({ scale });
+
+          const canvas = document.createElement('canvas');
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          const ctx = canvas.getContext('2d');
+
+          if (ctx) {
+            await page.render({
+              canvasContext: ctx,
+              viewport: viewport,
+            }).promise;
+            images.push(canvas.toDataURL('image/png'));
+          }
+        }
+        setThumbnails(images);
+      } catch (err) {
+        console.error('Failed to load thumbnails:', err);
         setThumbnails([]);
       } finally {
         setLoading(false);
@@ -36,7 +59,7 @@ export function PageThumbnails({ file, onSelect, selectedPages = [] }: PageThumb
 
   return (
     <div className={styles.grid}>
-      {thumbnails.map((label, index) => (
+      {thumbnails.map((src, index) => (
         <div
           key={index}
           className={`${styles.thumbnail} ${selectedPages.includes(index) ? styles.selected : ''}`}
@@ -44,9 +67,13 @@ export function PageThumbnails({ file, onSelect, selectedPages = [] }: PageThumb
           data-page-index={index}
         >
           <div className={styles.box}>
-            <span className={styles.pageNumber}>{index + 1}</span>
+            {src ? (
+              <img src={src} alt={`Page ${index + 1}`} className={styles.thumbnailImage} />
+            ) : (
+              <span className={styles.pageNumber}>{index + 1}</span>
+            )}
           </div>
-          <span className={styles.label}>{label}</span>
+          <span className={styles.label}>Page {index + 1}</span>
         </div>
       ))}
     </div>
