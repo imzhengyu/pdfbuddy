@@ -98,16 +98,20 @@ test.describe('PDF Tool WebApp Full Test', () => {
   test('Preview: Open preview modal for a file in Merge', async ({ page }) => {
     await page.getByRole('button', { name: 'Merge' }).click();
 
-    await uploadFile(page, testFiles.merge[0]);
+    await uploadFiles(page, [testFiles.merge[0], testFiles.merge[1]]);
 
     await expect(page.getByText('merge-1.pdf')).toBeVisible();
+    await expect(page.getByText('merge-2.pdf')).toBeVisible();
 
     const previewBtn = page.getByRole('button', { name: 'Preview Files' });
-    if (await previewBtn.isVisible()) {
-      await previewBtn.click();
-      await expect(page.getByRole('heading', { level: 3 })).toBeVisible();
-      console.log('Preview test passed: modal opened successfully');
-    }
+    await expect(previewBtn).toBeEnabled();
+    await previewBtn.click();
+
+    // Wait for preview to load (shows loading state)
+    await page.waitForTimeout(500);
+
+    await expect(page.getByRole('heading', { level: 3 })).toBeVisible();
+    console.log('Preview test passed: modal opened successfully');
   });
 
   test('Navigation: Click all view buttons and verify content changes', async ({ page }) => {

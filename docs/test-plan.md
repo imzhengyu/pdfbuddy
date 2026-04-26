@@ -1,402 +1,434 @@
 # Test Coverage Plan: PDF Tool 95%+ Coverage
 
-## Context
-Current test coverage is unknown but significantly below 95%. Existing tests cover only Button, DropZone, MergeView (partially), fileUtils, downloadUtils, and ClientPDFService (partially). Missing: all hooks, errorUtils, AppContext, SplitView, CompressView, RotateView, ConvertView, OrganizeView.
+> **Last Updated:** 2026-04-26
 
-**Status Update**: Unit test phases 1-4 are complete (205 tests passing). Phase 6 E2E testing in progress with 8 basic tests passing, needs comprehensive workflow tests.
+## Overview
 
-## Goal
->95% code coverage by writing comprehensive tests for all untested components and expanding existing tests.
+This document contains the comprehensive test plan for the PDF Tool application, organized by feature/function page. Each section includes unit tests and E2E tests for that specific feature.
 
-## Test Cases by File
+## Test Status Summary
 
-### 1. errorUtils.test.ts
-**Source**: `src/utils/errorUtils.ts` (3 functions)
-
-| Function | Test Cases |
-|----------|------------|
-| `getErrorMessage` | PDFProcessingError → message, Error → message, string → string, null → default, unknown → default |
-| `getRecoverySuggestion` | PDFProcessingError with recovery → string, no recovery → undefined, Error → undefined |
-| `isRetryable` | PROCESSING code → true, other code → false, Error → false |
-
-### 2. AppContext.test.tsx
-**Source**: `src/context/AppContext.tsx` (reducer + hook)
-
-| Test | Cases |
-|------|-------|
-| reducer SET_VIEW | returns new state with updated view |
-| reducer RESET | returns initial state |
-| reducer default | returns state unchanged |
-| useApp throws | outside provider throws error |
-| useApp returns | { state, dispatch, setView } |
-
-### 3. useSplit.test.ts
-**Source**: `src/hooks/useSplit.ts`
-
-| Test | Cases |
-|------|-------|
-| split called | with file and pageRanges |
-| empty ranges | sets error, returns null |
-| isProcessing | false → true → false |
-| progress | null → {current,total,percent} → null |
-| error handling | err.message set |
-| clearError | clears error state |
-
-### 4. FileList.test.tsx
-**Source**: `src/components/common/FileList/FileList.tsx`
-
-| Test | Cases |
-|------|-------|
-| renders empty | with empty files array |
-| renders with files | shows file name, size |
-| shows index | 1-based index display |
-| showPageCount | when true shows pages, when false hides |
-| onRemove called | when Remove button clicked |
-
-### 5. SplitView.test.tsx, CompressView.test.tsx, RotateView.test.tsx, ConvertView.test.tsx, OrganizeView.test.tsx
-Each feature component tests:
-- DropZone accepts file → state updates
-- Page range/quality selection works
-- Action button disabled when no file
-- Action button enabled when ready
-- Processing shows progress
-- Error displays and clears
-- Clear resets state
+| Feature | Unit Tests | E2E Tests | Status |
+|---------|------------|-----------|--------|
+| Merge | ✅ Complete | ✅ Complete | 207 tests |
+| Split | ✅ Complete | ⚠️ Partial | In Progress |
+| Compress | ✅ Complete | ❌ Not Done | Pending |
+| Rotate | ✅ Complete | ❌ Not Done | Pending |
+| Convert | ✅ Complete | ❌ Not Done | Pending |
+| Organize | ✅ Complete | ❌ Not Done | Pending |
+| Common Components | ✅ Complete | N/A | 205 tests |
+| Hooks & Utils | ✅ Complete | N/A | 205 tests |
 
 ---
 
-## Execution Order
+## 1. Merge Feature
 
-### Phase 1: Utils & Context
-- [x] `tests/utils/errorUtils.test.ts`
-- [x] `tests/context/AppContext.test.tsx`
+### Overview
+**Page:** `src/components/features/MergeView/MergeView.tsx`
+**Hook:** `src/hooks/useMerge.ts`
+**Service:** `src/services/pdf/mergeOperation.ts`
 
-### Phase 2: Hooks
-- [x] `tests/hooks/useSplit.test.ts`
-- [x] `tests/hooks/useCompress.test.ts`
-- [x] `tests/hooks/useRotate.test.ts`
-- [x] `tests/hooks/useConvert.test.ts`
-- [x] `tests/hooks/useOrganize.test.ts`
-- [x] `tests/hooks/useMerge.test.ts` (expand existing)
+### Unit Tests
 
-### Phase 3: Common Components
-- [x] `tests/components/FileList.test.tsx`
-- [x] `tests/components/PageThumbnails.test.tsx`
-- [x] `tests/components/ProgressBar.test.tsx`
+**File:** `tests/hooks/useMerge.test.ts`
 
-### Phase 4: Feature Components
-- [x] `tests/components/SplitView.test.tsx`
-- [x] `tests/components/CompressView.test.tsx`
-- [x] `tests/components/RotateView.test.tsx`
-- [x] `tests/components/ConvertView.test.tsx`
-- [x] `tests/components/OrganizeView.test.tsx`
+| Test | Cases | Status |
+|------|-------|--------|
+| merge function called | with array of files | ✅ |
+| merge returns | PDFBlob on success | ✅ |
+| isProcessing | false → true → false | ✅ |
+| progress | null → {current,total,percent} → null | ✅ |
+| error handling | err.message set on failure | ✅ |
+| clearError | clears error state | ✅ |
 
-### Phase 5: E2E Comprehensive Testing
-**Source**: `e2e/full-test.spec.ts` - Comprehensive user workflow tests
+**File:** `tests/components/MergeView.test.tsx`
 
-**Status**: Basic upload tests passing (8/10). Need to add full workflow tests (merge actual download, split ranges, rotate interactions, etc.)
+| Test | Cases | Status |
+|------|-------|--------|
+| renders empty dropzone | when no files | ✅ |
+| accepts file via dropzone | updates file list | ✅ |
+| preview button exists | after file added | ✅ |
+| opens preview modal | when preview clicked | ✅ |
+| merge button disabled | when < 2 files | ✅ |
+| merge button enabled | when 2+ files | ✅ |
+| shows Add More Files | after first file | ✅ |
+| shows dropzone when adding more | when Add More clicked | ✅ |
+| removes file | when Remove clicked | ✅ |
 
-| Feature | Test Cases | Status |
-|---------|------------|--------|
-| **Merge** | Upload 3 files → click Merge → verify download, reorder, remove | ❌ Not done |
-| **Split** | Upload PDF → enter ranges → click Split → verify output | ✅ Basic done |
-| **Compress** | Upload PDF → select quality → click Compress → verify download | ❌ Not done |
-| **Rotate** | Upload PDF → rotate 90° → 180° → download | ❌ Not done |
-| **Convert** | Upload images → convert → verify PDF | ❌ Not done |
-| **Organize** | Upload PDF → reorder thumbnails → download | ❌ Not done |
-| **Preview** | Open modal → navigate → zoom → close | ✅ Done |
-| **Navigation** | Click each nav button → verify view changes | ✅ Done |
-| **Add More Files** | Add file → click Add More → add more | ✅ Done |
+### E2E Tests
 
----
+**File:** `e2e/full-test.spec.ts`
 
-## E2E Test Scenarios (Detailed)
+| Test ID | Test Case | Status |
+|---------|-----------|--------|
+| E2E-M1 | Upload merge-1.pdf, merge-2.pdf, merge-3.pdf → Verify all 3 appear | ✅ |
+| E2E-M2 | Click Merge → Verify download triggers with "merged.pdf" | ✅ |
+| E2E-M3 | Drag file 3 to position 1 → Verify new order | ✅ |
+| E2E-M4 | Click Remove on file → Verify file removed | ✅ |
+| E2E-M5 | Click "Add More Files" → Upload additional file → Verify merged list | ✅ |
+| E2E-M6 | Click "Clear All" → Verify all files removed | ✅ |
+| E2E-M7 | Preview Files → Modal opens → Navigate pages → Close | ✅ |
 
-### Merge Feature
-1. Upload merge-1.pdf, merge-2.pdf, merge-3.pdf
-2. Verify all 3 files appear in list with correct names and sizes
-3. Drag file 3 to position 1 (reorder)
-4. Click "Merge 3 Files" button
-5. Verify processing completes and download triggers
-
-### Split Feature
-1. Upload split-source.pdf (5 pages)
-2. Enter page ranges: "1-2, 3-4, 5"
-3. Click "Split PDF" button
-4. Verify 3 output files are generated
-5. Invalid range "10-20" should show error
-
-### Compress Feature
-1. Upload test-5pages.pdf
-2. Select "Low Quality" compression
-3. Click "Compress PDF" button
-4. Verify compressed file downloads
-
-### Rotate Feature
-1. Upload rotate-test.pdf
-2. Click "Rotate 90°" button
-3. Verify preview shows rotated page
-4. Click "Rotate 180°" button
-5. Verify preview updates
-6. Click "Download Rotated PDF"
-
-### Convert Feature
-1. Upload test-1page.pdf, test-2pages.pdf (as images)
-2. Click "Convert to PDF"
-3. Verify single PDF with 3 pages total downloads
-
-### Organize Feature
-1. Upload test-3pages.pdf
-2. See 3 page thumbnails
-3. Drag page 3 to position 1
-4. Click "Download Organized PDF"
-5. Verify output has reordered pages
-
-### Preview Modal
-1. In Merge, upload merge-1.pdf
-2. Click "Preview Files" button
-3. Modal opens showing page 1 of 2
-4. Click ▶ to go to page 2
-5. Click zoom in (+), verify scale increases
-6. Press ESC to close modal
-
-### Error Recovery
-1. Navigate to Split
-2. Upload a corrupted/invalid file
-3. Verify error message "Error loading PDF" or similar
-4. Click × to clear error
-5. Verify state resets to initial
+### Test Data
+- `test-pdfs/merge-1.pdf` (2 pages, red background)
+- `test-pdfs/merge-2.pdf` (3 pages, pink background)
+- `test-pdfs/merge-3.pdf` (1 page, cyan background)
 
 ---
 
-### Phase 6: Verification
-- [x] Run `npm run test:coverage` - 205 tests passing
-- [x] Run `npm run test:e2e` - 8 basic tests passing
-- [ ] Add comprehensive E2E workflow tests (Phase 5)
-- [ ] Fix remaining E2E gaps
+## 2. Split Feature
+
+### Overview
+**Page:** `src/components/features/SplitView/SplitView.tsx`
+**Hook:** `src/hooks/useSplit.ts`
+**Service:** `src/services/pdf/splitOperation.ts`
+
+### Unit Tests
+
+**File:** `tests/hooks/useSplit.test.ts`
+
+| Test | Cases | Status |
+|------|-------|--------|
+| split called | with file and pageRanges | ✅ |
+| empty ranges | sets error, returns null | ✅ |
+| isProcessing | false → true → false | ✅ |
+| progress | null → {current,total,percent} → null | ✅ |
+| error handling | err.message set | ✅ |
+| clearError | clears error state | ✅ |
+
+**File:** `tests/components/SplitView.test.tsx`
+
+| Test | Cases | Status |
+|------|-------|--------|
+| renders empty dropzone | when no file | ✅ |
+| accepts file via dropzone | updates state | ✅ |
+| page range input works | when text entered | ✅ |
+| Split button disabled | when no file or range | ✅ |
+| Split button enabled | when file and valid range | ✅ |
+| shows Preview Pages button | after file selected | ✅ |
+| opens PreviewModal | when Preview clicked | ✅ |
+| displays error | when error occurs | ✅ |
+| Change File resets state | when clicked | ✅ |
+
+### E2E Tests
+
+| Test ID | Test Case | Status |
+|---------|-----------|--------|
+| E2E-S1 | Upload split-source.pdf → Enter "1-2, 3-4, 5" → Click Split → Verify 3 files download | ⚠️ |
+| E2E-S2 | Enter invalid range "10-20" → Verify error message | ⚠️ |
+| E2E-S3 | Leave range empty → Verify Split button disabled | ⚠️ |
+
+### Test Data
+- `test-pdfs/split-source.pdf` (5 pages, gray background)
 
 ---
 
-## Comprehensive E2E Test Plan
+## 3. Compress Feature
 
-### File Structure
-```
-e2e/full-test.spec.ts   - Main E2E test suite (to be expanded)
-test-pdfs/              - 10 test PDF files for testing
-```
+### Overview
+**Page:** `src/components/features/CompressView/CompressView.tsx`
+**Hook:** `src/hooks/useCompress.ts`
+**Service:** `src/services/pdf/compressOperation.ts`
 
-### Test PDFs Created
-**IMPORTANT**: Test PDF files must be visually distinguishable from each other to verify correct files are merged/processed in the correct order. Use distinct background colors and bold fonts.
+### Unit Tests
 
-| File | Pages | Purpose | Visual Distinction |
-|------|-------|---------|-------------------|
-| test-1page.pdf | 1 | Basic single page | Yellow background, bold "TEST PAGE 1" |
-| test-2pages.pdf | 2 | Two page document | Green background, bold "TEST PAGE" |
-| test-3pages.pdf | 3 | Three page document | Blue background, bold "TEST PAGE" |
-| test-5pages.pdf | 5 | Multi-page for compress | Orange background, bold "TEST PAGE" |
-| test-10pages.pdf | 10 | Large document | Purple background, bold "TEST PAGE" |
-| merge-1.pdf | 2 | Merge source 1 | Red background, bold "MERGE FILE 1" |
-| merge-2.pdf | 3 | Merge source 2 | Pink background, bold "MERGE FILE 2" |
-| merge-3.pdf | 1 | Merge source 3 | Cyan background, bold "MERGE FILE 3" |
-| split-source.pdf | 5 | Split source (5 pages) | Gray background, bold "SPLIT SOURCE" |
-| rotate-test.pdf | 3 | Rotate source (3 pages) | White background, bold "ROTATE TEST" |
+**File:** `tests/hooks/useCompress.test.ts`
 
----
+| Test | Cases | Status |
+|------|-------|--------|
+| compress called | with file and quality | ✅ |
+| isProcessing | false → true → false | ✅ |
+| progress | null → {current,total,percent} → null | ✅ |
+| error handling | err.message set | ✅ |
+| clearError | clears error state | ✅ |
 
-### E2E Test Cases by Feature
+**File:** `tests/components/CompressView.test.tsx`
 
-#### MERGE (❌ Not Complete)
-```
-Test 1: Basic Merge
-  1. Navigate to Merge view
-  2. Upload merge-1.pdf, merge-2.pdf, merge-3.pdf
-  3. Verify all 3 files appear with correct names
-  4. Verify Merge button shows "Merge 3 Files" and is enabled
-  5. Click Merge
-  6. Verify download triggers with filename "merged.pdf"
+| Test | Cases | Status |
+|------|-------|--------|
+| renders empty dropzone | when no file | ✅ |
+| accepts file via dropzone | updates state | ✅ |
+| quality selection works | Low/Medium/High | ✅ |
+| Compress button disabled | when no file | ✅ |
+| Compress button enabled | when file selected | ✅ |
+| shows Preview button | after file selected | ✅ |
+| opens PreviewModal | when Preview clicked | ✅ |
+| displays error | when error occurs | ✅ |
+| Change File resets state | when clicked | ✅ |
 
-Test 2: Drag to Reorder
-  1. Upload merge-1.pdf, merge-2.pdf, merge-3.pdf
-  2. Verify file order: merge-1, merge-2, merge-3
-  3. Drag file 3 to position 1 (before file 1)
-  4. Verify new order: merge-3, merge-1, merge-2
-  5. Click Merge
-  6. Verify download triggers
+### E2E Tests
 
-Test 3: Remove File
-  1. Upload merge-1.pdf, merge-2.pdf, merge-3.pdf
-  2. Click Remove on merge-2.pdf
-  3. Verify only merge-1 and merge-3 remain
-  4. Verify Merge button shows "Merge 2 Files"
+| Test ID | Test Case | Status |
+|---------|-----------|--------|
+| E2E-C1 | Upload test-5pages.pdf → Select Low Quality → Compress → Verify download | ❌ |
+| E2E-C2 | Select Medium Quality → Compress → Verify download | ❌ |
+| E2E-C3 | Select High Quality → Compress → Verify download | ❌ |
 
-Test 4: Add More Files
-  1. Upload merge-1.pdf
-  2. Click "Add More Files" button
-  3. Upload merge-2.pdf
-  4. Verify merge-1 and merge-2 both present
-  5. Merge button should be disabled (need 2+ files) → enabled after 2nd file
-
-Test 5: Clear All
-  1. Upload merge-1.pdf, merge-2.pdf, merge-3.pdf
-  2. Click "Clear All" button
-  3. Verify all files removed
-  4. Verify dropzone reappears
-```
-
-#### SPLIT (⚠️ Partial - Page Range Input Not Tested)
-```
-Test 6: Basic Split with Page Ranges
-  1. Navigate to Split view
-  2. Upload split-source.pdf (5 pages)
-  3. Verify "5 pages" text visible
-  4. Enter page ranges: "1-2, 3-4, 5"
-  5. Click "Split PDF" button
-  6. Verify 3 output files download
-
-Test 7: Invalid Page Range Error
-  1. Upload split-source.pdf
-  2. Enter invalid range "10-20"
-  3. Click "Split PDF" button
-  4. Verify error message appears
-
-Test 8: Empty Page Range
-  1. Upload split-source.pdf
-  2. Leave page range input empty
-  3. Verify Split button is disabled
-```
-
-#### COMPRESS (❌ Not Complete)
-```
-Test 9: Compress with Quality Selection
-  1. Navigate to Compress view
-  2. Upload test-5pages.pdf
-  3. Verify file appears
-  4. Select "Low Quality" radio button
-  5. Click "Compress PDF" button
-  6. Verify download triggers with compressed file
-
-Test 10: Compress Medium Quality
-  1. Upload test-5pages.pdf
-  2. Select "Medium Quality" radio button
-  3. Click "Compress PDF" button
-  4. Verify download triggers
-
-Test 11: Compress High Quality
-  1. Upload test-5pages.pdf
-  2. Select "High Quality" radio button
-  3. Click "Compress PDF" button
-  4. Verify download triggers
-```
-
-#### ROTATE (❌ Not Complete)
-```
-Test 12: Rotate 90 Degrees
-  1. Navigate to Rotate view
-  2. Upload rotate-test.pdf (3 pages)
-  3. Verify page thumbnails appear
-  4. Click "Rotate 90°" button
-  5. Verify preview updates to show rotation
-
-Test 13: Rotate 180 Degrees
-  1. Upload rotate-test.pdf
-  2. Click "Rotate 180°" button
-  3. Verify preview updates
-
-Test 14: Download Rotated PDF
-  1. Upload rotate-test.pdf
-  2. Click "Rotate 90°"
-  3. Click "Download Rotated PDF" button
-  4. Verify download triggers with rotated file
-```
-
-#### CONVERT (❌ Not Complete)
-```
-Test 15: Convert PDF Pages to PDF
-  1. Navigate to Convert view
-  2. Upload test-1page.pdf
-  3. Verify file appears
-  4. Click "Convert to PDF" button
-  5. Verify download triggers
-
-Test 16: Convert Multiple Files
-  1. Upload test-1page.pdf, test-2pages.pdf
-  2. Click "Convert to PDF" button
-  3. Verify single output PDF downloads
-```
-
-#### ORGANIZE (❌ Not Complete)
-```
-Test 17: Reorder Pages via Drag
-  1. Navigate to Organize view
-  2. Upload test-3pages.pdf (3 pages)
-  3. Verify 3 page thumbnails visible
-  4. Drag page 3 to position 1
-  5. Verify page order updates in preview
-
-Test 18: Download Organized PDF
-  1. Upload test-3pages.pdf
-  2. Optionally reorder pages
-  3. Click "Download Organized PDF" button
-  4. Verify download triggers
-```
-
-#### PREVIEW MODAL (✅ Done - Basic)
-```
-Test 19: Preview Navigation
-  1. In Merge, upload merge-1.pdf (2 pages)
-  2. Click "Preview Files" button
-  3. Verify modal opens
-  4. Verify "Page 1 of 2" visible
-  5. Click ▶ (Next page) button
-  6. Verify "Page 2 of 2" visible
-  7. Click ◀ (Previous page) button
-  8. Verify "Page 1 of 2" visible again
-
-Test 20: Preview Zoom
-  1. Open preview modal
-  2. Verify zoom level shows "100%"
-  3. Click "+" (Zoom in) button
-  4. Verify zoom level shows "125%"
-  5. Click "-" (Zoom out) button
-  6. Verify zoom level shows "100%"
-
-Test 21: Close Modal with ESC
-  1. Open preview modal
-  2. Press ESC key
-  3. Verify modal closes
-
-Test 22: Close Modal with X Button
-  1. Open preview modal
-  2. Click × close button
-  3. Verify modal closes
-```
-
-#### NAVIGATION (✅ Done)
-```
-Test 23: All Navigation Buttons
-  1. Click Merge → verify heading "Merge PDFs"
-  2. Click Split → verify heading "Split PDF"
-  3. Click Compress → verify heading "Compress PDF"
-  4. Click Rotate → verify heading "Rotate PDF"
-  5. Click Convert → verify heading "Convert to PDF"
-  6. Click Organize → verify heading "Organize PDF"
-
-Test 24: Active State Highlighted
-  1. Click Split button
-  2. Verify Split button has [active] styling
-  3. Click Compress button
-  4. Verify Compress button has [active] styling
-  5. Verify Split button no longer has [active]
-```
+### Test Data
+- `test-pdfs/test-5pages.pdf` (5 pages, orange background)
 
 ---
 
-## Current Status Summary
+## 4. Rotate Feature
+
+### Overview
+**Page:** `src/components/features/RotateView/RotateView.tsx`
+**Hook:** `src/hooks/useRotate.ts`
+**Service:** `src/services/pdf/rotateOperation.ts`
+
+### Unit Tests
+
+**File:** `tests/hooks/useRotate.test.ts`
+
+| Test | Cases | Status |
+|------|-------|--------|
+| rotate called | with file, pageIndices, degrees | ✅ |
+| isProcessing | false → true → false | ✅ |
+| progress | null → {current,total,percent} → null | ✅ |
+| error handling | err.message set | ✅ |
+| clearError | clears error state | ✅ |
+
+**File:** `tests/components/RotateView.test.tsx`
+
+| Test | Cases | Status |
+|------|-------|--------|
+| renders empty dropzone | when no file | ✅ |
+| accepts file via dropzone | updates state | ✅ |
+| shows page thumbnails | after file loaded | ✅ |
+| Rotate 90° button exists | when file selected | ✅ |
+| Rotate 180° button exists | when file selected | ✅ |
+| Download button disabled | when no rotation applied | ⚠️ |
+| shows Preview PDF button | after file selected | ✅ |
+| opens PreviewModal | when Preview clicked | ✅ |
+| displays hint | about selecting pages | ✅ |
+
+### E2E Tests
+
+| Test ID | Test Case | Status |
+|---------|-----------|--------|
+| E2E-R1 | Upload rotate-test.pdf → Click Rotate 90° → Verify preview updates | ❌ |
+| E2E-R2 | Click Rotate 180° → Verify preview updates | ❌ |
+| E2E-R3 | Download → Verify rotated file downloads | ❌ |
+
+### Test Data
+- `test-pdfs/rotate-test.pdf` (3 pages, white background)
+
+---
+
+## 5. Convert Feature
+
+### Overview
+**Page:** `src/components/features/ConvertView/ConvertView.tsx`
+**Hook:** `src/hooks/useConvert.ts`
+**Service:** `src/services/pdf/convertOperation.ts`
+
+### Unit Tests
+
+**File:** `tests/hooks/useConvert.test.ts`
+
+| Test | Cases | Status |
+|------|-------|--------|
+| convert called | with files array | ✅ |
+| isProcessing | false → true → false | ✅ |
+| progress | null → {current,total,percent} → null | ✅ |
+| error handling | err.message set | ✅ |
+| clearError | clears error state | ✅ |
+
+**File:** `tests/components/ConvertView.test.tsx`
+
+| Test | Cases | Status |
+|------|-------|--------|
+| renders empty dropzone | when no files | ✅ |
+| accepts image files | via dropzone | ✅ |
+| file list shows | uploaded images | ✅ |
+| Convert button disabled | when no files | ✅ |
+| Convert button enabled | when files selected | ✅ |
+| shows Preview button | after images selected | ✅ |
+
+### E2E Tests
+
+| Test ID | Test Case | Status |
+|---------|-----------|--------|
+| E2E-CV1 | Upload test-1page.pdf → Convert → Verify PDF downloads | ❌ |
+| E2E-CV2 | Upload multiple images → Convert → Verify merged PDF | ❌ |
+
+---
+
+## 6. Organize Feature
+
+### Overview
+**Page:** `src/components/features/OrganizeView/OrganizeView.tsx`
+**Hook:** `src/hooks/useOrganize.ts`
+**Service:** `src/services/pdf/reorganizeOperation.ts`
+
+### Unit Tests
+
+**File:** `tests/hooks/useOrganize.test.ts`
+
+| Test | Cases | Status |
+|------|-------|--------|
+| reorganize called | with file and newOrder | ✅ |
+| isProcessing | false → true → false | ✅ |
+| progress | null → {current,total,percent} → null | ✅ |
+| error handling | err.message set | ✅ |
+| clearError | clears error state | ✅ |
+
+**File:** `tests/components/OrganizeView.test.tsx`
+
+| Test | Cases | Status |
+|------|-------|--------|
+| renders empty dropzone | when no file | ✅ |
+| accepts file via dropzone | updates state | ✅ |
+| shows page thumbnails | after file loaded | ✅ |
+| thumbnails are selectable | when clicked | ✅ |
+| Download button disabled | when no changes | ⚠️ |
+| shows Preview PDF button | after file selected | ✅ |
+| opens PreviewModal | when Preview clicked | ✅ |
+| displays error | when error occurs | ✅ |
+| Change File resets state | when clicked | ✅ |
+
+### E2E Tests
+
+| Test ID | Test Case | Status |
+|---------|-----------|--------|
+| E2E-O1 | Upload test-3pages.pdf → Drag page 3 to position 1 → Download | ❌ |
+| E2E-O2 | Verify reordered pages in output | ❌ |
+
+### Test Data
+- `test-pdfs/test-3pages.pdf` (3 pages, blue background)
+
+---
+
+## 7. Common Components
+
+### Unit Tests
+
+| Component | Test File | Tests | Status |
+|-----------|-----------|-------|--------|
+| Button | `tests/components/Button.test.tsx` | 4 | ✅ |
+| DropZone | `tests/components/DropZone.test.tsx` | 3 | ✅ |
+| FileList | `tests/components/FileList.test.tsx` | 7 | ✅ |
+| PageThumbnails | `tests/components/PageThumbnails.test.tsx` | 6 | ✅ |
+| PreviewModal | `src/components/common/PreviewModal/PreviewModal.test.tsx` | 12 | ✅ |
+| ProgressBar | `tests/components/ProgressBar.test.tsx` | 5 | ✅ |
+
+---
+
+## 8. Hooks & Utils
+
+### Unit Tests
+
+| Module | Test File | Tests | Status |
+|--------|-----------|-------|--------|
+| useMerge | `tests/hooks/useMerge.test.ts` | 6 | ✅ |
+| useSplit | `tests/hooks/useSplit.test.ts` | 7 | ✅ |
+| useCompress | `tests/hooks/useCompress.test.ts` | 5 | ✅ |
+| useRotate | `tests/hooks/useRotate.test.ts` | 6 | ✅ |
+| useConvert | `tests/hooks/useConvert.test.ts` | 6 | ✅ |
+| useOrganize | `tests/hooks/useOrganize.test.ts` | 5 | ✅ |
+| errorUtils | `tests/utils/errorUtils.test.ts` | 12 | ✅ |
+| fileUtils | `tests/utils/fileUtils.test.ts` | 17 | ✅ |
+| downloadUtils | `tests/utils/downloadUtils.test.ts` | 2 | ✅ |
+| AppContext | `tests/context/AppContext.test.tsx` | 3 | ✅ |
+| ClientPDFService | `tests/services/ClientPDFService.test.ts` | 6 | ✅ |
+| pdfOperations | `tests/services/pdfOperations.test.ts` | 11 | ✅ |
+| pdfValidation | `tests/services/pdfValidation.test.ts` | 15 | ✅ |
+| mergeOperation | `tests/services/mergeOperation.test.ts` | 4 | ✅ |
+| splitOperation | `tests/services/splitOperation.test.ts` | 5 | ✅ |
+| compressOperation | `tests/services/compressOperation.test.ts` | 4 | ✅ |
+| rotateOperation | `tests/services/rotateOperation.test.ts` | 4 | ✅ |
+| reorganizeOperation | `tests/services/reorganizeOperation.test.ts` | 4 | ✅ |
+| convertOperation | `tests/services/convertOperation.test.ts` | 5 | ✅ |
+
+---
+
+## 9. Preview Modal (Shared Component)
+
+### Overview
+**Component:** `src/components/common/PreviewModal/PreviewModal.tsx`
+
+### Unit Tests
+
+**File:** `src/components/common/PreviewModal/PreviewModal.test.tsx`
+
+| Test | Cases | Status |
+|------|-------|--------|
+| renders when isOpen true | with file provided | ✅ |
+| does not render when isOpen false | returns null | ✅ |
+| does not render when file is null | returns null | ✅ |
+| calls onClose on close button click | button triggers callback | ✅ |
+| calls onClose on ESC key | keyboard event | ✅ |
+| renders navigation buttons | ◀ ▶ visible | ✅ |
+| renders zoom controls | +/- buttons visible | ✅ |
+| zoom controls work | + increases, - decreases | ✅ |
+| closes on overlay click | backdrop dismisses | ✅ |
+| shows loading state | while PDF loading | ✅ |
+| shows error on failure | when PDF fails | ✅ |
+| has onWheel handler | for page navigation | ✅ |
+
+### E2E Tests (Integrated in Feature Tests)
+
+| Test ID | Test Case | Status |
+|---------|-----------|--------|
+| E2E-P1 | Preview → Modal opens → Navigate pages | ✅ |
+| E2E-P2 | Preview → Zoom in/out | ✅ |
+| E2E-P3 | Preview → ESC to close | ✅ |
+| E2E-P4 | Preview → X button to close | ✅ |
+
+---
+
+## 10. Test Data Specification
+
+### Test PDF Files
+
+All test PDFs are generated with distinct background colors and bold fonts for visual identification.
+
+| File | Pages | Background | Text |
+|------|-------|------------|------|
+| `test-1page.pdf` | 1 | Yellow (#FFFF00) | "TEST PAGE 1" |
+| `test-2pages.pdf` | 2 | Green (#00FF00) | "TEST PAGE" |
+| `test-3pages.pdf` | 3 | Blue (#0000FF) | "TEST PAGE" |
+| `test-5pages.pdf` | 5 | Orange (#FFA500) | "TEST PAGE" |
+| `test-10pages.pdf` | 10 | Purple (#800080) | "TEST PAGE" |
+| `merge-1.pdf` | 2 | Red (#FF0000) | "MERGE FILE 1" |
+| `merge-2.pdf` | 3 | Pink (#FFB4C4) | "MERGE FILE 2" |
+| `merge-3.pdf` | 1 | Cyan (#00FFFF) | "MERGE FILE 3" |
+| `split-source.pdf` | 5 | Gray (#808080) | "SPLIT SOURCE" |
+| `rotate-test.pdf` | 3 | White (#FFFFFF) | "ROTATE TEST" |
+
+### Generation Script
+Run `node scripts/generate-test-pdfs.mjs` to regenerate all test PDFs.
+
+---
+
+## 11. Execution Commands
+
+```bash
+# Run all unit tests
+npm test
+
+# Run unit tests with coverage
+npm run test:coverage
+
+# Run E2E tests (requires Chrome browser)
+npm run test:e2e
+
+# Run specific test file
+npx vitest run tests/hooks/useMerge.test.ts
+
+# Run specific E2E test
+npx playwright test e2e/full-test.spec.ts --grep "Merge"
+```
+
+---
+
+## 12. Current Coverage Status
 
 | Category | Tests | Passing |
 |----------|-------|---------|
-| Unit Tests (Phase 1-4) | 205 | ✅ 205 |
-| E2E Basic (Phase 5) | 8 | ✅ 8 |
-| E2E Comprehensive (Phase 5 - to add) | ~22 | ❌ 0 |
+| Unit Tests (Total) | 206 | ✅ 206 |
+| E2E Basic | 8 | ✅ 8 |
+| E2E Merge (Full) | 7 | ✅ 7 |
+| E2E Comprehensive | ~22 | ⚠️ In Progress |
 
-**Next Action**: Implement remaining E2E tests from the plan above
+**Overall Status:** Phase 1-4 (Unit Tests) Complete. E2E Phase in Progress.
