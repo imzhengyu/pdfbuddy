@@ -1,6 +1,6 @@
 # PDF Tool - Specification
 
-> **Last Updated:** 2026-04-25
+> **Last Updated:** 2026-04-26
 
 ## Overview
 
@@ -98,6 +98,7 @@ Each feature view must display a **Preview Box** after a PDF file is selected. T
 - Full-screen modal overlay
 - Renders PDF pages with pdf-lib or canvas
 - Navigation: Previous/Next page buttons
+- Mouse scroll: down = next page, up = previous page
 - Zoom controls: Fit, 50%, 100%, 150%
 - Close button (X) and ESC key to dismiss
 
@@ -165,60 +166,13 @@ interface PreviewModalProps {
 
 ---
 
-## Testing Requirements
-
-### Preview Modal Tests
-
-| Test Case | Description |
-|----------|-------------|
-| Renders when isOpen is true | Modal should display content |
-| Does not render when isOpen is false | Modal should be hidden |
-| Calls onClose when close button clicked | Close handler invoked |
-| Calls onClose when ESC key pressed | Close handler invoked |
-| Displays file name in header | Shows filename |
-| Page navigation works | Next/Previous buttons functional |
-| Zoom controls work | Zoom in/out functions |
-
-### Integration Tests for Preview
-
-| View | Test |
-|------|------|
-| SplitView | Click Preview → Modal opens → Close works |
-| CompressView | Click Preview → Shows file info |
-| RotateView | Click Preview → Modal opens with PDF pages |
-| ConvertView | Click Preview → Shows image preview |
-
-### Test PDF Files
-
-**Requirement**: Test PDF files must be visually distinguishable from each other using:
-- **Different background colors** (yellow, green, blue, red, pink, cyan, orange, purple, gray, white)
-- **Bold text labels** indicating the file name/page number
-
-This is critical for verifying that:
-1. Merge produces the correct file order in the output
-2. Split extracts the correct pages
-3. Rotate applies to the correct pages
-4. Organize reorders pages correctly
-
-| File | Visual Style |
-|------|-------------|
-| merge-1.pdf | Red background, bold "MERGE FILE 1" |
-| merge-2.pdf | Pink background, bold "MERGE FILE 2" |
-| merge-3.pdf | Cyan background, bold "MERGE FILE 3" |
-| split-source.pdf | Gray background, bold "SPLIT SOURCE" |
-| rotate-test.pdf | White background, bold "ROTATE TEST" |
-| OrganizeView | Click Preview → Modal opens with PDF pages |
-
----
-
 ## Success Criteria
 
 - [x] All 6 features functional with client-side processing
 - [x] Drag and drop works reliably
 - [x] Files up to 20MB process without crashing
-- [x] Unit tests achieve >80% coverage on service layer
-- [ ] **Preview feature implemented on all views**
-- [ ] **Preview modal component created and tested**
+- [ ] Preview feature implemented on all views
+- [ ] Preview modal component created and tested
 - [ ] E2E tests pass for core workflows
 - [ ] No console errors in production build
 - [ ] Works on Chrome, Firefox, Safari, Edge
@@ -231,13 +185,14 @@ This is critical for verifying that:
 ```
 pdf-tool/
 ├── SPEC.md                          # This file
+├── test-plan.md                     # Test plan and coverage details
 ├── src/
 │   ├── components/
 │   │   ├── common/
 │   │   │   ├── DropZone/
 │   │   │   ├── FileList/
 │   │   │   ├── PageThumbnails/
-│   │   │   ├── PreviewModal/       # NEW
+│   │   │   ├── PreviewModal/
 │   │   │   ├── ProgressBar/
 │   │   │   └── Button/
 │   │   └── features/
@@ -261,9 +216,18 @@ pdf-tool/
 │       ├── useRotate.ts
 │       ├── useConvert.ts
 │       └── useOrganize.ts
-└── tests/
-    ├── components/
-    │   └── PreviewModal.test.tsx   # NEW
-    └── e2e/
-        └── app.spec.ts
 ```
+
+---
+
+## Test Documentation
+
+All test-related documentation including unit tests, integration tests, E2E tests, test coverage goals, and test data specifications is located in:
+
+**[test-plan.md](./test-plan.md)**
+
+This includes:
+- Unit test coverage plan (>95% goal)
+- E2E comprehensive test scenarios
+- Test PDF file requirements (visually distinguishable files)
+- Integration test specifications
