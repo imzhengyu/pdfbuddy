@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { DropZone } from '../../common/DropZone/DropZone';
 import { Button } from '../../common/Button/Button';
 import { ProgressBar } from '../../common/ProgressBar/ProgressBar';
@@ -22,6 +22,10 @@ export function MergeView() {
   const [previewFile, setPreviewFile] = useState<File | null>(null);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const { merge, isProcessing, progress, error, clearError } = useMerge();
+
+  useEffect(() => {
+    setPreviewFile(null);
+  }, [files]);
 
   const handleFilesDropped = useCallback((droppedFiles: File[]) => {
     const newFiles = droppedFiles.map((file, index) => ({
