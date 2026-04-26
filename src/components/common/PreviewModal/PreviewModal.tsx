@@ -27,6 +27,15 @@ export function PreviewModal({ isOpen, onClose, file, title }: PreviewModalProps
     }
   }, [onClose, totalPages]);
 
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    e.preventDefault();
+    if (e.deltaY > 0) {
+      setCurrentPage(prev => Math.min(totalPages, prev + 1));
+    } else if (e.deltaY < 0) {
+      setCurrentPage(prev => Math.max(1, prev - 1));
+    }
+  }, [totalPages]);
+
   useEffect(() => {
     if (isOpen) {
       document.addEventListener('keydown', handleKeyDown);
@@ -110,7 +119,7 @@ export function PreviewModal({ isOpen, onClose, file, title }: PreviewModalProps
           </button>
         </div>
 
-        <div className={styles.content}>
+        <div className={styles.content} onWheel={handleWheel}>
           {isLoading && (
             <div className={styles.loading}>Loading PDF...</div>
           )}
