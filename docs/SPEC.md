@@ -146,6 +146,8 @@ interface PreviewModalProps {
 - If a library is not available as an npm package, evaluate if the feature is necessary
 - Exception: CDN for worker scripts required by libraries (e.g., pdfjs-dist worker) is acceptable only when no local solution exists
 
+**Lint Before Commit:** All commits must pass lint checks before being allowed to commit. A pre-commit hook runs `npm run lint` (TypeScript type checking via `tsc --noEmit`) before any commit is accepted. If lint fails, the commit is rejected.
+
 ---
 
 ## UI Design

@@ -15,7 +15,6 @@ export function PreviewModal({ isOpen, onClose, file, title }: PreviewModalProps
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pageImages, setPageImages] = useState<string[]>([]);
-  const [pdfDoc, setPdfDoc] = useState<any>(null);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape') {
@@ -54,7 +53,6 @@ export function PreviewModal({ isOpen, onClose, file, title }: PreviewModalProps
       setIsLoading(true);
       setError(null);
       setPageImages([]);
-      setPdfDoc(null);
 
       try {
         const pdfjsLib = await import('pdfjs-dist');
@@ -66,7 +64,6 @@ export function PreviewModal({ isOpen, onClose, file, title }: PreviewModalProps
         const numPages = pdf.numPages;
         setTotalPages(numPages);
         setCurrentPage(1);
-        setPdfDoc(pdf);
 
         const images: string[] = [];
         for (let i = 1; i <= numPages; i++) {
