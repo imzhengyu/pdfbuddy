@@ -137,6 +137,14 @@ interface PreviewModalProps {
 | Testing | Vitest + React Testing Library |
 | E2E Testing | Playwright |
 
+### Development Rules
+
+**No CDN Dependencies:** Do NOT use CDN-based external dependencies. Always use local npm packages unless there is no other way to accomplish the requirement.
+
+- Use npm packages installed locally via `npm install`
+- If a library is not available as an npm package, evaluate if the feature is necessary
+- Exception: CDN for worker scripts required by libraries (e.g., pdfjs-dist worker) is acceptable only when no local solution exists
+
 ---
 
 ## UI Design

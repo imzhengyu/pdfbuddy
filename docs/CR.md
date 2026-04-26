@@ -2,6 +2,25 @@
 
 ## 2026-04-26
 
+### Feature: Mouse Scroll Navigation in Preview Modal
+
+**Issue:** In PreviewModal, users could only navigate pages using the ◀ ▶ buttons. Mouse scroll was not supported.
+
+**Fix:** Added `onWheel` handler to the preview content area for page navigation:
+- Scroll down → go to next page
+- Scroll up → go to previous page
+- Page navigation is bounded between 1 and totalPages
+
+**Files Changed:**
+- `src/components/common/PreviewModal/PreviewModal.tsx` - Added `handleWheel` callback and `onWheel` prop to content div
+
+**Tests Added:**
+- `src/components/common/PreviewModal/PreviewModal.test.tsx` - Test to verify onWheel handler presence
+
+**Test Results:** All 206 tests passing
+
+---
+
 ### Bug Fix: MergeView Preview shows only first file instead of merged PDF
 
 **Issue:** In MergeView, clicking "Preview Files" would only show the first PDF file, not the merged result. Users could not preview what the actual merged output would look like.
