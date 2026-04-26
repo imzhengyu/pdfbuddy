@@ -186,18 +186,20 @@ test-pdfs/              - 10 test PDF files for testing
 ```
 
 ### Test PDFs Created
-| File | Pages | Purpose |
-|------|-------|---------|
-| test-1page.pdf | 1 | Basic single page |
-| test-2pages.pdf | 2 | Two page document |
-| test-3pages.pdf | 3 | Three page document |
-| test-5pages.pdf | 5 | Multi-page for compress |
-| test-10pages.pdf | 10 | Large document |
-| merge-1.pdf | 2 | Merge source 1 |
-| merge-2.pdf | 3 | Merge source 2 |
-| merge-3.pdf | 1 | Merge source 3 |
-| split-source.pdf | 5 | Split source (5 pages) |
-| rotate-test.pdf | 3 | Rotate source (3 pages) |
+**IMPORTANT**: Test PDF files must be visually distinguishable from each other to verify correct files are merged/processed in the correct order. Use distinct background colors and bold fonts.
+
+| File | Pages | Purpose | Visual Distinction |
+|------|-------|---------|-------------------|
+| test-1page.pdf | 1 | Basic single page | Yellow background, bold "TEST PAGE 1" |
+| test-2pages.pdf | 2 | Two page document | Green background, bold "TEST PAGE" |
+| test-3pages.pdf | 3 | Three page document | Blue background, bold "TEST PAGE" |
+| test-5pages.pdf | 5 | Multi-page for compress | Orange background, bold "TEST PAGE" |
+| test-10pages.pdf | 10 | Large document | Purple background, bold "TEST PAGE" |
+| merge-1.pdf | 2 | Merge source 1 | Red background, bold "MERGE FILE 1" |
+| merge-2.pdf | 3 | Merge source 2 | Pink background, bold "MERGE FILE 2" |
+| merge-3.pdf | 1 | Merge source 3 | Cyan background, bold "MERGE FILE 3" |
+| split-source.pdf | 5 | Split source (5 pages) | Gray background, bold "SPLIT SOURCE" |
+| rotate-test.pdf | 3 | Rotate source (3 pages) | White background, bold "ROTATE TEST" |
 
 ---
 

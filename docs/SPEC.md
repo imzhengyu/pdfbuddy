@@ -187,6 +187,26 @@ interface PreviewModalProps {
 | CompressView | Click Preview → Shows file info |
 | RotateView | Click Preview → Modal opens with PDF pages |
 | ConvertView | Click Preview → Shows image preview |
+
+### Test PDF Files
+
+**Requirement**: Test PDF files must be visually distinguishable from each other using:
+- **Different background colors** (yellow, green, blue, red, pink, cyan, orange, purple, gray, white)
+- **Bold text labels** indicating the file name/page number
+
+This is critical for verifying that:
+1. Merge produces the correct file order in the output
+2. Split extracts the correct pages
+3. Rotate applies to the correct pages
+4. Organize reorders pages correctly
+
+| File | Visual Style |
+|------|-------------|
+| merge-1.pdf | Red background, bold "MERGE FILE 1" |
+| merge-2.pdf | Pink background, bold "MERGE FILE 2" |
+| merge-3.pdf | Cyan background, bold "MERGE FILE 3" |
+| split-source.pdf | Gray background, bold "SPLIT SOURCE" |
+| rotate-test.pdf | White background, bold "ROTATE TEST" |
 | OrganizeView | Click Preview → Modal opens with PDF pages |
 
 ---
