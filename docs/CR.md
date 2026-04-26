@@ -21,6 +21,27 @@
 
 ---
 
+### Bug Fix: MergeView Preview doesn't refresh when files change
+
+**Issue:** In MergeView, after viewing a preview and then modifying the file list (add/remove/reorder), the preview would still show the old merged PDF when opened again.
+
+**Root Cause:** The `previewFile` state was not cleared when the `files` array changed, causing stale preview data to persist.
+
+**Fix:** Added `useEffect` in MergeView to clear `previewFile` whenever the `files` dependency array changes:
+
+```typescript
+useEffect(() => {
+  setPreviewFile(null);
+}, [files]);
+```
+
+**Files Changed:**
+- `src/components/features/MergeView/MergeView.tsx` - Added `useEffect` to clear preview on files change
+
+**Test Results:** All 206 tests passing
+
+---
+
 ### Bug Fix: MergeView Preview shows only first file instead of merged PDF
 
 **Issue:** In MergeView, clicking "Preview Files" would only show the first PDF file, not the merged result. Users could not preview what the actual merged output would look like.
