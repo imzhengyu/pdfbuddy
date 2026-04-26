@@ -149,4 +149,37 @@ describe('PreviewModal', () => {
 
     expect(onCloseMock).toHaveBeenCalled();
   });
+
+  it('shows loading state while PDF is being loaded', async () => {
+    const { PDFDocument } = await import('pdf-lib');
+    (PDFDocument.load as any).mockImplementation(() => new Promise(resolve => setTimeout(() => resolve({ getPageCount: () => 5 }), 100)));
+
+    render(
+      <PreviewModal
+        isOpen={true}
+        onClose={vi.fn()}
+        file={mockFile}
+      />
+    );
+
+    expect(screen.getByText('Loading PDF...')).toBeInTheDocument();
+  });
+
+  it('shows error message when PDF loading fails', async () => {
+    const { PDFDocument } = await import('pdf-lib');
+    (PDFDocument.load as any).mockRejectedValue(new Error('Failed to load PDF'));
+
+    render(
+      <PreviewModal
+        isOpen={true}
+        onClose={vi.fn()}
+        file={mockFile}
+      />
+    );
+
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    expect(screen.getByText('Error loading PDF')).toBeInTheDocument();
+    expect(screen.getByText('Failed to load PDF')).toBeInTheDocument();
+  });
 });

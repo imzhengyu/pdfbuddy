@@ -144,5 +144,33 @@ describe('MergeView', () => {
       const fileItems = document.querySelectorAll('[draggable=true]');
       expect(fileItems.length).toBe(2);
     });
+
+    it('shows Preview Files button after adding files', async () => {
+      render(<MergeView />);
+
+      const input = screen.getByTestId('dropzone').querySelector('input');
+      uploadFile(input, createFile('test.pdf'));
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: 'Preview Files' })).toBeInTheDocument();
+      });
+    });
+
+    it('opens PreviewModal when Preview Files button clicked', async () => {
+      render(<MergeView />);
+
+      const input = screen.getByTestId('dropzone').querySelector('input');
+      uploadFile(input, createFile('test.pdf'));
+
+      await waitFor(() => {
+        expect(screen.getByText('test.pdf')).toBeInTheDocument();
+      });
+
+      clickButton('Preview Files');
+
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { level: 3 })).toBeInTheDocument();
+      });
+    });
   });
 });

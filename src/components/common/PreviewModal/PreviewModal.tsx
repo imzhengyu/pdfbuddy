@@ -12,6 +12,8 @@ export function PreviewModal({ isOpen, onClose, file, title }: PreviewModalProps
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [zoom, setZoom] = useState(100);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape') {
@@ -37,14 +39,20 @@ export function PreviewModal({ isOpen, onClose, file, title }: PreviewModalProps
   useEffect(() => {
     async function loadPageCount() {
       if (file && isOpen) {
+        setIsLoading(true);
+        setError(null);
         try {
           const { PDFDocument } = await import('pdf-lib');
           const arrayBuffer = await file.arrayBuffer();
           const pdf = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
           setTotalPages(pdf.getPageCount());
           setCurrentPage(1);
-        } catch {
+        } catch (err) {
+          const errorMessage = err instanceof Error ? err.message : 'Failed to load PDF';
+          setError(errorMessage);
           setTotalPages(0);
+        } finally {
+          setIsLoading(false);
         }
       }
     }
@@ -68,12 +76,28 @@ export function PreviewModal({ isOpen, onClose, file, title }: PreviewModalProps
         </div>
 
         <div className={styles.content}>
-          <div className={styles.previewArea} style={{ transform: `scale(${zoom / 100})` }}>
-            <div className={styles.pagePlaceholder}>
-              <span>Page {currentPage} of {totalPages}</span>
-              <p className={styles.hint}>PDF preview requires canvas rendering</p>
+          {isLoading && (
+            <div className={styles.loading}>Loading PDF...</div>
+          )}
+          {error && (
+            <div className={styles.error}>
+              <span>Error loading PDF</span>
+              <small>{error}</small>
             </div>
-          </div>
+          )}
+          {!isLoading && !error && totalPages > 0 && (
+            <div className={styles.previewArea} style={{ transform: `scale(${zoom / 100})` }}>
+              <div className={styles.pagePlaceholder}>
+                <span>Page {currentPage} of {totalPages}</span>
+                <p className={styles.hint}>PDF preview requires canvas rendering</p>
+              </div>
+            </div>
+          )}
+          {!isLoading && !error && totalPages === 0 && (
+            <div className={styles.pagePlaceholder}>
+              <span>No pages found</span>
+            </div>
+          )}
         </div>
 
         <div className={styles.footer}>

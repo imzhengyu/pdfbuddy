@@ -1,0 +1,8 @@
+node_modules/
+dist/
+coverage/
+test-results/
+e2e/
+*.log
+.vite/
+.vitest/

@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { DropZone } from '../../common/DropZone/DropZone';
 import { Button } from '../../common/Button/Button';
 import { ProgressBar } from '../../common/ProgressBar/ProgressBar';
+import { PreviewModal } from '../../common/PreviewModal/PreviewModal';
 import { useMerge } from '../../../hooks/useMerge';
 import { downloadBlob } from '../../../utils/downloadUtils';
 import { formatFileSize } from '../../../utils/fileUtils';
@@ -17,6 +18,7 @@ export function MergeView() {
   const [isAddingMore, setIsAddingMore] = useState(false);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const { merge, isProcessing, progress, error, clearError } = useMerge();
 
   const handleFilesDropped = useCallback((droppedFiles: File[]) => {
@@ -137,6 +139,11 @@ export function MergeView() {
               />
             )}
             <Button
+              label="Preview Files"
+              variant="outline"
+              onClick={() => setIsPreviewOpen(true)}
+            />
+            <Button
               label="Clear All"
               variant="outline"
               onClick={handleClear}
@@ -152,6 +159,13 @@ export function MergeView() {
           </div>
         </div>
       )}
+
+      <PreviewModal
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        file={files.length > 0 ? files[0].file : null}
+        title="Preview"
+      />
     </div>
   );
 }

@@ -2,6 +2,27 @@
 
 ## 2026-04-25
 
+### Bug Fix: Split function fails with "PDF preview requires canvas rendering"
+
+**Issue:** When using SplitView and clicking "Preview Pages", the preview modal shows "PDF preview requires canvas rendering" instead of properly displaying the PDF or showing an error message.
+
+**Root Cause:** The PreviewModal component silently catches errors during PDF loading and shows a placeholder message instead of informing the user about the actual error.
+
+**Fix:** 
+1. Added error state to PreviewModal to track and display loading errors
+2. Show user-friendly error message when PDF loading fails
+3. Add loading state indicator while PDF is being loaded
+
+**Files Changed:**
+- `src/components/common/PreviewModal/PreviewModal.tsx` - Added error handling state and user-friendly error messages
+
+**Tests Added:**
+- `tests/components/PreviewModal.test.tsx` - Error state handling tests
+
+**Test Results:** All tests passing
+
+---
+
 ### Bug Fix: Add More Files button not working
 
 **Issue:** In MergeView, clicking "Add More Files" button after adding the first PDF did nothing because the `onClick` handler was an empty function `onClick={() => {}}`.
