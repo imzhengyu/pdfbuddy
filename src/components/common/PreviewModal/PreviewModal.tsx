@@ -14,6 +14,8 @@ export function PreviewModal({ isOpen, onClose, file, title }: PreviewModalProps
   const [zoom, setZoom] = useState(100);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pageImages, setPageImages] = useState<string[]>([]);
+  const [pdfDoc, setPdfDoc] = useState<any>(null);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape') {
@@ -37,26 +39,58 @@ export function PreviewModal({ isOpen, onClose, file, title }: PreviewModalProps
   }, [isOpen, handleKeyDown]);
 
   useEffect(() => {
-    async function loadPageCount() {
-      if (file && isOpen) {
-        setIsLoading(true);
-        setError(null);
-        try {
-          const { PDFDocument } = await import('pdf-lib');
-          const arrayBuffer = await file.arrayBuffer();
-          const pdf = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
-          setTotalPages(pdf.getPageCount());
-          setCurrentPage(1);
-        } catch (err) {
-          const errorMessage = err instanceof Error ? err.message : 'Failed to load PDF';
-          setError(errorMessage);
-          setTotalPages(0);
-        } finally {
-          setIsLoading(false);
+    async function loadPageImages() {
+      if (!file || !isOpen) return;
+
+      setIsLoading(true);
+      setError(null);
+      setPageImages([]);
+      setPdfDoc(null);
+
+      try {
+        const pdfjs = await import('pdfjs-dist');
+
+        // Use legacy build which doesn't need external worker
+        pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        const arrayBuffer = await file.arrayBuffer();
+        const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
+        const pdf = await loadingTask.promise;
+        const numPages = pdf.numPages;
+        setTotalPages(numPages);
+        setCurrentPage(1);
+        setPdfDoc(pdf);
+
+        const images: string[] = [];
+        for (let i = 1; i <= numPages; i++) {
+          const page = await pdf.getPage(i);
+          const scale = 1.5;
+          const viewport = page.getViewport({ scale });
+
+          const canvas = document.createElement('canvas');
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          const ctx = canvas.getContext('2d');
+
+          if (ctx) {
+            await page.render({
+              canvasContext: ctx,
+              viewport: viewport,
+            }).promise;
+            images.push(canvas.toDataURL('image/png'));
+          }
         }
+        setPageImages(images);
+      } catch (err: any) {
+        console.error('PDF load error:', err);
+        setError(err?.message || 'Failed to load PDF');
+        setTotalPages(0);
+      } finally {
+        setIsLoading(false);
       }
     }
-    loadPageCount();
+
+    loadPageImages();
   }, [file, isOpen]);
 
   if (!isOpen || !file) return null;
@@ -85,17 +119,18 @@ export function PreviewModal({ isOpen, onClose, file, title }: PreviewModalProps
               <small>{error}</small>
             </div>
           )}
-          {!isLoading && !error && totalPages > 0 && (
+          {!isLoading && !error && pageImages.length > 0 && (
             <div className={styles.previewArea} style={{ transform: `scale(${zoom / 100})` }}>
-              <div className={styles.pagePlaceholder}>
-                <span>Page {currentPage} of {totalPages}</span>
-                <p className={styles.hint}>PDF preview requires canvas rendering</p>
-              </div>
+              <img
+                src={pageImages[currentPage - 1]}
+                alt={`Page ${currentPage} of ${totalPages}`}
+                style={{ maxWidth: '100%', height: 'auto' }}
+              />
             </div>
           )}
-          {!isLoading && !error && totalPages === 0 && (
+          {!isLoading && !error && pageImages.length === 0 && !isLoading && (
             <div className={styles.pagePlaceholder}>
-              <span>No pages found</span>
+              <span>No pages to display</span>
             </div>
           )}
         </div>

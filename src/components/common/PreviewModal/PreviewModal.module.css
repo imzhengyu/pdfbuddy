@@ -78,6 +78,13 @@
   justify-content: center;
   transform-origin: center center;
   transition: transform 0.2s ease;
+  overflow: hidden;
+}
+
+.canvas {
+  max-width: 100%;
+  height: auto;
+  display: block;
 }
 
 .pagePlaceholder {
