@@ -1,5 +1,29 @@
 # Changelog / Bug Fixes
 
+## 2026-04-26
+
+### Bug Fix: MergeView Preview shows only first file instead of merged PDF
+
+**Issue:** In MergeView, clicking "Preview Files" would only show the first PDF file, not the merged result. Users could not preview what the actual merged output would look like.
+
+**Root Cause:** The PreviewModal was passed `files[0].file` (the first file only) instead of a merged PDF.
+
+**Fix:** Modified MergeView to:
+1. Add `previewFile` and `isPreviewLoading` state
+2. Add `handlePreview` function that merges files first, then creates a File from the merged Blob
+3. PreviewModal now receives the merged PDF file with title "Merged Preview"
+4. Preview button shows loading state while merging
+
+**Files Changed:**
+- `src/components/features/MergeView/MergeView.tsx` - Added `handlePreview` async function, `previewFile` and `isPreviewLoading` states
+
+**Tests Added:**
+- `tests/components/MergeView.test.tsx` - Mock useMerge hook to test preview functionality
+
+**Test Results:** All 205 tests passing
+
+---
+
 ## 2026-04-25
 
 ### Bug Fix: Split function fails with "PDF preview requires canvas rendering"

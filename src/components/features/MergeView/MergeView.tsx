@@ -19,6 +19,8 @@ export function MergeView() {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [previewFile, setPreviewFile] = useState<File | null>(null);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const { merge, isProcessing, progress, error, clearError } = useMerge();
 
   const handleFilesDropped = useCallback((droppedFiles: File[]) => {
@@ -49,6 +51,21 @@ export function MergeView() {
     setFiles([]);
     clearError();
   }, [clearError]);
+
+  const handlePreview = useCallback(async () => {
+    if (files.length < 1) return;
+
+    setIsPreviewLoading(true);
+    const fileList = files.map(f => f.file);
+    const mergedBlob = await merge(fileList);
+
+    if (mergedBlob) {
+      const mergedFile = new File([mergedBlob], 'merged-preview.pdf', { type: 'application/pdf' });
+      setPreviewFile(mergedFile);
+      setIsPreviewOpen(true);
+    }
+    setIsPreviewLoading(false);
+  }, [files, merge]);
 
   const handleDragStart = useCallback((index: number) => {
     setDragIndex(index);
@@ -141,7 +158,9 @@ export function MergeView() {
             <Button
               label="Preview Files"
               variant="outline"
-              onClick={() => setIsPreviewOpen(true)}
+              onClick={handlePreview}
+              disabled={isPreviewLoading}
+              loading={isPreviewLoading}
             />
             <Button
               label="Clear All"
@@ -162,9 +181,12 @@ export function MergeView() {
 
       <PreviewModal
         isOpen={isPreviewOpen}
-        onClose={() => setIsPreviewOpen(false)}
-        file={files.length > 0 ? files[0].file : null}
-        title="Preview"
+        onClose={() => {
+          setIsPreviewOpen(false);
+          setPreviewFile(null);
+        }}
+        file={previewFile}
+        title="Merged Preview"
       />
     </div>
   );

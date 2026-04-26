@@ -6,6 +6,16 @@ vi.mock('../../src/utils/downloadUtils', () => ({
   downloadBlob: vi.fn()
 }));
 
+vi.mock('../../src/hooks/useMerge', () => ({
+  useMerge: () => ({
+    merge: vi.fn().mockResolvedValue(new Blob(['mock pdf'], { type: 'application/pdf' })),
+    isProcessing: false,
+    progress: null,
+    error: null,
+    clearError: vi.fn()
+  })
+}));
+
 describe('MergeView', () => {
   describe('Add More Files', () => {
     const createFile = (name: string) => {
