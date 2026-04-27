@@ -6,6 +6,12 @@ vi.mock('../../src/utils/downloadUtils', () => ({
   downloadBlob: vi.fn()
 }));
 
+vi.mock('../../src/services/pdf/ClientPDFService', () => ({
+  ClientPDFService: vi.fn().mockImplementation(() => ({
+    rotate: vi.fn().mockResolvedValue(new Blob(['test'], { type: 'application/pdf' }))
+  }))
+}));
+
 describe('RotateView', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -22,49 +28,7 @@ describe('RotateView', () => {
     expect(screen.getByText('Drag and drop a PDF file to rotate')).toBeInTheDocument();
   });
 
-  it('accepts file via dropzone', async () => {
-    render(<RotateView />);
-
-    const input = screen.getByTestId('dropzone').querySelector('input');
-    if (input) {
-      const file = new File(['test'], 'test.pdf', { type: 'application/pdf' });
-      fireEvent.change(input, { target: { files: [file] } });
-    }
-
-    await waitFor(() => {
-      expect(screen.getByText('test.pdf')).toBeInTheDocument();
-    });
-  });
-
-  it('shows hint about selecting pages', async () => {
-    render(<RotateView />);
-
-    const input = screen.getByTestId('dropzone').querySelector('input');
-    if (input) {
-      const file = new File(['test'], 'test.pdf', { type: 'application/pdf' });
-      fireEvent.change(input, { target: { files: [file] } });
-    }
-
-    await waitFor(() => {
-      expect(screen.getByText('Click pages to select them')).toBeInTheDocument();
-    });
-  });
-
-  it('shows Preview PDF button after file selected', async () => {
-    render(<RotateView />);
-
-    const input = screen.getByTestId('dropzone').querySelector('input');
-    if (input) {
-      const file = new File(['test'], 'test.pdf', { type: 'application/pdf' });
-      fireEvent.change(input, { target: { files: [file] } });
-    }
-
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Preview PDF' })).toBeInTheDocument();
-    });
-  });
-
-  it('opens PreviewModal when Preview PDF button clicked', async () => {
+  it('accepts file via dropzone and shows source/result sections', async () => {
     render(<RotateView />);
 
     const input = screen.getByTestId('dropzone').querySelector('input');
@@ -77,11 +41,75 @@ describe('RotateView', () => {
       expect(screen.getByText('test.pdf')).toBeInTheDocument();
     });
 
-    const previewBtn = screen.getByRole('button', { name: 'Preview PDF' });
-    fireEvent.click(previewBtn);
+    expect(screen.getByText('Source Pages')).toBeInTheDocument();
+    expect(screen.getByText('Result Preview')).toBeInTheDocument();
+    expect(screen.getByText('Result will appear here')).toBeInTheDocument();
+  });
+
+  it('shows transform buttons', async () => {
+    render(<RotateView />);
+
+    const input = screen.getByTestId('dropzone').querySelector('input');
+    if (input) {
+      const file = new File(['test'], 'test.pdf', { type: 'application/pdf' });
+      fireEvent.change(input, { target: { files: [file] } });
+    }
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { level: 3 })).toBeInTheDocument();
+      expect(screen.getByText('Rotate 90°')).toBeInTheDocument();
+      expect(screen.getByText('Rotate 180°')).toBeInTheDocument();
+      expect(screen.getByText('Rotate 270°')).toBeInTheDocument();
+      expect(screen.getByText('Mirror H')).toBeInTheDocument();
+      expect(screen.getByText('Mirror V')).toBeInTheDocument();
+    });
+  });
+
+  it('shows selection info', async () => {
+    render(<RotateView />);
+
+    const input = screen.getByTestId('dropzone').querySelector('input');
+    if (input) {
+      const file = new File(['test'], 'test.pdf', { type: 'application/pdf' });
+      fireEvent.change(input, { target: { files: [file] } });
+    }
+
+    await waitFor(() => {
+      expect(screen.getByText(/No pages selected/)).toBeInTheDocument();
+    });
+  });
+
+  it('shows Clear Selection button when pages selected', async () => {
+    render(<RotateView />);
+
+    const input = screen.getByTestId('dropzone').querySelector('input');
+    if (input) {
+      const file = new File(['test'], 'test.pdf', { type: 'application/pdf' });
+      fireEvent.change(input, { target: { files: [file] } });
+    }
+
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: 'Clear Selection' })).not.toBeInTheDocument();
+    });
+  });
+
+  it('Change File button resets state', async () => {
+    render(<RotateView />);
+
+    const input = screen.getByTestId('dropzone').querySelector('input');
+    if (input) {
+      const file = new File(['test'], 'test.pdf', { type: 'application/pdf' });
+      fireEvent.change(input, { target: { files: [file] } });
+    }
+
+    await waitFor(() => {
+      expect(screen.getByText('test.pdf')).toBeInTheDocument();
+    });
+
+    const changeBtn = screen.getByRole('button', { name: 'Change File' });
+    fireEvent.click(changeBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText('Drag and drop a PDF file to rotate')).toBeInTheDocument();
     });
   });
 });

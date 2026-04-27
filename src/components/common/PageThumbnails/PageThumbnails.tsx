@@ -5,9 +5,11 @@ interface PageThumbnailsProps {
   file: File;
   onSelect?: (pageIndex: number) => void;
   selectedPages?: number[];
+  onPageClick?: (pageIndex: number) => void;
+  onPageDragStart?: (e: React.DragEvent, pageIndex: number) => void;
 }
 
-export function PageThumbnails({ file, onSelect, selectedPages = [] }: PageThumbnailsProps) {
+export function PageThumbnails({ file, onSelect, selectedPages = [], onPageClick, onPageDragStart }: PageThumbnailsProps) {
   const [thumbnails, setThumbnails] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -25,7 +27,7 @@ export function PageThumbnails({ file, onSelect, selectedPages = [] }: PageThumb
         const images: string[] = [];
         for (let i = 1; i <= count; i++) {
           const page = await pdf.getPage(i);
-          const scale = 0.5; // Smaller scale for thumbnails
+          const scale = 0.5;
           const viewport = page.getViewport({ scale });
 
           const canvas = document.createElement('canvas');
@@ -53,6 +55,20 @@ export function PageThumbnails({ file, onSelect, selectedPages = [] }: PageThumb
     loadThumbnails();
   }, [file]);
 
+  const handleClick = (index: number) => {
+    if (onPageClick) {
+      onPageClick(index);
+    } else {
+      onSelect?.(index);
+    }
+  };
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    if (onPageDragStart) {
+      onPageDragStart(e, index);
+    }
+  };
+
   if (loading) {
     return <div className={styles.loading}>Loading pages...</div>;
   }
@@ -63,7 +79,9 @@ export function PageThumbnails({ file, onSelect, selectedPages = [] }: PageThumb
         <div
           key={index}
           className={`${styles.thumbnail} ${selectedPages.includes(index) ? styles.selected : ''}`}
-          onClick={() => onSelect?.(index)}
+          onClick={() => handleClick(index)}
+          draggable={!!onPageDragStart}
+          onDragStart={(e) => handleDragStart(e, index)}
           data-page-index={index}
         >
           <div className={styles.box}>

@@ -7,6 +7,12 @@ vi.mock('../../src/utils/downloadUtils', () => ({
   downloadBlobsAsZip: vi.fn().mockResolvedValue(undefined)
 }));
 
+vi.mock('../../src/services/pdf/ClientPDFService', () => ({
+  ClientPDFService: vi.fn().mockImplementation(() => ({
+    split: vi.fn().mockResolvedValue([new Blob(['test'], { type: 'application/pdf' })])
+  }))
+}));
+
 const mockUseSplit = vi.fn();
 
 vi.mock('../../src/hooks/useSplit', () => ({
@@ -36,36 +42,7 @@ describe('SplitView', () => {
     expect(screen.getByText('Drag and drop a PDF file to split')).toBeInTheDocument();
   });
 
-  it('accepts file via dropzone', async () => {
-    render(<SplitView />);
-
-    const input = screen.getByTestId('dropzone').querySelector('input');
-    if (input) {
-      const file = new File(['test'], 'test.pdf', { type: 'application/pdf' });
-      fireEvent.change(input, { target: { files: [file] } });
-    }
-
-    await waitFor(() => {
-      expect(screen.getByText('test.pdf')).toBeInTheDocument();
-    });
-  });
-
-  it('Split PDF button is disabled when no page ranges', async () => {
-    render(<SplitView />);
-
-    const input = screen.getByTestId('dropzone').querySelector('input');
-    if (input) {
-      const file = new File(['test'], 'test.pdf', { type: 'application/pdf' });
-      fireEvent.change(input, { target: { files: [file] } });
-    }
-
-    await waitFor(() => {
-      const splitBtn = screen.getByRole('button', { name: 'Split PDF' });
-      expect(splitBtn).toBeDisabled();
-    });
-  });
-
-  it('Split PDF button is enabled when page ranges entered', async () => {
+  it('accepts file via dropzone and shows source/target sections', async () => {
     render(<SplitView />);
 
     const input = screen.getByTestId('dropzone').querySelector('input');
@@ -78,22 +55,12 @@ describe('SplitView', () => {
       expect(screen.getByText('test.pdf')).toBeInTheDocument();
     });
 
-    const pageRangesInput = screen.getByLabelText('Page Ranges:');
-    fireEvent.change(pageRangesInput, { target: { value: '1-3' } });
-
-    const splitBtn = screen.getByRole('button', { name: 'Split PDF' });
-    expect(splitBtn).not.toBeDisabled();
+    expect(screen.getByText('Source Pages')).toBeInTheDocument();
+    expect(screen.getByText('Selected Pages')).toBeInTheDocument();
+    expect(screen.getByText('Drag pages here or click to select')).toBeInTheDocument();
   });
 
-  it('renders with loading state', async () => {
-    mockUseSplit.mockReturnValue({
-      split: vi.fn().mockResolvedValue([new Blob(['test'], { type: 'application/pdf' })]),
-      isProcessing: true,
-      progress: { current: 1, total: 2, percent: 50 },
-      error: null,
-      clearError: vi.fn()
-    });
-
+  it('shows mode toggle with Visual Selection and Page Ranges options', async () => {
     render(<SplitView />);
 
     const input = screen.getByTestId('dropzone').querySelector('input');
@@ -104,6 +71,104 @@ describe('SplitView', () => {
 
     await waitFor(() => {
       expect(screen.getByText('test.pdf')).toBeInTheDocument();
+    });
+
+    expect(screen.getByText('Visual Selection')).toBeInTheDocument();
+    expect(screen.getByText('Page Ranges')).toBeInTheDocument();
+  });
+
+  it('shows Export button disabled when no pages selected in visual mode', async () => {
+    render(<SplitView />);
+
+    const input = screen.getByTestId('dropzone').querySelector('input');
+    if (input) {
+      const file = new File(['test'], 'test.pdf', { type: 'application/pdf' });
+      fireEvent.change(input, { target: { files: [file] } });
+    }
+
+    await waitFor(() => {
+      expect(screen.getByText('test.pdf')).toBeInTheDocument();
+    });
+
+    const exportBtn = screen.getByRole('button', { name: 'Export Selected Pages' });
+    expect(exportBtn).toBeDisabled();
+  });
+
+  it('shows Preview Selected button disabled when no pages selected in visual mode', async () => {
+    render(<SplitView />);
+
+    const input = screen.getByTestId('dropzone').querySelector('input');
+    if (input) {
+      const file = new File(['test'], 'test.pdf', { type: 'application/pdf' });
+      fireEvent.change(input, { target: { files: [file] } });
+    }
+
+    await waitFor(() => {
+      expect(screen.getByText('test.pdf')).toBeInTheDocument();
+    });
+
+    const previewBtn = screen.getByRole('button', { name: 'Preview Selected' });
+    expect(previewBtn).toBeDisabled();
+  });
+
+  it('switches to Page Ranges mode', async () => {
+    render(<SplitView />);
+
+    const input = screen.getByTestId('dropzone').querySelector('input');
+    if (input) {
+      const file = new File(['test'], 'test.pdf', { type: 'application/pdf' });
+      fireEvent.change(input, { target: { files: [file] } });
+    }
+
+    await waitFor(() => {
+      expect(screen.getByText('test.pdf')).toBeInTheDocument();
+    });
+
+    const rangeBtn = screen.getByText('Page Ranges');
+    fireEvent.click(rangeBtn);
+
+    expect(screen.getByLabelText('Page Ranges:')).toBeInTheDocument();
+  });
+
+  it('shows page range input in range mode', async () => {
+    render(<SplitView />);
+
+    const input = screen.getByTestId('dropzone').querySelector('input');
+    if (input) {
+      const file = new File(['test'], 'test.pdf', { type: 'application/pdf' });
+      fireEvent.change(input, { target: { files: [file] } });
+    }
+
+    await waitFor(() => {
+      expect(screen.getByText('test.pdf')).toBeInTheDocument();
+    });
+
+    const rangeBtn = screen.getByText('Page Ranges');
+    fireEvent.click(rangeBtn);
+
+    const rangeInput = screen.getByLabelText('Page Ranges:');
+    expect(rangeInput).toBeInTheDocument();
+    expect(rangeInput).toHaveAttribute('placeholder', 'e.g., 1-3, 4-6, 7');
+  });
+
+  it('Change File button resets state', async () => {
+    render(<SplitView />);
+
+    const input = screen.getByTestId('dropzone').querySelector('input');
+    if (input) {
+      const file = new File(['test'], 'test.pdf', { type: 'application/pdf' });
+      fireEvent.change(input, { target: { files: [file] } });
+    }
+
+    await waitFor(() => {
+      expect(screen.getByText('test.pdf')).toBeInTheDocument();
+    });
+
+    const changeBtn = screen.getByRole('button', { name: 'Change File' });
+    fireEvent.click(changeBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText('Drag and drop a PDF file to split')).toBeInTheDocument();
     });
   });
 
@@ -134,7 +199,15 @@ describe('SplitView', () => {
     expect(clearErrorMock).toHaveBeenCalled();
   });
 
-  it('Change File button resets state', async () => {
+  it('shows loading state during processing', async () => {
+    mockUseSplit.mockReturnValue({
+      split: vi.fn().mockResolvedValue([new Blob(['test'], { type: 'application/pdf' })]),
+      isProcessing: true,
+      progress: { current: 1, total: 2, percent: 50 },
+      error: null,
+      clearError: vi.fn()
+    });
+
     render(<SplitView />);
 
     const input = screen.getByTestId('dropzone').querySelector('input');
@@ -147,29 +220,10 @@ describe('SplitView', () => {
       expect(screen.getByText('test.pdf')).toBeInTheDocument();
     });
 
-    const changeBtn = screen.getByRole('button', { name: 'Change File' });
-    fireEvent.click(changeBtn);
-
-    await waitFor(() => {
-      expect(screen.getByText('Drag and drop a PDF file to split')).toBeInTheDocument();
-    });
+    expect(screen.getByText(/50%/)).toBeInTheDocument();
   });
 
-  it('shows Preview Pages button after file selected', async () => {
-    render(<SplitView />);
-
-    const input = screen.getByTestId('dropzone').querySelector('input');
-    if (input) {
-      const file = new File(['test'], 'test.pdf', { type: 'application/pdf' });
-      fireEvent.change(input, { target: { files: [file] } });
-    }
-
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Preview Pages' })).toBeInTheDocument();
-    });
-  });
-
-  it('opens PreviewModal when Preview Pages button clicked', async () => {
+  it('renders with page count info in target section', async () => {
     render(<SplitView />);
 
     const input = screen.getByTestId('dropzone').querySelector('input');
@@ -182,11 +236,22 @@ describe('SplitView', () => {
       expect(screen.getByText('test.pdf')).toBeInTheDocument();
     });
 
-    const previewBtn = screen.getByRole('button', { name: 'Preview Pages' });
-    fireEvent.click(previewBtn);
+    expect(screen.getByText(/0 selected/)).toBeInTheDocument();
+  });
+
+  it('does not show Clear All button when no pages selected', async () => {
+    render(<SplitView />);
+
+    const input = screen.getByTestId('dropzone').querySelector('input');
+    if (input) {
+      const file = new File(['test'], 'test.pdf', { type: 'application/pdf' });
+      fireEvent.change(input, { target: { files: [file] } });
+    }
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { level: 3 })).toBeInTheDocument();
+      expect(screen.getByText('test.pdf')).toBeInTheDocument();
     });
+
+    expect(screen.queryByRole('button', { name: 'Clear All' })).not.toBeInTheDocument();
   });
 });

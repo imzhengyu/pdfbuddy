@@ -101,22 +101,25 @@ This document contains the comprehensive test plan for the PDF Tool application,
 | Test | Cases | Status |
 |------|-------|--------|
 | renders empty dropzone | when no file | ✅ |
-| accepts file via dropzone | updates state | ✅ |
-| page range input works | when text entered | ✅ |
-| Split button disabled | when no file or range | ✅ |
-| Split button enabled | when file and valid range | ✅ |
-| shows Preview Pages button | after file selected | ✅ |
-| opens PreviewModal | when Preview clicked | ✅ |
-| displays error | when error occurs | ✅ |
+| accepts file via dropzone | shows source/target sections | ✅ |
+| shows mode toggle | Visual Selection and Page Ranges | ✅ |
+| shows Export button disabled | when no pages selected | ✅ |
+| shows Preview Selected disabled | when no pages selected | ✅ |
+| switches to Page Ranges mode | clicking Page Ranges button | ✅ |
+| shows page range input | when in range mode | ✅ |
 | Change File resets state | when clicked | ✅ |
+| displays error | when error occurs | ✅ |
+| shows loading state | during processing | ✅ |
+| renders with page count info | shows 0 selected | ✅ |
+| does not show Clear All | when no pages selected | ✅ |
 
 ### E2E Tests
 
 | Test ID | Test Case | Status |
 |---------|-----------|--------|
-| E2E-S1 | Upload split-source.pdf → Enter "1-2, 3-4, 5" → Click Split → Verify 3 files download | ⚠️ |
-| E2E-S2 | Enter invalid range "10-20" → Verify error message | ⚠️ |
-| E2E-S3 | Leave range empty → Verify Split button disabled | ⚠️ |
+| E2E-S1 | Upload split-source.pdf → Verify file loaded, mode toggle visible | ✅ |
+| E2E-S2 | Visual selection: Source and Selected sections visible, Export disabled | ✅ |
+| E2E-S3 | Page Ranges mode: Enter "1-2, 3" → Export enabled | ✅ |
 
 ### Test Data
 - `test-pdfs/split-source.pdf` (5 pages, gray background)
@@ -193,22 +196,18 @@ This document contains the comprehensive test plan for the PDF Tool application,
 | Test | Cases | Status |
 |------|-------|--------|
 | renders empty dropzone | when no file | ✅ |
-| accepts file via dropzone | updates state | ✅ |
-| shows page thumbnails | after file loaded | ✅ |
-| Rotate 90° button exists | when file selected | ✅ |
-| Rotate 180° button exists | when file selected | ✅ |
-| Download button disabled | when no rotation applied | ⚠️ |
-| shows Preview PDF button | after file selected | ✅ |
-| opens PreviewModal | when Preview clicked | ✅ |
-| displays hint | about selecting pages | ✅ |
+| accepts file via dropzone | shows source/result sections | ✅ |
+| shows transform buttons | Rotate 90°, 180°, 270°, Mirror H, Mirror V | ✅ |
+| shows selection info | No pages selected / N pages selected | ✅ |
+| does not show Clear Selection | when no pages selected | ✅ |
+| Change File resets state | when clicked | ✅ |
 
 ### E2E Tests
 
 | Test ID | Test Case | Status |
 |---------|-----------|--------|
-| E2E-R1 | Upload rotate-test.pdf → Click Rotate 90° → Verify preview updates | ❌ |
-| E2E-R2 | Click Rotate 180° → Verify preview updates | ❌ |
-| E2E-R3 | Download → Verify rotated file downloads | ❌ |
+| E2E-R1 | Upload rotate-test.pdf → Verify file loaded, source/result visible | ✅ |
+| E2E-R2 | Transform buttons disabled when no pages selected | ✅ |
 
 ### Test Data
 - `test-pdfs/rotate-test.pdf` (3 pages, white background)

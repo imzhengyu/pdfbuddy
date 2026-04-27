@@ -4,7 +4,26 @@
 .description { color: var(--color-text-secondary); max-width: 600px; }
 .workspace { display: flex; flex-direction: column; gap: var(--space-lg); background: var(--color-surface); border-radius: var(--radius-lg); padding: var(--space-xl); box-shadow: var(--shadow-md); }
 .fileInfo { display: flex; align-items: center; justify-content: space-between; padding: var(--space-md); background: var(--color-background); border-radius: var(--radius-md); }
-.hint { text-align: center; color: var(--color-text-secondary); }
 .actions { display: flex; gap: var(--space-md); justify-content: flex-end; }
 .error { display: flex; align-items: center; justify-content: space-between; padding: var(--space-md); background: var(--color-error-light); color: var(--color-error); border-radius: var(--radius-md); }
 .error button { background: none; border: none; font-size: 1.5rem; cursor: pointer; }
+
+/* Two-column split layout */
+.splitContainer { display: flex; gap: var(--space-xl); }
+.sourceSection { flex: 1; }
+.targetSection { flex: 0 0 300px; display: flex; flex-direction: column; gap: var(--space-md); }
+.sectionTitle { font-size: 1rem; font-weight: 600; color: var(--color-text); margin: 0; }
+.sectionHint { font-size: 0.875rem; color: var(--color-text-secondary); margin: 0 0 var(--space-sm) 0; }
+
+/* Selection info */
+.selectionInfo { font-size: 0.875rem; color: var(--color-text-secondary); text-align: center; margin-top: var(--space-sm); }
+
+/* Result Box */
+.resultBox { min-height: 200px; border: 2px dashed var(--color-border); border-radius: var(--radius-md); padding: var(--space-md); background: var(--color-background); }
+.resultBox.empty { display: flex; align-items: center; justify-content: center; }
+.emptyResult { color: var(--color-text-secondary); font-size: 0.875rem; text-align: center; }
+.resultPreview { max-height: 300px; overflow-y: auto; }
+.resultActions { display: flex; justify-content: flex-end; margin-top: var(--space-md); }
+
+/* Transform buttons */
+.transformButtons { display: flex; gap: var(--space-sm); flex-wrap: wrap; justify-content: center; padding: var(--space-md); background: var(--color-background); border-radius: var(--radius-md); }

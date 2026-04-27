@@ -3,9 +3,14 @@ export interface PageRange {
   end: number; // inclusive, or -1 for "to end"
 }
 
+export type RotationType = 0 | 90 | 180 | 270;
+export type MirrorType = 'horizontal' | 'vertical';
+
 export interface PageRotation {
   pageIndex: number;
-  degrees: 0 | 90 | 180 | 270;
+  type: 'rotate' | 'mirror';
+  degrees?: RotationType;
+  mirror?: MirrorType;
 }
 
 export interface PageOrder {

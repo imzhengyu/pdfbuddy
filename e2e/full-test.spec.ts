@@ -52,8 +52,54 @@ test.describe('PDF Tool WebApp Full Test', () => {
     await uploadFile(page, testFiles.split);
 
     await expect(page.getByText('split-source.pdf')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Visual Selection' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Page Ranges' })).toBeVisible();
 
     console.log('Split test passed: file uploaded successfully');
+  });
+
+  test('Split: Select pages using visual selection mode', async ({ page }) => {
+    await page.getByRole('button', { name: 'Split' }).click();
+    await expect(page.getByRole('heading', { name: 'Split PDF' })).toBeVisible();
+
+    await uploadFile(page, testFiles.split);
+    await expect(page.getByText('split-source.pdf')).toBeVisible();
+
+    // Verify source and target sections are visible
+    await expect(page.getByRole('heading', { name: 'Source Pages' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Selected Pages' })).toBeVisible();
+    await expect(page.getByText('0 selected')).toBeVisible();
+
+    // Verify Export and Preview buttons are disabled when no selection
+    const exportBtn = page.getByRole('button', { name: 'Export Selected Pages' });
+    await expect(exportBtn).toBeDisabled();
+
+    console.log('Split visual selection test passed: UI elements correct');
+  });
+
+  test('Split: Switch to Page Ranges mode and enter range', async ({ page }) => {
+    await page.getByRole('button', { name: 'Split' }).click();
+    await expect(page.getByRole('heading', { name: 'Split PDF' })).toBeVisible();
+
+    await uploadFile(page, testFiles.split);
+    await expect(page.getByText('split-source.pdf')).toBeVisible();
+
+    // Click Page Ranges mode
+    await page.getByRole('button', { name: 'Page Ranges' }).click();
+
+    // Verify page range input appears
+    const rangeInput = page.locator('#pageRanges');
+    await expect(rangeInput).toBeVisible();
+    await expect(rangeInput).toHaveAttribute('placeholder', 'e.g., 1-3, 4-6, 7');
+
+    // Enter page range
+    await rangeInput.fill('1-2, 3');
+
+    // Verify Export button is now enabled
+    const exportBtn = page.getByRole('button', { name: 'Export Selected Pages' });
+    await expect(exportBtn).toBeEnabled();
+
+    console.log('Split page range mode test passed: range input works');
   });
 
   test('Rotate: Upload PDF and verify file is loaded', async ({ page }) => {
@@ -63,8 +109,39 @@ test.describe('PDF Tool WebApp Full Test', () => {
     await uploadFile(page, testFiles.rotate);
 
     await expect(page.getByText('rotate-test.pdf')).toBeVisible();
+    await expect(page.getByText('Source Pages')).toBeVisible();
+    await expect(page.getByText('Result Preview')).toBeVisible();
+    await expect(page.getByText('Rotate 90°')).toBeVisible();
+    await expect(page.getByText('Rotate 180°')).toBeVisible();
+    await expect(page.getByText('Rotate 270°')).toBeVisible();
 
     console.log('Rotate test passed: file uploaded successfully');
+  });
+
+  test('Rotate: Transform buttons are disabled when no pages selected', async ({ page }) => {
+    await page.getByRole('button', { name: 'Rotate' }).click();
+    await expect(page.getByRole('heading', { name: 'Rotate PDF' })).toBeVisible();
+
+    await uploadFile(page, testFiles.rotate);
+    await expect(page.getByText('rotate-test.pdf')).toBeVisible();
+
+    // Wait for the page to settle
+    await page.waitForTimeout(500);
+
+    // All transform buttons should be disabled when no pages selected
+    const rotate90Btn = page.getByRole('button', { name: 'Rotate 90°' });
+    const rotate180Btn = page.getByRole('button', { name: 'Rotate 180°' });
+    const rotate270Btn = page.getByRole('button', { name: 'Rotate 270°' });
+
+    await expect(rotate90Btn).toBeDisabled();
+    await expect(rotate180Btn).toBeDisabled();
+    await expect(rotate270Btn).toBeDisabled();
+
+    // Download button should not be visible
+    const downloadBtnCount = await page.locator('button', { hasText: 'Download' }).count();
+    expect(downloadBtnCount).toBe(0);
+
+    console.log('Rotate transform buttons test passed: buttons disabled without selection');
   });
 
   test('Compress: Upload PDF and see compress button enabled', async ({ page }) => {

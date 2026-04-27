@@ -18,11 +18,12 @@ A colorful, friendly React web app for PDF manipulation with client-side process
 ### 2. Split PDF
 - Select single PDF file
 - Choose split mode:
-  - By page ranges (e.g., "1-3, 4-6, 7-end")
-  - Extract specific pages
-  - Split into individual pages
-- **Preview pages before splitting** ← NEW
-- Download split PDFs (as ZIP for multiple files)
+  - **Visual Selection** - Click pages to select, drag to 2nd box
+  - **Page Ranges** - Enter ranges (e.g., "1-3, 4-6, 7")
+- Two-box layout: Source Pages (left) + Selected Pages (right)
+- Each selected page has × remove button at top-right
+- Preview shows result AFTER split (not before)
+- Download only exports selected pages
 
 ### 3. Compress PDF
 - Select single PDF file
@@ -36,10 +37,12 @@ A colorful, friendly React web app for PDF manipulation with client-side process
 
 ### 4. Rotate PDF
 - Select single PDF file
-- Visual page thumbnails
-- Click to rotate individual pages (90° increments)
-- **Preview button to see full PDF preview** ← NEW
-- Download rotated PDF
+- Visual page thumbnails in grid
+- Click pages to select them
+- Transform options: Rotate 90°, Rotate 180°, Rotate 270°, Mirror H, Mirror V
+- Two-box layout: Source Pages (left) + Result Preview (right)
+- Preview shows result AFTER transformation
+- Download button to export transformed PDF
 
 ### 5. Convert
 - **PDF to Images**: Select PDF, **preview pages**, choose format (PNG/JPEG), download images (ZIP) ← NEW
@@ -173,12 +176,12 @@ interface PreviewModalProps {
 - [x] All 6 features functional with client-side processing
 - [x] Drag and drop works reliably
 - [x] Files up to 20MB process without crashing
-- [ ] Preview feature implemented on all views
-- [ ] Preview modal component created and tested
-- [ ] E2E tests pass for core workflows
-- [ ] No console errors in production build
-- [ ] Works on Chrome, Firefox, Safari, Edge
-- [ ] Responsive on mobile (320px+), tablet, desktop
+- [x] Preview feature implemented on all views (Merge, Split, Rotate, Compress, Organize, Convert)
+- [x] Preview modal component created and tested
+- [x] E2E tests pass for core workflows (11 tests passing)
+- [ ] No console errors in production build (not verified)
+- [ ] Works on Chrome, Firefox, Safari, Edge (only Chrome verified)
+- [ ] Responsive on mobile (320px+), tablet, desktop (not verified)
 
 ---
 

@@ -1,4 +1,5 @@
 .dropzone {
+  position: relative;
   border: 2px dashed var(--color-border);
   border-radius: var(--radius-lg);
   padding: var(--space-2xl);
@@ -19,11 +20,23 @@
   transform: scale(1.01);
 }
 
+.dropzone input[type="file"] {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 1;
+}
+
 .content {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--space-md);
+  pointer-events: none;
 }
 
 .icon {
