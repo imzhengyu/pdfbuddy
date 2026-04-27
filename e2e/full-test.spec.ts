@@ -158,6 +158,93 @@ test.describe('PDF Tool WebApp Full Test', () => {
     console.log('Compress test passed: file uploaded and compress button enabled');
   });
 
+  test('Compress: Compress with Low quality and verify download', async ({ page }) => {
+    await page.getByRole('button', { name: 'Compress' }).click();
+    await expect(page.getByRole('heading', { name: 'Compress PDF' })).toBeVisible();
+
+    await uploadFile(page, testFiles.compress);
+    await expect(page.getByText('test-5pages.pdf')).toBeVisible();
+
+    // Select Low quality
+    await page.locator('input[type="radio"][value="low"]').check();
+    await expect(page.locator('input[type="radio"][value="low"]')).toBeChecked();
+
+    // Set up download handler before clicking compress
+    const downloadPromise = page.waitForEvent('download');
+
+    // Click compress
+    await page.getByRole('button', { name: 'Compress PDF' }).click();
+
+    // Wait for download
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toMatch(/compressed.*\.pdf$/i);
+
+    console.log('Compress Low quality test passed: download triggered');
+  });
+
+  test('Compress: Compress with Medium quality and verify download', async ({ page }) => {
+    await page.getByRole('button', { name: 'Compress' }).click();
+    await expect(page.getByRole('heading', { name: 'Compress PDF' })).toBeVisible();
+
+    await uploadFile(page, testFiles.compress);
+    await expect(page.getByText('test-5pages.pdf')).toBeVisible();
+
+    // Select Medium quality (default)
+    await expect(page.locator('input[type="radio"][value="medium"]')).toBeChecked();
+
+    // Set up download handler before clicking compress
+    const downloadPromise = page.waitForEvent('download');
+
+    // Click compress
+    await page.getByRole('button', { name: 'Compress PDF' }).click();
+
+    // Wait for download
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toMatch(/compressed.*\.pdf$/i);
+
+    console.log('Compress Medium quality test passed: download triggered');
+  });
+
+  test('Compress: Compress with High quality and verify download', async ({ page }) => {
+    await page.getByRole('button', { name: 'Compress' }).click();
+    await expect(page.getByRole('heading', { name: 'Compress PDF' })).toBeVisible();
+
+    await uploadFile(page, testFiles.compress);
+    await expect(page.getByText('test-5pages.pdf')).toBeVisible();
+
+    // Select High quality
+    await page.locator('input[type="radio"][value="high"]').check();
+    await expect(page.locator('input[type="radio"][value="high"]')).toBeChecked();
+
+    // Set up download handler before clicking compress
+    const downloadPromise = page.waitForEvent('download');
+
+    // Click compress
+    await page.getByRole('button', { name: 'Compress PDF' }).click();
+
+    // Wait for download
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toMatch(/compressed.*\.pdf$/i);
+
+    console.log('Compress High quality test passed: download triggered');
+  });
+
+  test('Compress: Preview button opens preview modal', async ({ page }) => {
+    await page.getByRole('button', { name: 'Compress' }).click();
+    await expect(page.getByRole('heading', { name: 'Compress PDF' })).toBeVisible();
+
+    await uploadFile(page, testFiles.compress);
+    await expect(page.getByText('test-5pages.pdf')).toBeVisible();
+
+    // Click Preview button
+    await page.getByRole('button', { name: 'Preview' }).click();
+
+    // Modal should open
+    await expect(page.getByRole('heading', { level: 3 })).toBeVisible();
+
+    console.log('Compress Preview test passed: modal opened');
+  });
+
   test('Organize: Upload PDF and see organize button enabled', async ({ page }) => {
     await page.getByRole('button', { name: 'Organize' }).click();
     await expect(page.getByRole('heading', { name: 'Organize PDF' })).toBeVisible();
@@ -170,6 +257,83 @@ test.describe('PDF Tool WebApp Full Test', () => {
     await expect(organizeBtn).toBeEnabled();
 
     console.log('Organize test passed: file uploaded and organize button enabled');
+  });
+
+  test('Organize: Select pages to delete and download organized PDF', async ({ page }) => {
+    await page.getByRole('button', { name: 'Organize' }).click();
+    await expect(page.getByRole('heading', { name: 'Organize PDF' })).toBeVisible();
+
+    await uploadFile(page, testFiles.organize);
+    await expect(page.getByText('test-3pages.pdf')).toBeVisible();
+
+    // Wait for thumbnails to load
+    await page.waitForTimeout(500);
+
+    // Click on first thumbnail to select page for deletion
+    const thumbnails = page.locator('[class*="thumbnail"]');
+    await expect(thumbnails.first()).toBeVisible();
+    await thumbnails.first().click();
+
+    // Hint should appear showing selected pages for deletion
+    await expect(page.getByText(/1 page\(s\) selected/)).toBeVisible();
+
+    // Download button should still be enabled (can download with deleted pages)
+    const organizeBtn = page.getByRole('button', { name: 'Download Organized PDF' });
+    await expect(organizeBtn).toBeEnabled();
+
+    // Set up download handler before clicking
+    const downloadPromise = page.waitForEvent('download');
+
+    // Download
+    await organizeBtn.click();
+
+    // Wait for download
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toMatch(/organized.*\.pdf$/i);
+
+    console.log('Organize page deletion test passed: download triggered');
+  });
+
+  test('Organize: Preview PDF opens preview modal', async ({ page }) => {
+    await page.getByRole('button', { name: 'Organize' }).click();
+    await expect(page.getByRole('heading', { name: 'Organize PDF' })).toBeVisible();
+
+    await uploadFile(page, testFiles.organize);
+    await expect(page.getByText('test-3pages.pdf')).toBeVisible();
+
+    // Click Preview PDF button
+    await page.getByRole('button', { name: 'Preview PDF' }).click();
+
+    // Modal should open
+    await expect(page.getByRole('heading', { level: 3 })).toBeVisible();
+
+    console.log('Organize Preview test passed: modal opened');
+  });
+
+  test('Organize: Change File resets state', async ({ page }) => {
+    await page.getByRole('button', { name: 'Organize' }).click();
+    await expect(page.getByRole('heading', { name: 'Organize PDF' })).toBeVisible();
+
+    await uploadFile(page, testFiles.organize);
+    await expect(page.getByText('test-3pages.pdf')).toBeVisible();
+
+    // Wait for thumbnails to load
+    await page.waitForTimeout(500);
+
+    // Select a page
+    const thumbnails = page.locator('[class*="thumbnail"]');
+    await thumbnails.first().click();
+
+    // Verify selection hint appears
+    await expect(page.getByText(/1 page\(s\) selected/)).toBeVisible();
+
+    // Click Change File
+    await page.getByRole('button', { name: 'Change File' }).click();
+
+    // Should show dropzone again
+    await expect(page.getByText('Drag and drop a PDF file to organize')).toBeVisible();
+
+    console.log('Organize Change File test passed: state reset');
   });
 
   test('Preview: Open preview modal for a file in Merge', async ({ page }) => {
@@ -189,6 +353,30 @@ test.describe('PDF Tool WebApp Full Test', () => {
 
     await expect(page.getByRole('heading', { level: 3 })).toBeVisible();
     console.log('Preview test passed: modal opened successfully');
+  });
+
+  test('Convert: Verify Convert view shows correct UI elements', async ({ page }) => {
+    await page.getByRole('button', { name: 'Convert' }).click();
+    await expect(page.getByRole('heading', { name: 'Convert to PDF' })).toBeVisible();
+    await expect(page.getByText('Convert images (PNG, JPEG) to a PDF document.')).toBeVisible();
+    await expect(page.getByText('Drag and drop images here to convert to PDF')).toBeVisible();
+
+    console.log('Convert view test passed: UI elements correct');
+  });
+
+  test('Convert: Shows empty dropzone for images', async ({ page }) => {
+    await page.getByRole('button', { name: 'Convert' }).click();
+    await expect(page.getByRole('heading', { name: 'Convert to PDF' })).toBeVisible();
+
+    // Dropzone should accept images
+    const dropzone = page.locator('[class*="dropzone"]');
+    await expect(dropzone).toBeVisible();
+
+    // File input should accept image types
+    const input = page.locator('input[type="file"]').first();
+    await expect(input).toBeVisible();
+
+    console.log('Convert dropzone test passed: image dropzone visible');
   });
 
   test('Navigation: Click all view buttons and verify content changes', async ({ page }) => {

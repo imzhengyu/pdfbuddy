@@ -6,3 +6,8 @@ e2e/
 *.log
 .vite/
 .vitest/
+tool.md
+*.ps1
+*.bat
+test-output.txt
+test-result.txt

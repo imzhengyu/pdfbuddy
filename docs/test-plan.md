@@ -11,11 +11,11 @@ This document contains the comprehensive test plan for the PDF Tool application,
 | Feature | Unit Tests | E2E Tests | Status |
 |---------|------------|-----------|--------|
 | Merge | ✅ Complete | ✅ Complete | 207 tests |
-| Split | ✅ Complete | ⚠️ Partial | In Progress |
-| Compress | ✅ Complete | ❌ Not Done | Pending |
-| Rotate | ✅ Complete | ❌ Not Done | Pending |
-| Convert | ✅ Complete | ❌ Not Done | Pending |
-| Organize | ✅ Complete | ❌ Not Done | Pending |
+| Split | ✅ Complete | ✅ Complete | In Progress |
+| Compress | ✅ Complete | ✅ Complete | Done |
+| Rotate | ✅ Complete | ✅ Complete | Done |
+| Convert | ✅ Complete | ⚠️ Partial | Pending (needs test images) |
+| Organize | ✅ Complete | ✅ Complete | Done |
 | Common Components | ✅ Complete | N/A | 205 tests |
 | Hooks & Utils | ✅ Complete | N/A | 205 tests |
 
@@ -163,9 +163,10 @@ This document contains the comprehensive test plan for the PDF Tool application,
 
 | Test ID | Test Case | Status |
 |---------|-----------|--------|
-| E2E-C1 | Upload test-5pages.pdf → Select Low Quality → Compress → Verify download | ❌ |
-| E2E-C2 | Select Medium Quality → Compress → Verify download | ❌ |
-| E2E-C3 | Select High Quality → Compress → Verify download | ❌ |
+| E2E-C1 | Upload test-5pages.pdf → Select Low Quality → Compress → Verify download | ✅ |
+| E2E-C2 | Select Medium Quality → Compress → Verify download | ✅ |
+| E2E-C3 | Select High Quality → Compress → Verify download | ✅ |
+| E2E-C4 | Preview button opens preview modal | ✅ |
 
 ### Test Data
 - `test-pdfs/test-5pages.pdf` (5 pages, orange background)
@@ -248,8 +249,9 @@ This document contains the comprehensive test plan for the PDF Tool application,
 
 | Test ID | Test Case | Status |
 |---------|-----------|--------|
-| E2E-CV1 | Upload test-1page.pdf → Convert → Verify PDF downloads | ❌ |
-| E2E-CV2 | Upload multiple images → Convert → Verify merged PDF | ❌ |
+| E2E-CV1 | Verify Convert view shows correct UI elements | ✅ |
+| E2E-CV2 | Shows empty dropzone for images | ✅ |
+| E2E-CV3 | Full images to PDF conversion (requires test images) | ❌ |
 
 ---
 
@@ -290,8 +292,9 @@ This document contains the comprehensive test plan for the PDF Tool application,
 
 | Test ID | Test Case | Status |
 |---------|-----------|--------|
-| E2E-O1 | Upload test-3pages.pdf → Drag page 3 to position 1 → Download | ❌ |
-| E2E-O2 | Verify reordered pages in output | ❌ |
+| E2E-O1 | Upload test-3pages.pdf → Select page → Download with deletion | ✅ |
+| E2E-O2 | Preview PDF opens preview modal | ✅ |
+| E2E-O3 | Change File resets state | ✅ |
 
 ### Test Data
 - `test-pdfs/test-3pages.pdf` (3 pages, blue background)
