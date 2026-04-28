@@ -45,16 +45,15 @@ A colorful, friendly React web app for PDF manipulation with client-side process
 - Download button to export transformed PDF
 
 ### 5. Convert
-- **PDF to Images**: Select PDF, **preview pages**, choose format (PNG/JPEG), download images (ZIP) ← NEW
-- **Images to PDF**: Select images, reorder, download PDF
-- Support drag and drop for multiple images
+- **Images to PDF**: Select images (PNG, JPEG), reorder, download PDF
+- **PDF to Images**: Select PDF, preview pages, choose format (PNG/JPEG), download images (ZIP) ← TODO
 
 ### 6. Organize PDF
 - Select single PDF file
 - Visual page thumbnails in grid
-- Drag to reorder pages
-- Select and delete pages
-- **Preview button to view full PDF** ← NEW
+- Select pages and delete them
+- Drag to reorder pages (both within grid) ← TODO
+- **Preview button to view full PDF**
 - Download reorganized PDF
 
 ---
@@ -135,7 +134,7 @@ interface PreviewModalProps {
 | Frontend | React 18 |
 | PDF Processing | pdf-lib |
 | Drag & Drop | react-dropzone |
-| State | React Context + useReducer |
+| State | React Context + useReducer (single AppContext for view routing) |
 | Styling | CSS Modules + CSS Variables |
 | Build | Vite |
 | Testing | Vitest + React Testing Library |
@@ -191,36 +190,54 @@ interface PreviewModalProps {
 pdf-tool/
 ├── SPEC.md                          # This file
 ├── test-plan.md                     # Test plan and coverage details
+├── implementation.md                # Implementation status and approach
 ├── src/
+│   ├── App.tsx                      # Main app with view routing
+│   ├── main.tsx                     # Entry point
+│   ├── context/
+│   │   └── AppContext.tsx           # Single context for view state
+│   ├── styles/
+│   │   ├── variables.css            # CSS custom properties
+│   │   └── global.css               # Global styles
+│   ├── utils/
+│   │   ├── downloadUtils.ts         # Download blob helpers
+│   │   ├── errorUtils.ts            # Error formatting helpers
+│   │   └── fileUtils.ts             # File validation utilities
 │   ├── components/
 │   │   ├── common/
-│   │   │   ├── DropZone/
-│   │   │   ├── FileList/
-│   │   │   ├── PageThumbnails/
-│   │   │   ├── PreviewModal/
-│   │   │   ├── ProgressBar/
-│   │   │   └── Button/
+│   │   │   ├── DropZone/            # Drag and drop file input
+│   │   │   ├── FileList/            # File list with remove action
+│   │   │   ├── PageThumbnails/      # PDF page thumbnail grid
+│   │   │   ├── PreviewModal/        # Full PDF preview modal
+│   │   │   ├── ProgressBar/         # Processing progress indicator
+│   │   │   └── Button/              # Reusable button component
 │   │   └── features/
-│   │       ├── MergeView/
-│   │       ├── SplitView/
-│   │       ├── CompressView/
-│   │       ├── RotateView/
-│   │       ├── ConvertView/
-│   │       └── OrganizeView/
+│   │       ├── MergeView/           # Merge multiple PDFs (drag-to-reorder files)
+│   │       ├── SplitView/           # Split PDF (visual selection + page ranges)
+│   │       ├── CompressView/        # Compress PDF (Low/Medium/High quality)
+│   │       ├── RotateView/          # Rotate PDF (90°/180°/270°/Mirror H/Mirror V)
+│   │       ├── ConvertView/         # Convert: Images→PDF (PNG/JPEG to PDF)
+│   │       └── OrganizeView/        # Reorganize PDF (select & delete pages, drag-reorder)
 │   ├── services/pdf/
-│   │   ├── mergeOperation.ts
-│   │   ├── splitOperation.ts
-│   │   ├── compressOperation.ts
-│   │   ├── rotateOperation.ts
-│   │   ├── convertOperation.ts
-│   │   └── reorganizeOperation.ts
+│   │   ├── types.ts                 # Shared TypeScript interfaces
+│   │   ├── index.ts                 # Barrel exports
+│   │   ├── ClientPDFService.ts      # Main PDF operations service
+│   │   ├── pdfOperations.ts         # Core PDF operations
+│   │   ├── pdfValidation.ts         # File validation utilities
+│   │   ├── pdfFallback.ts           # Fallback strategies
+│   │   ├── mergeOperation.ts        # Merge multiple PDFs
+│   │   ├── splitOperation.ts        # Split PDF by selection/ranges
+│   │   ├── compressOperation.ts     # Compress with quality levels
+│   │   ├── rotateOperation.ts       # Rotate/mirror pages
+│   │   ├── convertOperation.ts      # Images↔PDF conversion
+│   │   └── reorganizeOperation.ts   # Reorder/delete pages
 │   └── hooks/
-│       ├── useMerge.ts
-│       ├── useSplit.ts
-│       ├── useCompress.ts
-│       ├── useRotate.ts
-│       ├── useConvert.ts
-│       └── useOrganize.ts
+│       ├── useMerge.ts              # Merge state management
+│       ├── useSplit.ts              # Split state management
+│       ├── useCompress.ts           # Compress state management
+│       ├── useRotate.ts             # Rotate state management
+│       ├── useConvert.ts            # Convert state management
+│       └── useOrganize.ts           # Organize state management
 ```
 
 ---

@@ -7,9 +7,21 @@ interface PageThumbnailsProps {
   selectedPages?: number[];
   onPageClick?: (pageIndex: number) => void;
   onPageDragStart?: (e: React.DragEvent, pageIndex: number) => void;
+  onPageDragOver?: (e: React.DragEvent, pageIndex: number) => void;
+  onPageDragEnd?: () => void;
+  dragOverIndex?: number | null;
 }
 
-export function PageThumbnails({ file, onSelect, selectedPages = [], onPageClick, onPageDragStart }: PageThumbnailsProps) {
+export function PageThumbnails({
+  file,
+  onSelect,
+  selectedPages = [],
+  onPageClick,
+  onPageDragStart,
+  onPageDragOver,
+  onPageDragEnd,
+  dragOverIndex
+}: PageThumbnailsProps) {
   const [thumbnails, setThumbnails] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -69,6 +81,18 @@ export function PageThumbnails({ file, onSelect, selectedPages = [], onPageClick
     }
   };
 
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    if (onPageDragOver) {
+      onPageDragOver(e, index);
+    }
+  };
+
+  const handleDragEnd = () => {
+    if (onPageDragEnd) {
+      onPageDragEnd();
+    }
+  };
+
   if (loading) {
     return <div className={styles.loading}>Loading pages...</div>;
   }
@@ -78,10 +102,12 @@ export function PageThumbnails({ file, onSelect, selectedPages = [], onPageClick
       {thumbnails.map((src, index) => (
         <div
           key={index}
-          className={`${styles.thumbnail} ${selectedPages.includes(index) ? styles.selected : ''}`}
+          className={`${styles.thumbnail} ${selectedPages.includes(index) ? styles.selected : ''} ${dragOverIndex === index ? styles.dragOver : ''}`}
           onClick={() => handleClick(index)}
           draggable={!!onPageDragStart}
           onDragStart={(e) => handleDragStart(e, index)}
+          onDragOver={(e) => handleDragOver(e, index)}
+          onDragEnd={handleDragEnd}
           data-page-index={index}
         >
           <div className={styles.box}>

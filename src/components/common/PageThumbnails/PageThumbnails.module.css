@@ -56,6 +56,16 @@
   color: var(--color-primary);
 }
 
+.dragOver .box {
+  border-color: var(--color-accent);
+  background: var(--color-accent-light);
+  transform: scale(1.1);
+}
+
+.dragging {
+  opacity: 0.5;
+}
+
 .label {
   font-size: 0.75rem;
   color: var(--color-text-muted);

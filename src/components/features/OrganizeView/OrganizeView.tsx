@@ -15,6 +15,9 @@ export function OrganizeView() {
   const [selectedPages, setSelectedPages] = useState<number[]>([]);
   const [pageCount, setPageCount] = useState<number>(0);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [pageOrder, setPageOrder] = useState<number[]>([]);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const { reorganize, isProcessing, progress, error, clearError } = useOrganize();
 
   const handleFileDropped = useCallback(async (files: File[]) => {
@@ -25,8 +28,10 @@ export function OrganizeView() {
       try {
         const count = await getPageCount(f);
         setPageCount(count);
+        setPageOrder(Array.from({ length: count }, (_, i) => i));
       } catch {
         setPageCount(0);
+        setPageOrder([]);
       }
     }
   }, []);
@@ -39,10 +44,12 @@ export function OrganizeView() {
 
   const handleOrganize = useCallback(async () => {
     if (!file) return;
-    const order: PageOrder[] = Array.from({ length: pageCount }, (_, i) => ({
-      originalIndex: i,
-      newIndex: selectedPages.includes(i) ? -1 : i
-    })).filter(o => o.newIndex !== -1).map((o, i) => ({ originalIndex: o.originalIndex, newIndex: i }));
+
+    // Build PageOrder from the current pageOrder array, excluding deleted pages
+    const deletedSet = new Set(selectedPages);
+    const order: PageOrder[] = pageOrder
+      .filter(idx => !deletedSet.has(idx))
+      .map((originalIndex, newIndex) => ({ originalIndex, newIndex }));
 
     if (order.length === 0) {
       alert('No pages left after deletion');
@@ -52,7 +59,31 @@ export function OrganizeView() {
     if (result) {
       downloadBlob(result, `organized_${file.name}`);
     }
-  }, [file, pageCount, selectedPages, reorganize]);
+  }, [file, pageOrder, selectedPages, reorganize]);
+
+  const handleDragStart = useCallback((_e: React.DragEvent, pageIndex: number) => {
+    setDragIndex(pageIndex);
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent, pageIndex: number) => {
+    e.preventDefault();
+    if (dragIndex !== null && dragIndex !== pageIndex) {
+      setDragOverIndex(pageIndex);
+    }
+  }, [dragIndex]);
+
+  const handleDragEnd = useCallback(() => {
+    if (dragIndex !== null && dragOverIndex !== null && dragIndex !== dragOverIndex) {
+      setPageOrder(prev => {
+        const newOrder = [...prev];
+        const [removed] = newOrder.splice(dragIndex, 1);
+        newOrder.splice(dragOverIndex, 0, removed);
+        return newOrder;
+      });
+    }
+    setDragIndex(null);
+    setDragOverIndex(null);
+  }, [dragIndex, dragOverIndex]);
 
   return (
     <div className={styles.container}>
@@ -70,7 +101,15 @@ export function OrganizeView() {
             <Button label="Change File" variant="outline" size="sm" onClick={() => setFile(null)} />
           </div>
 
-          <PageThumbnails file={file} onSelect={handlePageSelect} selectedPages={selectedPages} />
+          <PageThumbnails
+            file={file}
+            onSelect={handlePageSelect}
+            selectedPages={selectedPages}
+            onPageDragStart={handleDragStart}
+            onPageDragOver={handleDragOver}
+            onPageDragEnd={handleDragEnd}
+            dragOverIndex={dragOverIndex}
+          />
 
           <div className={styles.actions}>
             <Button label="Preview PDF" variant="outline" onClick={() => setIsPreviewOpen(true)} />

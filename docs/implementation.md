@@ -34,12 +34,12 @@ This document outlines the implementation approach for the PDF Tool, following t
 
 | View | Status | Description |
 |------|--------|-------------|
-| `MergeView` | ✅ Done | Merge multiple PDFs |
+| `MergeView` | ✅ Done | Merge multiple PDFs with drag-to-reorder |
 | `SplitView` | ✅ Done | Split with visual/range modes |
 | `CompressView` | ✅ Done | Compress with quality picker |
 | `RotateView` | ✅ Done | Rotate/mirror transformations |
-| `ConvertView` | ✅ Done | Images→PDF conversion |
-| `OrganizeView` | ✅ Done | Delete pages (drag-reorder not implemented) |
+| `ConvertView` | ⚠️ Partial | Images→PDF done; PDF→Images TODO |
+| `OrganizeView` | ⚠️ Partial | Page deletion done; drag-reorder TODO |
 
 ### Phase 4: Custom Hooks
 
@@ -91,17 +91,17 @@ Each feature view follows a consistent pattern:
 
 ## State Management
 
-Using React Context + useReducer for global state:
+Single `AppContext` for view routing (not per-feature contexts):
 
 ```
-src/contexts/
-├── MergeContext.tsx
-├── SplitContext.tsx
-├── CompressContext.tsx
-├── RotateContext.tsx
-├── ConvertContext.tsx
-└── OrganizeContext.tsx
+src/context/
+└── AppContext.tsx    # View state only: { currentView: View }
 ```
+
+Each feature view manages its own local state via hooks:
+- `useMerge`, `useSplit`, `useCompress`, `useRotate`, `useConvert`, `useOrganize`
+
+This is simpler than per-feature contexts and avoids over-architecture.
 
 ---
 
@@ -114,6 +114,17 @@ pdf-tool/
 │   ├── implementation.md    # This file
 │   └── test-plan.md         # Test documentation
 ├── src/
+│   ├── App.tsx              # Main app with view routing
+│   ├── main.tsx             # Entry point
+│   ├── context/
+│   │   └── AppContext.tsx   # Single context for view state
+│   ├── styles/
+│   │   ├── variables.css    # CSS custom properties
+│   │   └── global.css       # Global styles
+│   ├── utils/
+│   │   ├── downloadUtils.ts
+│   │   ├── errorUtils.ts
+│   │   └── fileUtils.ts
 │   ├── components/
 │   │   ├── common/
 │   │   │   ├── DropZone/
@@ -130,21 +141,25 @@ pdf-tool/
 │   │       ├── ConvertView/
 │   │       └── OrganizeView/
 │   ├── services/pdf/
+│   │   ├── types.ts
+│   │   ├── index.ts
+│   │   ├── ClientPDFService.ts
+│   │   ├── pdfOperations.ts
+│   │   ├── pdfValidation.ts
+│   │   ├── pdfFallback.ts
 │   │   ├── mergeOperation.ts
 │   │   ├── splitOperation.ts
 │   │   ├── compressOperation.ts
 │   │   ├── rotateOperation.ts
 │   │   ├── convertOperation.ts
 │   │   └── reorganizeOperation.ts
-│   ├── hooks/
-│   │   ├── useMerge.ts
-│   │   ├── useSplit.ts
-│   │   ├── useCompress.ts
-│   │   ├── useRotate.ts
-│   │   ├── useConvert.ts
-│   │   └── useOrganize.ts
-│   └── contexts/
-│       └── (contexts per feature)
+│   └── hooks/
+│       ├── useMerge.ts
+│       ├── useSplit.ts
+│       ├── useCompress.ts
+│       ├── useRotate.ts
+│       ├── useConvert.ts
+│       └── useOrganize.ts
 ```
 
 ---
