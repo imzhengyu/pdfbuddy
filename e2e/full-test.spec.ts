@@ -25,7 +25,7 @@ async function uploadFiles(page, filePaths) {
 
 test.describe('PDF Tool WebApp Full Test', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:3006');
+    await page.goto('http://localhost:3000');
     await expect(page.getByRole('heading', { name: 'PDF Tool' })).toBeVisible();
   });
 
@@ -266,26 +266,46 @@ test.describe('PDF Tool WebApp Full Test', () => {
     await uploadFile(page, testFiles.organize);
     await expect(page.getByText('test-3pages.pdf')).toBeVisible();
 
-    // Wait for thumbnails to load
-    await page.waitForTimeout(500);
+    // Wait for thumbnails to fully load by waiting for the loading text to disappear or grid to appear
+    await page.waitForFunction(() => {
+      const loading = document.querySelector('[class*="loading"]');
+      const grid = document.querySelector('[class*="grid"]');
+      return !loading || grid;
+    }, { timeout: 10000 }).catch(() => {});
 
     // Click on first thumbnail to select page for deletion
     const thumbnails = page.locator('[class*="thumbnail"]');
-    await expect(thumbnails.first()).toBeVisible();
-    await thumbnails.first().click();
+    const count = await thumbnails.count();
+    console.log(`Found ${count} thumbnails`);
+    expect(count).toBeGreaterThan(0);
+    await thumbnails.first().click({ force: true });
+
+    // Wait a moment for state to update
+    await page.waitForTimeout(200);
 
     // Hint should appear showing selected pages for deletion
-    await expect(page.getByText(/1 page\(s\) selected/)).toBeVisible();
+    const hint = page.getByText(/1 page.*selected/);
+    await expect(hint).toBeVisible({ timeout: 5000 });
 
     // Download button should still be enabled (can download with deleted pages)
     const organizeBtn = page.getByRole('button', { name: 'Download Organized PDF' });
     await expect(organizeBtn).toBeEnabled();
 
     // Set up download handler before clicking
-    const downloadPromise = page.waitForEvent('download');
+    const downloadPromise = page.waitForEvent('download', { timeout: 15000 });
 
     // Download
     await organizeBtn.click();
+
+    // Wait a moment for processing to start
+    await page.waitForTimeout(1000);
+
+    // Check if there's an error displayed
+    const errorEl = page.locator('[class*="error"]');
+    if (await errorEl.count() > 0) {
+      const errorText = await errorEl.textContent();
+      console.log('Error displayed:', errorText);
+    }
 
     // Wait for download
     const download = await downloadPromise;

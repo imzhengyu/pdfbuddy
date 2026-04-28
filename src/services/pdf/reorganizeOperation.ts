@@ -27,9 +27,9 @@ export async function reorganizePdf(
     validIndices.add(order.originalIndex);
   }
 
-  if (validIndices.size !== pageCount) {
+  if (newOrder.length === 0) {
     throw new PDFProcessingError(
-      'All pages must be included in the new order',
+      'At least one page must be in the new order',
       'PAGE_RANGE'
     );
   }
