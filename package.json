@@ -5,16 +5,16 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "predev": "powershell -Command \"Get-NetTCPConnection -LocalPort 3000,3006 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }\"",
+    "predev": "powershell -Command \"Get-NetTCPConnection -LocalPort 3000,3006 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; exit 0\"",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "lint": "tsc --noEmit",
     "test": "vitest",
-    "pretest": "powershell -Command \"Get-NetTCPConnection -LocalPort 3000,3006 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }\"",
+    "pretest": "powershell -Command \"Get-NetTCPConnection -LocalPort 3000,3006 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; exit 0\"",
     "test:coverage": "vitest --coverage",
-    "pretest:coverage": "powershell -Command \"Get-NetTCPConnection -LocalPort 3000,3006 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }\"",
+    "pretest:coverage": "powershell -Command \"Get-NetTCPConnection -LocalPort 3000,3006 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; exit 0\"",
     "test:e2e": "playwright test",
-    "pretest:e2e": "powershell -Command \"Get-NetTCPConnection -LocalPort 3000,3006 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }\"",
+    "pretest:e2e": "powershell -Command \"Get-NetTCPConnection -LocalPort 3000,3006 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; exit 0\"",
     "prepare": "husky install"
   },
   "dependencies": {
