@@ -30,3 +30,62 @@
   color: var(--color-text-muted);
   text-align: center;
 }
+
+/* Circular Progress */
+.circular {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.circularTrack {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.circularTrack svg {
+  transform: rotate(-90deg);
+}
+
+.circularBg {
+  fill: none;
+  stroke: var(--color-border);
+}
+
+.circularFill {
+  fill: none;
+  stroke: url(#progressGradient);
+  stroke-linecap: round;
+  transition: stroke-dashoffset var(--transition-normal);
+}
+
+.circularLabel {
+  position: absolute;
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.circularDetail {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* Sizes */
+.sm .circularTrack {
+  width: 48px;
+  height: 48px;
+}
+
+.md .circularTrack {
+  width: 80px;
+  height: 80px;
+}
+
+.lg .circularTrack {
+  width: 120px;
+  height: 120px;
+}

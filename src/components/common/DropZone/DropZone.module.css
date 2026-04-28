@@ -1,7 +1,7 @@
 .dropzone {
   position: relative;
   border: 2px dashed var(--color-border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   padding: var(--space-2xl);
   text-align: center;
   cursor: pointer;
@@ -11,13 +11,18 @@
 
 .dropzone:hover {
   border-color: var(--color-primary);
-  background: var(--color-primary-light);
+  border-style: solid;
+  background-color: var(--color-primary-light);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .dragOver {
   border-color: var(--color-primary);
-  background: var(--color-primary-light);
-  transform: scale(1.01);
+  border-style: solid;
+  background-color: var(--color-primary-light);
+  transform: scale(1.02);
+  box-shadow: var(--shadow-lg);
 }
 
 .dropzone input[type="file"] {
@@ -41,15 +46,22 @@
 
 .icon {
   color: var(--color-primary);
+  width: 64px;
+  height: 64px;
+  padding: var(--space-md);
+  background: var(--color-surface);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--space-sm);
 }
 
 .message {
-  font-size: 1.125rem;
-  font-weight: 500;
+  font-size: var(--font-size-lg);
+  font-weight: 600;
   color: var(--color-text);
 }
 
 .hint {
-  font-size: 0.875rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
 }

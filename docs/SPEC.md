@@ -46,7 +46,7 @@ A colorful, friendly React web app for PDF manipulation with client-side process
 
 ### 5. Convert
 - **Images to PDF**: Select images (PNG, JPEG), reorder, download PDF
-- **PDF to Images**: Select PDF, preview pages, choose format (PNG/JPEG), download images (ZIP) ← TODO
+- **PDF to Images**: ← NOT YET IMPLEMENTED - Requires backend service (pdf-lib cannot render PDFs to images client-side)
 
 ### 6. Organize PDF
 - Select single PDF file

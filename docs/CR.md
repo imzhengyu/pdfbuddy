@@ -1,5 +1,39 @@
 # Changelog / Bug Fixes
 
+## 2026-04-28
+
+### Improvement: TypeScript Code Quality Enhancements
+
+**Changes:**
+
+1. **Added `assert.ts` utility** (`src/services/pdf/assert.ts`)
+   - `assert(condition, message, code)` - Throws if condition is false
+   - `assertDefined(value, message)` - Throws if null/undefined
+   - `assertRange(value, min, max, message)` - Throws if out of range
+   - `assertNonEmpty(array, message)` - Throws if empty array
+   - `assertString(value, message)` - Throws if not a string
+   - `assertNumber(value, message)` - Throws if not a number (including NaN)
+
+2. **Added unit tests for pdfFallback error paths** (`tests/services/pdfFallback.test.ts`)
+   - 18 tests covering all error paths: PDFDict2 errors, encryption errors, unknown errors, fallback behavior
+
+3. **Added unit tests for assert utilities** (`tests/services/assert.test.ts`)
+   - 21 tests covering all assertion functions
+
+4. **Updated SPEC.md** - Clarified that PDF→Images conversion is NOT YET IMPLEMENTED (requires backend service since pdf-lib cannot render PDFs to images client-side)
+
+**Files Added:**
+- `src/services/pdf/assert.ts` - NEW: Assertion utilities
+- `tests/services/assert.test.ts` - NEW: Assert utility tests
+- `tests/services/pdfFallback.test.ts` - NEW: pdfFallback error path tests
+
+**Files Changed:**
+- `docs/SPEC.md` - Updated Convert feature to clarify PDF→Images is not implemented
+
+**Test Results:** All 249 tests passing
+
+---
+
 ## 2026-04-26
 
 ### Feature: Mouse Scroll Navigation in Preview Modal
