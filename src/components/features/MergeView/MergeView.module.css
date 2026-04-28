@@ -62,8 +62,10 @@
 
 .dragHandle {
   color: var(--color-text-secondary);
-  font-size: 1.2rem;
   cursor: grab;
+  display: flex;
+  align-items: center;
+  padding: var(--space-xs);
 }
 
 .index {

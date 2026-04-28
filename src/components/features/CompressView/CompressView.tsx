@@ -13,6 +13,7 @@ export function CompressView() {
   const [file, setFile] = useState<File | null>(null);
   const [quality, setQuality] = useState<CompressionQuality>('medium');
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [compressionResult, setCompressionResult] = useState<{ originalSize: number; compressedSize: number; reduction: number } | null>(null);
   const { compress, isProcessing, progress, error, clearError } = useCompress();
 
   const handleFileDropped = useCallback((files: File[]) => {
@@ -29,8 +30,8 @@ export function CompressView() {
       const originalSize = file.size;
       const compressedSize = result.size;
       const reduction = Math.round((1 - compressedSize / originalSize) * 100);
+      setCompressionResult({ originalSize, compressedSize, reduction });
       downloadBlob(result, `compressed_${file.name}`);
-      alert(`Compressed! Size reduced by ${reduction}% (${formatFileSize(originalSize)} → ${formatFileSize(compressedSize)})`);
     }
   }, [file, quality, compress]);
 
@@ -68,6 +69,13 @@ export function CompressView() {
             <div className={styles.error}>
               <span>{error}</span>
               <button onClick={clearError}>×</button>
+            </div>
+          )}
+
+          {compressionResult && (
+            <div className={styles.success}>
+              <span>Compressed! Size reduced by <strong>{compressionResult.reduction}%</strong> ({formatFileSize(compressionResult.originalSize)} → {formatFileSize(compressionResult.compressedSize)})</span>
+              <button onClick={() => setCompressionResult(null)}>×</button>
             </div>
           )}
 

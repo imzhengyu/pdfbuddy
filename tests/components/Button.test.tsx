@@ -17,7 +17,9 @@ describe('Button', () => {
 
   it('shows loading state', () => {
     render(<Button label="Click me" onClick={() => {}} loading />);
-    expect(screen.getByText('Loading...')).toBeInTheDocument();
+    expect(screen.getByRole('button')).toBeDisabled();
+    const spinner = screen.getByLabelText('Loading');
+    expect(spinner).toBeInTheDocument();
   });
 
   it('is disabled when loading', () => {

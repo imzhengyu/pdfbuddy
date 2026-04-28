@@ -15,12 +15,14 @@ interface FileItem {
 
 export function ConvertView() {
   const [files, setFiles] = useState<FileItem[]>([]);
+  const [isAddingMore, setIsAddingMore] = useState(false);
   const { convertToPDF, isProcessing, progress, error, clearError } = useConvert();
 
   const handleFilesDropped = useCallback((droppedFiles: File[]) => {
     const validFiles = droppedFiles.filter(validateImageFile);
     const newFiles = validFiles.map((file, index) => ({ id: `${Date.now()}-${index}`, file }));
     setFiles(prev => [...prev, ...newFiles]);
+    setIsAddingMore(false);
   }, []);
 
   const handleRemoveFile = useCallback((id: string) => {
@@ -64,7 +66,20 @@ export function ConvertView() {
           )}
 
           <div className={styles.actions}>
-            <Button label="Add More" variant="outline" onClick={() => {}} />
+            {isAddingMore ? (
+              <DropZone
+                onFilesDropped={handleFilesDropped}
+                message="Add more images"
+                accept={{ 'image/png': ['.png'], 'image/jpeg': ['.jpg', '.jpeg'] }}
+              />
+            ) : (
+              <Button
+                label="Add More"
+                variant="outline"
+                onClick={() => setIsAddingMore(true)}
+                disabled={isProcessing}
+              />
+            )}
             <Button label="Clear All" variant="outline" onClick={handleClear} disabled={isProcessing} />
             <Button label={`Convert ${files.length} Image${files.length > 1 ? 's' : ''} to PDF`} variant="primary" onClick={handleConvert} disabled={isProcessing} loading={isProcessing} />
           </div>

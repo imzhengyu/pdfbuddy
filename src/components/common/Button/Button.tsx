@@ -36,7 +36,7 @@ export function Button({
       {...props}
     >
       {loading ? (
-        <span className={styles.spinner}>Loading...</span>
+        <span className={styles.spinner} aria-label="Loading" />
       ) : (
         <>
           {icon && <span className={styles.icon}>{icon}</span>}

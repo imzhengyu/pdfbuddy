@@ -13,7 +13,6 @@ import styles from './OrganizeView.module.css';
 export function OrganizeView() {
   const [file, setFile] = useState<File | null>(null);
   const [selectedPages, setSelectedPages] = useState<number[]>([]);
-  const [pageCount, setPageCount] = useState<number>(0);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [pageOrder, setPageOrder] = useState<number[]>([]);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
@@ -27,10 +26,8 @@ export function OrganizeView() {
       setSelectedPages([]);
       try {
         const count = await getPageCount(f);
-        setPageCount(count);
         setPageOrder(Array.from({ length: count }, (_, i) => i));
       } catch {
-        setPageCount(0);
         setPageOrder([]);
       }
     }

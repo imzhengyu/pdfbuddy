@@ -8,12 +8,14 @@ import { useSplit } from '../../../hooks/useSplit';
 import { downloadBlob } from '../../../utils/downloadUtils';
 import { ClientPDFService } from '../../../services/pdf/ClientPDFService';
 import { PageRange } from '../../../services/pdf/types';
+import { getPageCount } from '../../../utils/fileUtils';
 import styles from './SplitView.module.css';
 
 type SelectionMode = 'visual' | 'range';
 
 export function SplitView() {
   const [file, setFile] = useState<File | null>(null);
+  const [pageCount, setPageCount] = useState<number>(0);
   const [selectedPages, setSelectedPages] = useState<number[]>([]);
   const [pageRanges, setPageRanges] = useState<string>('');
   const [selectionMode, setSelectionMode] = useState<SelectionMode>('visual');
@@ -22,12 +24,19 @@ export function SplitView() {
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const { split, isProcessing, progress, error, clearError } = useSplit();
 
-  const handleFileDropped = useCallback((files: File[]) => {
+  const handleFileDropped = useCallback(async (files: File[]) => {
     if (files.length > 0) {
-      setFile(files[0]);
+      const f = files[0];
+      setFile(f);
       setSelectedPages([]);
       setPageRanges('');
       setPreviewFile(null);
+      try {
+        const count = await getPageCount(f);
+        setPageCount(count);
+      } catch {
+        setPageCount(0);
+      }
     }
   }, []);
 
@@ -53,7 +62,7 @@ export function SplitView() {
 
     let pagesToPreview: number[];
     if (selectionMode === 'range' && pageRanges.trim()) {
-      pagesToPreview = parsePageRanges(pageRanges, 999); // Will be capped by actual page count
+      pagesToPreview = parsePageRanges(pageRanges, pageCount);
     } else if (selectedPages.length > 0) {
       // selectedPages is 0-based, convert to 1-based for split
       pagesToPreview = selectedPages.map(p => p + 1);
@@ -82,7 +91,7 @@ export function SplitView() {
     } catch (err) {
       console.error('Preview failed:', err);
     }
-  }, [file, selectedPages, pageRanges, selectionMode]);
+  }, [file, selectedPages, pageRanges, selectionMode, pageCount]);
 
   const parsePageRanges = (input: string, maxPages: number): number[] => {
     const pages: number[] = [];
@@ -111,7 +120,7 @@ export function SplitView() {
 
     let pagesToExport: number[];
     if (selectionMode === 'range' && pageRanges.trim()) {
-      pagesToExport = parsePageRanges(pageRanges, 999);
+      pagesToExport = parsePageRanges(pageRanges, pageCount);
     } else if (selectedPages.length > 0) {
       // selectedPages is 0-based, convert to 1-based for split
       pagesToExport = selectedPages.map(p => p + 1);
@@ -132,7 +141,7 @@ export function SplitView() {
         await downloadBlobsAsZip(zipBlobs, `${baseName}_selected.zip`);
       }
     }
-  }, [file, selectedPages, pageRanges, selectionMode, split]);
+  }, [file, selectedPages, pageRanges, selectionMode, split, pageCount]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -274,7 +283,7 @@ export function SplitView() {
                   placeholder="e.g., 1-3, 4-6, 7"
                   className={styles.input}
                 />
-                <p className={styles.rangeHint}>Enter page numbers or ranges separated by commas</p>
+                <p className={styles.rangeHint}>Enter page numbers or ranges separated by commas (max: {pageCount})</p>
               </div>
             </div>
           )}
