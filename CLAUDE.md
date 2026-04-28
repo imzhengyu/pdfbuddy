@@ -19,3 +19,18 @@ When stopping the pdf-tool webapp:
 - **ONLY** kill the Vite/node process serving the app on port 3000
 - **DO NOT** kill all chrome.exe processes - users may have other Chrome windows open for browsing
 - Use port-based process termination (e.g., `Get-NetTCPConnection -LocalPort 3000`) to target only the specific server process
+
+## Network/VPN Proxy Guideline
+
+If git operations timeout (e.g., `git push`, `git pull`), configure v2ray proxy:
+
+```bash
+git config --global http.proxy http://127.0.0.1:10808
+git config --global https.proxy http://127.0.0.1:10808
+```
+
+To disable when not needed:
+```bash
+git config --global --unset http.proxy
+git config --global --unset https.proxy
+```
