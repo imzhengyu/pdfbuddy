@@ -1,5 +1,22 @@
 # Changelog / Bug Fixes
 
+## 2026-04-29
+
+### Bug Fix: Rotate page order not preserved
+
+**Issue:** When rotating pages in RotateView, the rotated pages were appended at the end instead of being placed in their original positions. For example, with 3 pages [0, 1, 2] and rotating page 1, the result was pages [0, 2, 1] instead of [0, 1, 2].
+
+**Root Cause:** In `rotateOperation.ts`, the code first added all non-rotated pages, then added rotated pages at the end.
+
+**Fix:** Rewrote the page iteration to process pages in original order, applying rotations to specific pages via a Map lookup while maintaining correct page positions.
+
+**Files Changed:**
+- `src/services/pdf/rotateOperation.ts` - Rewrote page iteration logic to preserve page order
+
+**Test Results:** All 249 tests passing
+
+---
+
 ## 2026-04-28
 
 ### Improvement: TypeScript Code Quality Enhancements
