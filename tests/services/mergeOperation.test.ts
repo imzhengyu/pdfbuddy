@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mergePdfs } from '../../src/services/pdf/mergeOperation';
+import { PDFDocument } from 'pdf-lib';
 
 vi.mock('pdf-lib', () => ({
   PDFDocument: {
@@ -55,5 +56,54 @@ describe('mergeOperation', () => {
     const onProgress = vi.fn();
     await mergePdfs([file1, file2], onProgress);
     expect(onProgress).toHaveBeenCalled();
+  });
+
+  it('includes filename in error message when PDF fails to load', async () => {
+    const badFileName = 'corrupted-file.pdf';
+
+    // Mock PDFDocument.load to throw PDFDict2 error
+    (PDFDocument.load as any).mockImplementationOnce(() =>
+      Promise.reject(new Error('Expected instance of PDFDict2, but got instance of undefined'))
+    );
+
+    const badFile = createMockFile('test1', badFileName, 'application/pdf');
+    const goodFile = createMockFile('test2', 'valid-file.pdf', 'application/pdf');
+
+    const result = mergePdfs([badFile, goodFile]);
+    await expect(result).rejects.toThrow(`Failed to process "${badFileName}"`);
+    await expect(result).rejects.toThrow('Expected instance of PDFDict2');
+  });
+
+  it('includes filename in error message when copyPages fails', async () => {
+    const badFileName = 'problematic.pdf';
+
+    // Mock PDFDocument.create to return an object whose copyPages calls the source pdf's copyPages
+    // This way, when mergedPdf.copyPages(pdf, ...) is called, it will invoke pdf.copyPages
+    const mockPages = [{ addPage: vi.fn() }];
+    (PDFDocument.create as any).mockResolvedValueOnce({
+      copyPages: vi.fn().mockImplementation(async (sourcePdf: any, indices: number[]) => {
+        // When copyPages is called on mergedPdf, it internally calls sourcePdf.copyPages
+        return sourcePdf.copyPages(sourcePdf, indices);
+      }),
+      addPage: vi.fn(),
+      save: vi.fn().mockResolvedValue(new Uint8Array([1, 2, 3]))
+    });
+
+    // Mock PDFDocument.load to throw error in copyPages
+    (PDFDocument.load as any).mockImplementationOnce(() =>
+      Promise.resolve({
+        getPageIndices: vi.fn().mockReturnValue([0]),
+        getPageCount: vi.fn().mockReturnValue(1),
+        getPages: vi.fn().mockReturnValue([]),
+        copyPages: vi.fn().mockRejectedValue(new Error('copyPages failed: Expected instance of PDFDict2'))
+      })
+    );
+
+    const badFile = createMockFile('test1', badFileName, 'application/pdf');
+    const goodFile = createMockFile('test2', 'good.pdf', 'application/pdf');
+
+    const result = mergePdfs([badFile, goodFile]);
+    await expect(result).rejects.toThrow(`Failed to process "${badFileName}"`);
+    await expect(result).rejects.toThrow('copyPages failed');
   });
 });

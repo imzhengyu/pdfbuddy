@@ -1,6 +1,6 @@
 # PDF Tool - Specification
 
-> **Last Updated:** 2026-04-26
+> **Last Updated:** 2026-04-29
 
 ## Overview
 
@@ -46,6 +46,8 @@ A colorful, friendly React web app for PDF manipulation with client-side process
 
 ### 5. Convert
 - **Images to PDF**: Select images (PNG, JPEG), reorder, download PDF
+- **Default page size: A4** (595 x 842 points) - Images are scaled to fit A4 with margins
+- **Preview button** - Preview converted PDF before download
 - **PDF to Images**: ← NOT YET IMPLEMENTED - Requires backend service (pdf-lib cannot render PDFs to images client-side)
 
 ### 6. Organize PDF
@@ -177,7 +179,7 @@ interface PreviewModalProps {
 - [x] Files up to 20MB process without crashing
 - [x] Preview feature implemented on all views (Merge, Split, Rotate, Compress, Organize, Convert)
 - [x] Preview modal component created and tested
-- [x] E2E tests pass for core workflows (11 tests passing)
+- [x] E2E tests pass for core workflows (20 tests passing)
 - [ ] No console errors in production build (not verified)
 - [ ] Works on Chrome, Firefox, Safari, Edge (only Chrome verified)
 - [ ] Responsive on mobile (320px+), tablet, desktop (not verified)

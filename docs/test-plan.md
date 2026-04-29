@@ -428,9 +428,7 @@ npx playwright test e2e/full-test.spec.ts --grep "Merge"
 
 | Category | Tests | Passing |
 |----------|-------|---------|
-| Unit Tests (Total) | 206 | ✅ 206 |
-| E2E Basic | 8 | ✅ 8 |
-| E2E Merge (Full) | 7 | ✅ 7 |
-| E2E Comprehensive | ~22 | ⚠️ In Progress |
+| Unit Tests (Total) | 251 | ✅ 251 |
+| E2E Tests (Total) | 20 | ✅ 20 |
 
-**Overall Status:** Phase 1-4 (Unit Tests) Complete. E2E Phase in Progress.
+**Overall Status:** All tests passing. Both unit tests and E2E tests complete.

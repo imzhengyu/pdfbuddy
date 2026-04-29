@@ -1,7 +1,7 @@
 import { PDFDocument } from 'pdf-lib';
 import { validatePDFFile } from './pdfValidation';
 import { ProgressCallback, loadPDFFromArrayBuffer } from './pdfOperations';
-import { withPDFLibFallback } from './pdfFallback';
+import { withPDFLibFallback, PDFLibError } from './pdfFallback';
 
 export async function mergePdfs(
   files: File[],
@@ -18,16 +18,28 @@ export async function mergePdfs(
     const file = files[i];
     validatePDFFile(file);
 
-    const arrayBuffer = await file.arrayBuffer();
+    let pdf;
+    try {
+      const arrayBuffer = await file.arrayBuffer();
 
-    const pdf = await withPDFLibFallback(
-      async () => loadPDFFromArrayBuffer(arrayBuffer),
-      undefined,
-      'PDFKit merge'
-    );
+      pdf = await withPDFLibFallback(
+        async () => loadPDFFromArrayBuffer(arrayBuffer),
+        undefined,
+        'PDFKit merge'
+      );
 
-    const pages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
-    pages.forEach(page => mergedPdf.addPage(page));
+      // copyPages can also throw PDFDict2 errors
+      const pages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+      pages.forEach(page => mergedPdf.addPage(page));
+    } catch (err) {
+      let errorMessage = 'Unknown error';
+      if (err instanceof PDFLibError && err.originalError) {
+        errorMessage = err.originalError.message;
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      throw new Error(`Failed to process "${file.name}": ${errorMessage}`);
+    }
 
     onProgress?.({
       current: i + 1,

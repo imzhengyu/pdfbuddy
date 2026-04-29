@@ -34,3 +34,7 @@ To disable when not needed:
 git config --global --unset http.proxy
 git config --global --unset https.proxy
 ```
+
+## Git Commit & Push Rule
+
+**DO NOT commit or push automatically.** Only commit and push when explicitly commanded by the user. If work is ready to be saved, inform the user and wait for their explicit instruction to commit and push.

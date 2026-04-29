@@ -217,12 +217,14 @@ export function SplitView() {
               <div className={styles.sourceSection}>
                 <h3 className={styles.sectionTitle}>Source Pages</h3>
                 <p className={styles.sectionHint}>Click pages to select them</p>
-                <PageThumbnails
-                  file={file}
-                  selectedPages={selectedPages}
-                  onPageClick={handlePageClick}
-                  onPageDragStart={handlePageDragStart}
-                />
+                <div className={styles.sourceContent}>
+                  <PageThumbnails
+                    file={file}
+                    selectedPages={selectedPages}
+                    onPageClick={handlePageClick}
+                    onPageDragStart={handlePageDragStart}
+                  />
+                </div>
               </div>
 
               <div className={styles.targetSection}>

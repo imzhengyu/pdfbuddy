@@ -14,10 +14,27 @@
 .modeBtn:hover { background: var(--color-primary-light); }
 .modeBtn.active { background: var(--color-primary); color: white; border-color: var(--color-primary); }
 
-/* Split Container - Two Box Layout */
-.splitContainer { display: flex; gap: var(--space-xl); }
-.sourceSection { flex: 1; }
-.targetSection { flex: 0 0 280px; display: flex; flex-direction: column; gap: var(--space-md); }
+/* Split Container - Two Box Layout - 50/50 */
+.splitContainer { display: flex; gap: var(--space-xl); height: calc(100vh - 200px); }
+.sourceSection {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.sourceContent {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-md);
+  background: var(--color-background);
+  border-radius: var(--radius-md);
+}
+.targetSection {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
 .sectionTitle { font-size: 1rem; font-weight: 600; color: var(--color-text); margin: 0; }
 .sectionHint { font-size: 0.875rem; color: var(--color-text-secondary); margin: 0 0 var(--space-sm) 0; }
 

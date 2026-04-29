@@ -122,12 +122,15 @@ export function RotateView() {
             <div className={styles.sourceSection}>
               <h3 className={styles.sectionTitle}>Source Pages</h3>
               <p className={styles.sectionHint}>Click pages to select, hover to rotate</p>
-              <PageThumbnails
-                file={file}
-                selectedPages={selectedPages}
-                onPageClick={handlePageClick}
-                onRotate={handleRotate}
-              />
+              <div className={styles.sourceContent}>
+                <PageThumbnails
+                  file={file}
+                  selectedPages={selectedPages}
+                  onPageClick={handlePageClick}
+                  onRotate={handleRotate}
+                  rotatedPages={pageRotations}
+                />
+              </div>
               <p className={styles.selectionInfo}>
                 {selectedPages.length === 0 ? 'No pages selected' : `${selectedPages.length} page(s) selected`}
               </p>
@@ -144,6 +147,8 @@ export function RotateView() {
                     <PageThumbnails
                       file={resultFile}
                       onPageClick={() => {}}
+                      rotatedPages={pageRotations}
+                      showChangedIndicator
                     />
                   </div>
                 ) : (

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import styles from './PageThumbnails.module.css';
 
 interface PageThumbnailsProps {
@@ -11,7 +11,13 @@ interface PageThumbnailsProps {
   onPageDragEnd?: () => void;
   dragOverIndex?: number | null;
   onRotate?: (pageIndex: number) => void;
+  rotatedPages?: Map<number, number>;
+  showChangedIndicator?: boolean;
+  onError?: (error: string) => void;
 }
+
+// Cache for parsed PDFs
+const pdfCache = new Map<string, { pdf: any; arrayBuffer: ArrayBuffer }>();
 
 export function PageThumbnails({
   file,
@@ -22,51 +28,125 @@ export function PageThumbnails({
   onPageDragOver,
   onPageDragEnd,
   dragOverIndex,
-  onRotate
+  onRotate,
+  rotatedPages = new Map(),
+  showChangedIndicator = false,
+  onError
 }: PageThumbnailsProps) {
-  const [thumbnails, setThumbnails] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [thumbnails, setThumbnails] = useState<(string | null)[]>([]);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const pdfRef = useRef<any>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function loadThumbnails() {
       try {
         const pdfjsLib = await import('pdfjs-dist');
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-        const arrayBuffer = await file.arrayBuffer();
-        const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
-        const pdf = await loadingTask.promise;
+        // Use cache if available
+        let pdf = pdfRef.current;
+        let arrayBuffer: ArrayBuffer;
+
+        if (!pdf) {
+          const cacheKey = file.name + file.size;
+          const cached = pdfCache.get(cacheKey);
+
+          if (cached) {
+            pdf = cached.pdf;
+            arrayBuffer = cached.arrayBuffer;
+          } else {
+            arrayBuffer = await file.arrayBuffer();
+            const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+            pdf = await loadingTask.promise;
+            pdfCache.set(cacheKey, { pdf, arrayBuffer });
+          }
+
+          if (cancelled) return;
+          pdfRef.current = pdf;
+        }
+
         const count = pdf.numPages;
 
-        const images: string[] = [];
-        for (let i = 1; i <= count; i++) {
-          const page = await pdf.getPage(i);
-          const scale = 0.5;
-          const viewport = page.getViewport({ scale });
+        // Initialize thumbnails array with nulls
+        if (!cancelled) {
+          setThumbnails(new Array(count).fill(null));
+          setIsInitialLoad(false);
+        }
 
-          const canvas = document.createElement('canvas');
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
-          const ctx = canvas.getContext('2d');
+        // Load pages in chunks of 10 for faster initial render
+        const chunkSize = 10;
+        const scale = 0.15;
 
-          if (ctx) {
-            await page.render({
-              canvasContext: ctx,
-              viewport: viewport,
-            }).promise;
-            images.push(canvas.toDataURL('image/png'));
+        for (let chunk = 0; chunk < Math.ceil(count / chunkSize); chunk++) {
+          if (cancelled) break;
+
+          const startIdx = chunk * chunkSize;
+          const endIdx = Math.min(startIdx + chunkSize, count);
+
+          const pagePromises = [];
+          for (let i = startIdx + 1; i <= endIdx; i++) {
+            pagePromises.push(pdf.getPage(i));
+          }
+
+          const pages = await Promise.all(pagePromises);
+
+          if (cancelled) break;
+
+          const renderPromises = pages.map(async (page) => {
+            const viewport = page.getViewport({ scale });
+
+            const canvas = document.createElement('canvas');
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            const ctx = canvas.getContext('2d');
+
+            if (ctx) {
+              await page.render({
+                canvasContext: ctx,
+                viewport: viewport,
+              }).promise;
+              return canvas.toDataURL('image/jpeg', 0.5);
+            }
+            return null;
+          });
+
+          const chunkImages = await Promise.all(renderPromises);
+
+          if (!cancelled) {
+            setThumbnails(prev => {
+              const newThumbs = [...prev];
+              chunkImages.forEach((img, idx) => {
+                newThumbs[startIdx + idx] = img;
+              });
+              return newThumbs;
+            });
           }
         }
-        setThumbnails(images);
       } catch (err) {
         console.error('Failed to load thumbnails:', err);
-        setThumbnails([]);
+        const errorMessage = err instanceof Error ? err.message : 'Failed to load PDF';
+        if (!cancelled) {
+          setError(errorMessage);
+          setThumbnails([]);
+          setIsInitialLoad(false);
+          onError?.(errorMessage);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setIsInitialLoad(false);
+        }
       }
     }
 
     loadThumbnails();
+
+    return () => {
+      cancelled = true;
+    };
   }, [file]);
 
   const handleClick = (index: number) => {
@@ -100,12 +180,22 @@ export function PageThumbnails({
     }
   };
 
-  if (loading) {
-    return <div className={styles.loading}>Loading pages...</div>;
+  if (error) {
+    return (
+      <div className={styles.errorContainer}>
+        <div className={styles.errorMessage}>
+          <span className={styles.errorIcon}>⚠️</span>
+          <span>{error}</span>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className={styles.grid}>
+    <div className={styles.grid} ref={gridRef}>
+      {isInitialLoad && thumbnails.length === 0 && (
+        <div className={styles.loading}>Loading pages...</div>
+      )}
       {thumbnails.map((src, index) => (
         <div
           key={index}
@@ -119,9 +209,20 @@ export function PageThumbnails({
         >
           <div className={styles.box}>
             {src ? (
-              <img src={src} alt={`Page ${index + 1}`} className={styles.thumbnailImage} />
+              <img
+                src={src}
+                alt={`Page ${index + 1}`}
+                className={styles.thumbnailImage}
+                style={{ transform: `rotate(${rotatedPages.get(index) || 0}deg)` }}
+              />
             ) : (
               <span className={styles.pageNumber}>{index + 1}</span>
+            )}
+            {showChangedIndicator && (rotatedPages.get(index) || 0) > 0 && (
+              <span className={styles.changedDot} title="Page modified" />
+            )}
+            {(rotatedPages.get(index) || 0) > 0 && (
+              <span className={styles.rotationBadge}>{rotatedPages.get(index)}°</span>
             )}
             {onRotate && (
               <button

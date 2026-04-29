@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useCallback, useState, useRef } from 'react';
 import styles from './PreviewModal.module.css';
 
 interface PreviewModalProps {
@@ -8,6 +8,9 @@ interface PreviewModalProps {
   title?: string;
 }
 
+// Cache for parsed PDFs to avoid re-parsing
+const pdfCache = new Map<string, { pdf: any; arrayBuffer: ArrayBuffer }>();
+
 export function PreviewModal({ isOpen, onClose, file, title }: PreviewModalProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
@@ -15,6 +18,7 @@ export function PreviewModal({ isOpen, onClose, file, title }: PreviewModalProps
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pageImages, setPageImages] = useState<string[]>([]);
+  const pdfRef = useRef<any>(null);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape') {
@@ -47,58 +51,122 @@ export function PreviewModal({ isOpen, onClose, file, title }: PreviewModalProps
   }, [isOpen, handleKeyDown]);
 
   useEffect(() => {
-    async function loadPageImages() {
+    let cancelled = false;
+
+    async function loadPdf() {
       if (!file || !isOpen) return;
 
       setIsLoading(true);
       setError(null);
-      setPageImages([]);
 
       try {
         const pdfjsLib = await import('pdfjs-dist');
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-        const arrayBuffer = await file.arrayBuffer();
-        const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
-        const pdf = await loadingTask.promise;
+        // Use cache if available
+        let pdf = pdfRef.current;
+        let arrayBuffer: ArrayBuffer;
+
+        if (!pdf) {
+          const cacheKey = file.name + file.size;
+          const cached = pdfCache.get(cacheKey);
+
+          if (cached) {
+            pdf = cached.pdf;
+            arrayBuffer = cached.arrayBuffer;
+          } else {
+            arrayBuffer = await file.arrayBuffer();
+            const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+            pdf = await loadingTask.promise;
+            pdfCache.set(cacheKey, { pdf, arrayBuffer });
+          }
+
+          if (cancelled) return;
+          pdfRef.current = pdf;
+        }
+
         const numPages = pdf.numPages;
         setTotalPages(numPages);
         setCurrentPage(1);
-
-        const images: string[] = [];
-        for (let i = 1; i <= numPages; i++) {
-          const page = await pdf.getPage(i);
-          const scale = 1.5;
-          const viewport = page.getViewport({ scale });
-
-          const canvas = document.createElement('canvas');
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
-          const ctx = canvas.getContext('2d');
-
-          if (!ctx) {
-            console.error('Failed to get canvas 2d context for page', i);
-            continue;
-          }
-
-          await page.render({
-            canvasContext: ctx,
-            viewport: viewport,
-          }).promise;
-          images.push(canvas.toDataURL('image/png'));
-        }
-        setPageImages(images);
+        setPageImages([]);
       } catch (err: any) {
-        console.error('PDF load error:', err);
-        setError(err?.message || 'Failed to load PDF');
-        setTotalPages(0);
+        if (!cancelled) {
+          console.error('PDF load error:', err);
+          setError(err?.message || 'Failed to load PDF');
+          setTotalPages(0);
+        }
       } finally {
-        setIsLoading(false);
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       }
     }
 
-    loadPageImages();
+    loadPdf();
+
+    return () => {
+      cancelled = true;
+    };
   }, [file, isOpen]);
+
+  // Load specific page image (lazy load current page + preload adjacent)
+  useEffect(() => {
+    if (!isOpen || !pdfRef.current || totalPages === 0) return;
+
+    let cancelled = false;
+    const pdf = pdfRef.current;
+    const scale = 1.0;
+
+    async function loadPage(pageNum: number) {
+      if (cancelled || pageNum < 1 || pageNum > totalPages) return null;
+
+      try {
+        const page = await pdf.getPage(pageNum);
+        const viewport = page.getViewport({ scale });
+
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return null;
+
+        await page.render({
+          canvasContext: ctx,
+          viewport: viewport,
+        }).promise;
+        return canvas.toDataURL('image/jpeg', 0.85);
+      } catch {
+        return null;
+      }
+    }
+
+    async function loadPages() {
+      // Load current page and preload ±1 pages
+      const pagesToLoad = [
+        currentPage,
+        currentPage - 1,
+        currentPage + 1
+      ].filter(p => p >= 1 && p <= totalPages);
+
+      const results = await Promise.all(pagesToLoad.map(p => loadPage(p)));
+      if (cancelled) return;
+
+      setPageImages(prev => {
+        const newImages = [...prev];
+        results.forEach((img, idx) => {
+          const pageNum = pagesToLoad[idx];
+          newImages[pageNum - 1] = img || newImages[pageNum - 1];
+        });
+        return newImages;
+      });
+    }
+
+    loadPages();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, currentPage, totalPages]);
 
   if (!isOpen || !file) return null;
 

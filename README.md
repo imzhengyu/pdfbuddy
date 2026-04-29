@@ -104,7 +104,7 @@ This enables extending with a backend server when needed without changing the fr
 | Convert (PDF → Images) | ⏸️ Not implemented (requires backend) |
 | Organize | ✅ Complete |
 
-**Test Coverage:** 249 unit tests, 33 E2E tests
+**Test Coverage:** 251 unit tests, 20 E2E tests
 
 ## Browser Support
 

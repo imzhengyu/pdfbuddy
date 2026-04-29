@@ -4,7 +4,7 @@
 
 ### Bug Fix: Rotate page order not preserved
 
-**Issue:** When rotating pages in RotateView, the rotated pages were appended at the end instead of being placed in their original positions. For example, with 3 pages [0, 1, 2] and rotating page 1, the result was pages [0, 2, 1] instead of [0, 1, 2].
+**Issue:** When rotating pages in RotateView, the rotated pages were appended at the end instead of being placed in their original positions.
 
 **Root Cause:** In `rotateOperation.ts`, the code first added all non-rotated pages, then added rotated pages at the end.
 
@@ -13,7 +13,111 @@
 **Files Changed:**
 - `src/services/pdf/rotateOperation.ts` - Rewrote page iteration logic to preserve page order
 
-**Test Results:** All 249 tests passing
+---
+
+### Bug Fix: Result Preview not sticky during scroll
+
+**Issue:** In RotateView, the Result Preview section would scroll away when the user scrolls down the page, making it hard to see the preview while adjusting page rotations.
+
+**Root Cause:** The targetSection was part of the normal document flow with no sticky positioning.
+
+**Fix:** Added sticky positioning to the `.targetSection` in RotateView.module.css with `position: sticky`, `top: var(--space-xl)`, and `align-self: flex-start`. Also set `max-height` with `overflow-y: auto` to keep the preview scrollable within viewport bounds.
+
+**Files Changed:**
+- `src/components/features/RotateView/RotateView.module.css` - Added sticky positioning to targetSection
+
+---
+
+### Bug Fix: E2E Test - Organize Thumbnail Loading
+
+**Issue:** The E2E test "Organize: Select pages to delete and download organized PDF" was failing with "Found 0 thumbnails" because the test used a fixed 2-second timeout to wait for thumbnails, but the chunked loading takes longer than 2 seconds.
+
+**Root Cause:** PageThumbnails component uses chunked loading (10 pages per chunk), so with larger PDFs the thumbnails aren't all rendered after 2 seconds.
+
+**Fix:** Changed the waiting logic in `full-test.spec.ts` to wait for the "Loading pages..." indicator to disappear before trying to find thumbnails, rather than using a fixed timeout:
+
+```typescript
+// Before:
+await page.waitForSelector('[class*="grid"]', { timeout: 10000 }).catch(() => {});
+await page.waitForTimeout(2000);
+
+// After:
+await page.waitForSelector('[class*="grid"]', { timeout: 10000 }).catch(() => {});
+await page.waitForFunction(() => {
+  const loading = document.querySelector('[class*="loading"]');
+  return !loading || loading.textContent === '';
+}, { timeout: 10000 }).catch(() => {});
+```
+
+**Files Changed:**
+- `e2e/full-test.spec.ts` - Updated Organize tests to wait for loading to complete
+
+**Test Results:** All 20 E2E tests passing, 251 unit tests passing
+
+---
+
+### Feature: PageThumbnails - PDF Caching
+
+**Issue:** When navigating between views that use PageThumbnails, the same PDF file would be re-parsed every time.
+
+**Fix:** Added a module-level cache (`pdfCache`) in PageThumbnails.tsx keyed by `file.name + file.size`. Already-parsed PDFs are reused.
+
+**Files Changed:**
+- `src/components/common/PageThumbnails/PageThumbnails.tsx` - Added caching logic
+
+---
+
+### Feature: PreviewModal - PDF Caching
+
+**Issue:** PreviewModal would re-parse the PDF every time it was opened, causing performance issues.
+
+**Fix:** Added a module-level cache to PreviewModal that stores the parsed PDF document.
+
+**Files Changed:**
+- `src/components/common/PreviewModal/PreviewModal.tsx` - Added caching
+
+---
+
+### Bug Fix: E2E Tests - Multiple Flaky Test Failures
+
+**Issue:** E2E tests were failing intermittently due to:
+1. Server timeouts on port 3000
+2. Flaky thumbnail loading in Organize view
+3. Navigation test timing issues
+
+**Fix:**
+- Updated E2E test infrastructure with proper waiting conditions
+- Fixed Organize view thumbnail selector
+- All 20 E2E tests now pass consistently
+
+---
+
+### Feature: Convert to PDF - A4 Default Page Size
+
+**Issue:** Images were being added to PDF pages of their original size, which could result in very small pages for high-resolution images or very large pages that didn't fit standard printing.
+
+**Fix:** Modified `convertOperation.ts` to scale images to fit A4 page size (595 x 842 points) with 20pt margins. The scaling maintains aspect ratio and centers the image on the page.
+
+**Files Changed:**
+- `src/services/pdf/convertOperation.ts` - Added A4 scaling logic with `scaleImageToFitA4()` function
+- `src/components/features/ConvertView/ConvertView.tsx` - Removed duplicate A4 constants (now only in convertOperation.ts)
+
+**Implementation:**
+- A4 page size: 595 x 842 points (72 DPI)
+- 20pt margin on all sides
+- Images scaled to fit within (555 x 802) bounds while maintaining aspect ratio
+- Centered on page: `x = (A4_WIDTH - scaledWidth) / 2`
+
+---
+
+### Feature: Convert to PDF - Preview Button
+
+**Issue:** ConvertView did not have a preview button to preview the converted PDF before downloading.
+
+**Fix:** Added `handlePreview` function and preview state to ConvertView. Preview button generates the PDF and opens it in PreviewModal.
+
+**Files Changed:**
+- `src/components/features/ConvertView/ConvertView.tsx` - Added `handlePreview`, `isPreviewOpen`, `previewFile`, `isPreviewLoading` state
 
 ---
 

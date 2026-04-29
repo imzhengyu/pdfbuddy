@@ -3,14 +3,14 @@ import path from 'path';
 
 const testFiles = {
   merge: [
-    'test-pdfs/merge-1.pdf',
-    'test-pdfs/merge-2.pdf',
-    'test-pdfs/merge-3.pdf'
+    'test-pdf/merge-1.pdf',
+    'test-pdf/merge-2.pdf',
+    'test-pdf/merge-3.pdf'
   ],
-  split: 'test-pdfs/split-source.pdf',
-  compress: 'test-pdfs/test-5pages.pdf',
-  rotate: 'test-pdfs/rotate-test.pdf',
-  organize: 'test-pdfs/test-3pages.pdf'
+  split: 'test-pdf/split-source.pdf',
+  compress: 'test-pdf/test-5pages.pdf',
+  rotate: 'test-pdf/rotate-test.pdf',
+  organize: 'test-pdf/test-3pages.pdf'
 };
 
 async function uploadFile(page, filePath) {
@@ -111,37 +111,35 @@ test.describe('PDF Tool WebApp Full Test', () => {
     await expect(page.getByText('rotate-test.pdf')).toBeVisible();
     await expect(page.getByText('Source Pages')).toBeVisible();
     await expect(page.getByText('Result Preview')).toBeVisible();
-    await expect(page.getByText('Rotate 90°')).toBeVisible();
-    await expect(page.getByText('Rotate 180°')).toBeVisible();
-    await expect(page.getByText('Rotate 270°')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Apply Rotation' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Preview' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Clear' })).toBeVisible();
 
     console.log('Rotate test passed: file uploaded successfully');
   });
 
-  test('Rotate: Transform buttons are disabled when no pages selected', async ({ page }) => {
+  test('Rotate: Apply Rotation button is disabled when no rotation applied', async ({ page }) => {
     await page.getByRole('button', { name: 'Rotate' }).click();
     await expect(page.getByRole('heading', { name: 'Rotate PDF' })).toBeVisible();
 
     await uploadFile(page, testFiles.rotate);
     await expect(page.getByText('rotate-test.pdf')).toBeVisible();
 
-    // Wait for the page to settle
-    await page.waitForTimeout(500);
+    // Wait for thumbnails to fully load - wait for loading to disappear
+    await page.waitForFunction(() => {
+      const loading = document.querySelector('[class*="loading"]');
+      return !loading || loading.textContent === '';
+    }, { timeout: 10000 }).catch(() => {});
 
-    // All transform buttons should be disabled when no pages selected
-    const rotate90Btn = page.getByRole('button', { name: 'Rotate 90°' });
-    const rotate180Btn = page.getByRole('button', { name: 'Rotate 180°' });
-    const rotate270Btn = page.getByRole('button', { name: 'Rotate 270°' });
+    // Apply Rotation button should be disabled when no pages rotated
+    const applyBtn = page.getByRole('button', { name: 'Apply Rotation' });
+    await expect(applyBtn).toBeDisabled();
 
-    await expect(rotate90Btn).toBeDisabled();
-    await expect(rotate180Btn).toBeDisabled();
-    await expect(rotate270Btn).toBeDisabled();
+    // Preview button should be disabled when no result
+    const previewBtn = page.getByRole('button', { name: 'Preview' });
+    await expect(previewBtn).toBeDisabled();
 
-    // Download button should not be visible
-    const downloadBtnCount = await page.locator('button', { hasText: 'Download' }).count();
-    expect(downloadBtnCount).toBe(0);
-
-    console.log('Rotate transform buttons test passed: buttons disabled without selection');
+    console.log('Rotate buttons test passed: correct buttons disabled without rotation');
   });
 
   test('Compress: Upload PDF and see compress button enabled', async ({ page }) => {
@@ -266,17 +264,27 @@ test.describe('PDF Tool WebApp Full Test', () => {
     await uploadFile(page, testFiles.organize);
     await expect(page.getByText('test-3pages.pdf')).toBeVisible();
 
-    // Wait for thumbnails to fully load by waiting for the loading text to disappear or grid to appear
+    // Wait for thumbnails to fully load - wait for loading to disappear
+    await page.waitForSelector('[class*="grid"]', { timeout: 10000 }).catch(() => {});
     await page.waitForFunction(() => {
       const loading = document.querySelector('[class*="loading"]');
-      const grid = document.querySelector('[class*="grid"]');
-      return !loading || grid;
+      return !loading || loading.textContent === '';
     }, { timeout: 10000 }).catch(() => {});
+    await page.waitForTimeout(1000); // Extra time for thumbnails to render
 
     // Click on first thumbnail to select page for deletion
     const thumbnails = page.locator('[class*="thumbnail"]');
     const count = await thumbnails.count();
     console.log(`Found ${count} thumbnails`);
+
+    // If no thumbnails found, check if there's an error
+    if (count === 0) {
+      const errorEl = page.locator('[class*="errorContainer"]');
+      if (await errorEl.isVisible()) {
+        const errorText = await errorEl.textContent();
+        console.log('Error loading thumbnails:', errorText);
+      }
+    }
     expect(count).toBeGreaterThan(0);
     await thumbnails.first().click({ force: true });
 
@@ -337,8 +345,11 @@ test.describe('PDF Tool WebApp Full Test', () => {
     await uploadFile(page, testFiles.organize);
     await expect(page.getByText('test-3pages.pdf')).toBeVisible();
 
-    // Wait for thumbnails to load
-    await page.waitForTimeout(500);
+    // Wait for thumbnails to fully load - wait for loading to disappear
+    await page.waitForFunction(() => {
+      const loading = document.querySelector('[class*="loading"]');
+      return !loading || loading.textContent === '';
+    }, { timeout: 10000 }).catch(() => {});
 
     // Select a page
     const thumbnails = page.locator('[class*="thumbnail"]');
