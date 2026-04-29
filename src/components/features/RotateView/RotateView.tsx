@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { DropZone } from '../../common/DropZone/DropZone';
 import { PageThumbnails } from '../../common/PageThumbnails/PageThumbnails';
 import { Button } from '../../common/Button/Button';
@@ -6,31 +6,16 @@ import { ProgressBar } from '../../common/ProgressBar/ProgressBar';
 import { PreviewModal } from '../../common/PreviewModal/PreviewModal';
 import { useRotate } from '../../../hooks/useRotate';
 import { downloadBlob } from '../../../utils/downloadUtils';
-import { PageRotation, RotationType, MirrorType } from '../../../services/pdf/types';
+import { PageRotation, RotationType } from '../../../services/pdf/types';
 import styles from './RotateView.module.css';
-
-type TransformType = 'rotate' | 'mirror';
-
-interface TransformOption {
-  label: string;
-  type: TransformType;
-  degrees?: RotationType;
-  mirror?: MirrorType;
-}
-
-const transformOptions: TransformOption[] = [
-  { label: 'Rotate 90°', type: 'rotate', degrees: 90 },
-  { label: 'Rotate 180°', type: 'rotate', degrees: 180 },
-  { label: 'Rotate 270°', type: 'rotate', degrees: 270 },
-  { label: 'Mirror H', type: 'mirror', mirror: 'horizontal' },
-  { label: 'Mirror V', type: 'mirror', mirror: 'vertical' },
-];
 
 export function RotateView() {
   const [file, setFile] = useState<File | null>(null);
   const [selectedPages, setSelectedPages] = useState<number[]>([]);
   const [resultFile, setResultFile] = useState<File | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  // Track rotation angle (0, 90, 180, 270) for each page
+  const [pageRotations, setPageRotations] = useState<Map<number, number>>(new Map());
   const { rotate, isProcessing, progress, error, clearError } = useRotate();
 
   const handleFileDropped = useCallback((files: File[]) => {
@@ -38,6 +23,7 @@ export function RotateView() {
       setFile(files[0]);
       setSelectedPages([]);
       setResultFile(null);
+      setPageRotations(new Map());
     }
   }, []);
 
@@ -47,22 +33,38 @@ export function RotateView() {
     );
   }, []);
 
-  const handleTransform = useCallback(async (option: TransformOption) => {
-    if (!file || selectedPages.length === 0) return;
+  const handleRotate = useCallback((pageIndex: number) => {
+    setPageRotations(prev => {
+      const newMap = new Map(prev);
+      const current = newMap.get(pageIndex) || 0;
+      newMap.set(pageIndex, (current + 90) % 360);
+      return newMap;
+    });
+    // Generate result preview when rotation changes
+    setResultFile(null);
+  }, []);
 
-    const rotations: PageRotation[] = selectedPages.map(pageIndex => ({
-      pageIndex,
-      type: option.type,
-      degrees: option.degrees,
-      mirror: option.mirror
-    }));
+  const handleApplyRotation = useCallback(async () => {
+    if (!file) return;
+
+    // Build rotations array from pageRotations map
+    const rotations: PageRotation[] = [];
+    pageRotations.forEach((degrees, pageIndex) => {
+      if (degrees > 0) {
+        rotations.push({ pageIndex, type: 'rotate', degrees: degrees as RotationType });
+      }
+    });
+
+    if (rotations.length === 0) {
+      return;
+    }
 
     const result = await rotate(file, rotations);
     if (result) {
-      const transformedFile = new File([result], `transformed_${file.name}`, { type: 'application/pdf' });
+      const transformedFile = new File([result], `rotated_${file.name}`, { type: 'application/pdf' });
       setResultFile(transformedFile);
     }
-  }, [file, selectedPages, rotate]);
+  }, [file, pageRotations, rotate]);
 
   const handleDownload = useCallback(() => {
     if (!resultFile) return;
@@ -71,15 +73,30 @@ export function RotateView() {
 
   const handleClearSelection = useCallback(() => {
     setSelectedPages([]);
+    setPageRotations(new Map());
     setResultFile(null);
   }, []);
+
+  const handleChangeFile = useCallback(() => {
+    setFile(null);
+    setSelectedPages([]);
+    setResultFile(null);
+    setPageRotations(new Map());
+  }, []);
+
+  const hasRotations = useMemo(() => {
+    for (const deg of pageRotations.values()) {
+      if (deg > 0) return true;
+    }
+    return false;
+  }, [pageRotations]);
 
   return (
     <div className={styles.container}>
       <div className={styles.header}>
         <h2 className={styles.title}>Rotate PDF</h2>
         <p className={styles.description}>
-          Select pages and apply rotation or mirror transformations. Preview the result before downloading.
+          Click the rotate button on any page to rotate it 90°. Preview and download when done.
         </p>
       </div>
 
@@ -97,18 +114,19 @@ export function RotateView() {
               label="Change File"
               variant="outline"
               size="sm"
-              onClick={() => { setFile(null); setSelectedPages([]); setResultFile(null); }}
+              onClick={handleChangeFile}
             />
           </div>
 
           <div className={styles.splitContainer}>
             <div className={styles.sourceSection}>
               <h3 className={styles.sectionTitle}>Source Pages</h3>
-              <p className={styles.sectionHint}>Click pages to select them</p>
+              <p className={styles.sectionHint}>Click pages to select, hover to rotate</p>
               <PageThumbnails
                 file={file}
                 selectedPages={selectedPages}
                 onPageClick={handlePageClick}
+                onRotate={handleRotate}
               />
               <p className={styles.selectionInfo}>
                 {selectedPages.length === 0 ? 'No pages selected' : `${selectedPages.length} page(s) selected`}
@@ -118,7 +136,7 @@ export function RotateView() {
             <div className={styles.targetSection}>
               <h3 className={styles.sectionTitle}>Result Preview</h3>
               <p className={styles.sectionHint}>
-                {resultFile ? 'Transformed result' : 'Apply transformation to preview'}
+                {resultFile ? 'Ready to download' : 'Apply rotation to see preview'}
               </p>
               <div className={`${styles.resultBox} ${!resultFile ? styles.empty : ''}`}>
                 {resultFile ? (
@@ -146,28 +164,27 @@ export function RotateView() {
             </div>
           </div>
 
-          <div className={styles.transformButtons}>
-            {transformOptions.map((option) => (
-              <Button
-                key={option.label}
-                label={option.label}
-                variant="outline"
-                onClick={() => handleTransform(option)}
-                disabled={selectedPages.length === 0 || isProcessing}
-              />
-            ))}
+          <div className={styles.actions}>
+            <Button
+              label="Apply Rotation"
+              variant="primary"
+              onClick={handleApplyRotation}
+              disabled={!hasRotations || isProcessing}
+            />
+            <Button
+              label="Preview"
+              variant="outline"
+              onClick={() => setIsPreviewOpen(true)}
+              disabled={!resultFile}
+            />
+            <Button
+              label="Clear"
+              variant="outline"
+              size="sm"
+              onClick={handleClearSelection}
+              disabled={!hasRotations && selectedPages.length === 0}
+            />
           </div>
-
-          {selectedPages.length > 0 && (
-            <div className={styles.actions}>
-              <Button
-                label="Clear Selection"
-                variant="outline"
-                size="sm"
-                onClick={handleClearSelection}
-              />
-            </div>
-          )}
 
           {isProcessing && progress && <ProgressBar progress={progress} />}
 
@@ -177,15 +194,6 @@ export function RotateView() {
               <button onClick={clearError}>×</button>
             </div>
           )}
-
-          <div className={styles.actions}>
-            <Button
-              label="Preview Full"
-              variant="outline"
-              onClick={() => setIsPreviewOpen(true)}
-              disabled={!resultFile}
-            />
-          </div>
         </div>
       )}
 
@@ -193,7 +201,7 @@ export function RotateView() {
         isOpen={isPreviewOpen}
         onClose={() => setIsPreviewOpen(false)}
         file={resultFile}
-        title="Preview - Transformed"
+        title="Preview - Rotated"
       />
     </div>
   );

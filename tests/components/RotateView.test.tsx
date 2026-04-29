@@ -46,7 +46,7 @@ describe('RotateView', () => {
     expect(screen.getByText('Result will appear here')).toBeInTheDocument();
   });
 
-  it('shows transform buttons', async () => {
+  it('shows action buttons (Apply Rotation, Preview, Clear)', async () => {
     render(<RotateView />);
 
     const input = screen.getByTestId('dropzone').querySelector('input');
@@ -56,11 +56,9 @@ describe('RotateView', () => {
     }
 
     await waitFor(() => {
-      expect(screen.getByText('Rotate 90°')).toBeInTheDocument();
-      expect(screen.getByText('Rotate 180°')).toBeInTheDocument();
-      expect(screen.getByText('Rotate 270°')).toBeInTheDocument();
-      expect(screen.getByText('Mirror H')).toBeInTheDocument();
-      expect(screen.getByText('Mirror V')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Apply Rotation' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Preview' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Clear' })).toBeInTheDocument();
     });
   });
 

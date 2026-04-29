@@ -10,6 +10,7 @@ interface PageThumbnailsProps {
   onPageDragOver?: (e: React.DragEvent, pageIndex: number) => void;
   onPageDragEnd?: () => void;
   dragOverIndex?: number | null;
+  onRotate?: (pageIndex: number) => void;
 }
 
 export function PageThumbnails({
@@ -20,7 +21,8 @@ export function PageThumbnails({
   onPageDragStart,
   onPageDragOver,
   onPageDragEnd,
-  dragOverIndex
+  dragOverIndex,
+  onRotate
 }: PageThumbnailsProps) {
   const [thumbnails, setThumbnails] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -75,6 +77,11 @@ export function PageThumbnails({
     }
   };
 
+  const handleRotate = (e: React.MouseEvent, index: number) => {
+    e.stopPropagation();
+    onRotate?.(index);
+  };
+
   const handleDragStart = (e: React.DragEvent, index: number) => {
     if (onPageDragStart) {
       onPageDragStart(e, index);
@@ -115,6 +122,18 @@ export function PageThumbnails({
               <img src={src} alt={`Page ${index + 1}`} className={styles.thumbnailImage} />
             ) : (
               <span className={styles.pageNumber}>{index + 1}</span>
+            )}
+            {onRotate && (
+              <button
+                className={styles.rotateButton}
+                onClick={(e) => handleRotate(e, index)}
+                title="Rotate 90°"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M23 4v6h-6" />
+                  <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                </svg>
+              </button>
             )}
           </div>
           <span className={styles.label}>Page {index + 1}</span>
