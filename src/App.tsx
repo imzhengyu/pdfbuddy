@@ -114,6 +114,19 @@ function AppContent() {
           {renderView()}
         </ErrorBoundary>
       </main>
+      <footer className={styles.footer}>
+        <span>© {new Date().getFullYear()} PDF Buddy</span>
+        {import.meta.env.VITE_GIT_COMMIT && (
+          <span className={styles.commitId}>
+            <a href={`https://github.com/imzhengyu/pdfbuddy/commit/${import.meta.env.VITE_GIT_COMMIT}`} target="_blank" rel="noopener noreferrer">
+              {import.meta.env.VITE_GIT_COMMIT?.slice(0, 7)}
+            </a>
+          </span>
+        )}
+        <a href="https://github.com/imzhengyu/pdfbuddy/issues" target="_blank" rel="noopener noreferrer">
+          Report Issue
+        </a>
+      </footer>
     </div>
   );
 }
