@@ -1,0 +1,10 @@
+# Exclude generated files from language statistics
+*.html linguist-generated
+coverage/** linguist-generated
+playwright-report/** linguist-generated
+test-output/** linguist-generated
+test-results/** linguist-generated
+testpdf-output/** linguist-generated
+
+# Override binary detection for JSON
+*.json -binary
