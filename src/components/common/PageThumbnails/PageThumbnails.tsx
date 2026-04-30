@@ -76,7 +76,7 @@ export function PageThumbnails({
 
         // Load pages in chunks of 10 for faster initial render
         const chunkSize = 10;
-        const scale = 0.15;
+        const scale = 0.25;
 
         for (let chunk = 0; chunk < Math.ceil(count / chunkSize); chunk++) {
           if (cancelled) break;
@@ -106,7 +106,7 @@ export function PageThumbnails({
                 canvasContext: ctx,
                 viewport: viewport,
               }).promise;
-              return canvas.toDataURL('image/jpeg', 0.5);
+              return canvas.toDataURL('image/jpeg', 0.85);
             }
             return null;
           });
