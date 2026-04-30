@@ -154,21 +154,104 @@ interface PreviewModalProps {
 
 ---
 
-## UI Design
+## UI Design (Smallpdf-Inspired)
 
-### Color Palette
+This app follows a Smallpdf-inspired design system for a clean, modern look.
+
+### Design Principles
+
+| Aspect | Smallpdf Approach |
+|--------|-----------------|
+| **Hero Section** | Clean white background, centered headline, single CTA |
+| **Tool Cards** | Rounded white cards with subtle shadow, icon + title + description |
+| **Drop Zone** | Large dashed border area, icon + text, file list appears after upload |
+| **Progress** | Circular progress indicator with percentage, green checkmark on complete |
+| **Buttons** | Rounded (8px), filled primary (indigo), outlined secondary |
+| **Typography** | Inter font, generous line-height (1.5), ample spacing |
+| **Whitespace** | 48px+ vertical spacing between sections |
+| **Color Coding** | Green for success, Red for error, Amber for warning, all with icons |
+
+### Typography System
 
 ```css
---color-primary: #6366f1;      /* Indigo */
---color-secondary: #f472b6;    /* Pink */
---color-accent: #22d3ee;       /* Cyan */
---color-success: #34d399;      /* Green */
---color-warning: #fbbf24;      /* Amber */
---color-error: #f87171;       /* Red */
---color-background: #f8fafc;  /* Light gray */
---color-surface: #ffffff;      /* White */
---color-text: #1e293b;         /* Dark slate */
+:root {
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --text-xs: 0.75rem;    /* 12px - captions */
+  --text-sm: 0.875rem;   /* 14px - secondary text */
+  --text-base: 1rem;      /* 16px - body */
+  --text-lg: 1.125rem;    /* 18px - emphasized body */
+  --text-xl: 1.25rem;     /* 20px - section titles */
+  --text-2xl: 1.5rem;     /* 24px - page titles */
+  --text-3xl: 1.875rem;   /* 30px - hero headlines */
+}
 ```
+
+### Spacing System (8px grid)
+
+```css
+:root {
+  --space-1: 0.25rem;   /* 4px */
+  --space-2: 0.5rem;     /* 8px */
+  --space-3: 0.75rem;    /* 12px */
+  --space-4: 1rem;       /* 16px */
+  --space-6: 1.5rem;     /* 24px */
+  --space-8: 2rem;       /* 32px */
+  --space-10: 2.5rem;    /* 40px */
+  --space-12: 3rem;      /* 48px */
+}
+```
+
+### Border Radius
+
+| Element | Radius |
+|---------|--------|
+| Buttons | 8px |
+| Cards | 12px |
+| Modals | 16px |
+| Thumbnails | 8px |
+
+### Shadows
+
+```css
+--shadow-card: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+--shadow-dropdown: 0 4px 6px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.06);
+--shadow-modal: 0 20px 25px rgba(0,0,0,0.1), 0 10px 10px rgba(0,0,0,0.04);
+```
+
+### Component Standards
+
+#### Button Hierarchy
+- **Primary:** Filled indigo (#6366f1), white text, 8px radius, 44px height
+- **Secondary:** White bg, indigo border, indigo text
+- **Tertiary:** No border, indigo text only
+- **Destructive:** Red (#ef4444) filled
+
+#### Card Component
+```css
+.card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+  padding: var(--space-6);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+```
+
+### Advanced UI Features (Planned)
+
+| Feature | Status | Description |
+|---------|--------|-------------|
+| Dark Mode | 📋 Planned | System preference detection + manual toggle |
+| Watermark Support | 📋 Planned | Text or image watermarks with position/opacity controls |
+| Electronic Signatures | 📋 Planned | Draw/type/upload signature with reuse |
+| PDF to Images | ⏸️ Not Implemented | Requires backend service |
+
+### Accessibility
+
+- Tab order follows visual flow
+- Focus indicators visible (3px outline)
+- ARIA labels on interactive elements
+- Color contrast meets WCAG AA
 
 ---
 
@@ -180,6 +263,7 @@ interface PreviewModalProps {
 - [x] Preview feature implemented on all views (Merge, Split, Rotate, Compress, Organize, Convert)
 - [x] Preview modal component created and tested
 - [x] E2E tests pass for core workflows (20 tests passing)
+- [x] Unit tests pass (254 tests passing)
 - [ ] No console errors in production build (not verified)
 - [ ] Works on Chrome, Firefox, Safari, Edge (only Chrome verified)
 - [ ] Responsive on mobile (320px+), tablet, desktop (not verified)
@@ -191,7 +275,7 @@ interface PreviewModalProps {
 ```
 pdf-tool/
 ├── SPEC.md                          # This file
-├── test-plan.md                     # Test plan and coverage details
+├── testplan.md                      # Test plan and coverage details (renamed from test-plan.md)
 ├── implementation.md                # Implementation status and approach
 ├── src/
 │   ├── App.tsx                      # Main app with view routing
@@ -248,7 +332,7 @@ pdf-tool/
 
 All test-related documentation including unit tests, integration tests, E2E tests, test coverage goals, and test data specifications is located in:
 
-**[test-plan.md](./test-plan.md)**
+**[testplan.md](./testplan.md)**
 
 This includes:
 - Unit test coverage plan (>95% goal)

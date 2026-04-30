@@ -36,24 +36,24 @@ export async function rotatePdf(
     if (pageRotation) {
       const { type, degrees: deg } = pageRotation;
 
+      if (type === 'mirror') {
+        throw new Error('Mirror rotation is not supported by this operation');
+      }
+
       if (type === 'rotate' && deg !== undefined) {
-        // Apply rotation on top of existing rotation
         const currentRotation = copiedPage.getRotation().angle;
         const newRotation = (currentRotation + deg) % 360;
         copiedPage.setRotation(degrees(newRotation));
       }
-      // Mirror is not directly supported in pdf-lib - copy page as-is
     }
 
     newPdf.addPage(copiedPage);
 
-    if (pageRotation) {
-      onProgress?.({
-        current: i + 1,
-        total: rotations.length,
-        percent: Math.round(((i + 1) / rotations.length) * 100)
-      });
-    }
+    onProgress?.({
+      current: i + 1,
+      total: pageCount,
+      percent: Math.round(((i + 1) / pageCount) * 100)
+    });
   }
 
   const pdfBytes = await newPdf.save();

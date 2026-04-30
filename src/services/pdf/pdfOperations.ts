@@ -14,19 +14,14 @@ export function createProgressCallback(
   };
 }
 
-export async function loadPDF(file: File): Promise<PDFDocument> {
-  const arrayBuffer = await file.arrayBuffer();
-  return PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
-}
-
 export async function loadPDFFromArrayBuffer(arrayBuffer: ArrayBuffer): Promise<PDFDocument> {
   return PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
 }
 
+export const loadPDF = loadPDFFromArrayBuffer;
+
 export function savePDF(pdf: PDFDocument): Promise<Blob> {
-  return pdf.save().then(bytes =>
-    new Blob([new Uint8Array(bytes)], { type: 'application/pdf' })
-  );
+  return savePDFWithOptions(pdf, {});
 }
 
 export function savePDFWithOptions(pdf: PDFDocument, options: object): Promise<Blob> {

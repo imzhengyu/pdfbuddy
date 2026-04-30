@@ -2,7 +2,7 @@ import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import fs from 'fs';
 import path from 'path';
 
-const OUTPUT_DIR = './test-pdfs';
+const OUTPUT_DIR = './test-inputs';
 
 // Ensure output directory exists
 if (!fs.existsSync(OUTPUT_DIR)) {

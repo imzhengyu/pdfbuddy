@@ -1,26 +1,31 @@
 # PDF Buddy
 
-A colorful, friendly web app for PDF manipulation - merge, split, compress, rotate, convert, and organize your PDFs. All processing happens client-side in your browser.
+A colorful, friendly web app for PDF manipulation - merge, split, compress, rotate, convert, and organize your PDFs. All processing happens **client-side in your browser** - your files never leave your device.
 
 **Live Demo:** https://imzhengyu.github.io/pdfbuddy/
 
 ## Features
 
-- **Merge PDFs** - Combine multiple PDF files into one
-- **Split PDF** - Extract pages or split by ranges (e.g., "1-3, 4-6, 7-end")
-- **Compress PDF** - Reduce file size with quality options (Low/Medium/High)
-- **Rotate PDF** - Rotate individual pages by 90°
-- **Convert to PDF** - Convert images (PNG, JPEG) to PDF
-- **Organize PDF** - Delete pages from your PDF
+### Merge PDFs
+Combine multiple PDF files into one. Drag to reorder before merging.
 
-## Tech Stack
+### Split PDF
+Extract specific pages from a PDF or split by page ranges (e.g., "1-3, 4-6, 7-end").
 
-- **Frontend:** React 18 + TypeScript
-- **Build Tool:** Vite
-- **PDF Processing:** pdf-lib (client-side WebAssembly)
-- **Drag & Drop:** react-dropzone
-- **Testing:** Vitest + React Testing Library + Playwright
-- **Architecture:** Modular service layer (ready for backend extension)
+### Compress PDF
+Reduce file size with quality options:
+- **Low** - Maximum compression (smaller file)
+- **Medium** - Balanced compression
+- **High** - Best quality (larger file)
+
+### Rotate PDF
+Rotate individual pages by 90°, 180°, or 270°. Mirror pages horizontally or vertically.
+
+### Convert to PDF
+Convert images (PNG, JPEG) to PDF. Images are automatically scaled to fit A4 page size.
+
+### Organize PDF
+Delete pages or reorder pages in your PDF.
 
 ## Getting Started
 
@@ -51,60 +56,6 @@ Open http://localhost:3000 in your browser.
 npm run build
 npm run preview
 ```
-
-### Testing
-
-```bash
-# Run unit tests
-npm test
-
-# Run tests with coverage
-npm run test:coverage
-
-# Run E2E tests
-npm run test:e2e
-```
-
-## Architecture
-
-```
-src/
-├── components/
-│   ├── common/          # Shared components (Button, DropZone, FileList, etc.)
-│   └── features/        # Feature views (MergeView, SplitView, etc.)
-├── services/
-│   └── pdf/
-│       ├── types.ts           # TypeScript interfaces
-│       ├── ClientPDFService.ts # Client-side PDF processing
-│       └── index.ts           # Exports
-├── hooks/              # React hooks (useMerge, useSplit, etc.)
-├── context/            # React Context (AppContext)
-├── utils/              # Utilities (fileUtils, downloadUtils, errorUtils)
-└── styles/             # CSS variables and global styles
-```
-
-### Service Layer
-
-The app uses a modular service layer (`IPDFService` interface) that allows swapping implementations:
-
-- **ClientPDFService** - Current client-side implementation using pdf-lib
-- **BackendPDFService** - Future backend implementation for heavy operations
-
-This enables extending with a backend server when needed without changing the frontend code.
-
-## Project Status
-
-| Feature | Status |
-|---------|--------|
-| Merge | ✅ Complete |
-| Split | ✅ Complete |
-| Compress | ✅ Complete |
-| Rotate | ✅ Complete |
-| Convert (Images → PDF) | ✅ Complete |
-| Convert (PDF → Images) | ⏸️ Not implemented (requires backend) |
-| Organize | ✅ Complete |
-
-**Test Coverage:** 251 unit tests, 20 E2E tests
 
 ## Browser Support
 

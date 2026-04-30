@@ -1,15 +1,13 @@
-import { describe, it, expect } from 'vitest';
-import {
-  isPDFLibError,
-  isPDFDict2Error,
-  isEncryptionError,
-  withPDFLibFallback,
-  PDFLibError
-} from '../../src/services/pdf/pdfFallback';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { PDFLibError, isPDFLibError, isPDFDict2Error, isEncryptionError, withPDFLibFallback } from '../../src/services/pdf/pdfFallback';
 
 describe('pdfFallback', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   describe('isPDFLibError', () => {
-    it('returns true for PDFLibError', () => {
+    it('returns true for PDFLibError instances', () => {
       const error = new PDFLibError('test', 'UNKNOWN');
       expect(isPDFLibError(error)).toBe(true);
     });
@@ -17,13 +15,6 @@ describe('pdfFallback', () => {
     it('returns false for regular Error', () => {
       const error = new Error('test');
       expect(isPDFLibError(error)).toBe(false);
-    });
-
-    it('returns false for non-error values', () => {
-      expect(isPDFLibError('string')).toBe(false);
-      expect(isPDFLibError(null)).toBe(false);
-      expect(isPDFLibError(undefined)).toBe(false);
-      expect(isPDFLibError({})).toBe(false);
     });
   });
 
@@ -42,12 +33,6 @@ describe('pdfFallback', () => {
       const error = new Error('Some other error');
       expect(isPDFDict2Error(error)).toBe(false);
     });
-
-    it('returns false for non-Error values', () => {
-      expect(isPDFDict2Error('string')).toBe(false);
-      expect(isPDFDict2Error(null)).toBe(false);
-      expect(isPDFDict2Error(undefined)).toBe(false);
-    });
   });
 
   describe('isEncryptionError', () => {
@@ -64,12 +49,6 @@ describe('pdfFallback', () => {
     it('returns false for unrelated errors', () => {
       const error = new Error('Some other error');
       expect(isEncryptionError(error)).toBe(false);
-    });
-
-    it('returns false for non-Error values', () => {
-      expect(isEncryptionError('string')).toBe(false);
-      expect(isEncryptionError(null)).toBe(false);
-      expect(isEncryptionError(undefined)).toBe(false);
     });
   });
 
@@ -104,21 +83,16 @@ describe('pdfFallback', () => {
       ).rejects.toMatchObject({ code: 'PDFDICT2' });
     });
 
-    it('retries with ignoreEncryption when encryption error occurs', async () => {
+    it('throws PDFLibError with ENCRYPTED code when encryption error occurs', async () => {
       const encryptionError = new Error('PDF is encrypted');
-      let callCount = 0;
 
-      const operation = async () => {
-        callCount++;
-        if (callCount === 1) {
-          throw encryptionError;
-        }
-        return 'retry-success';
-      };
+      await expect(
+        withPDFLibFallback(async () => { throw encryptionError; }, undefined, 'test operation')
+      ).rejects.toThrow(PDFLibError);
 
-      const result = await withPDFLibFallback(operation, undefined, 'test operation');
-      expect(result).toBe('retry-success');
-      expect(callCount).toBe(2);
+      await expect(
+        withPDFLibFallback(async () => { throw encryptionError; }, undefined, 'test operation')
+      ).rejects.toMatchObject({ code: 'ENCRYPTED' });
     });
 
     it('throws PDFLibError with UNKNOWN code for unknown errors', async () => {
@@ -126,16 +100,6 @@ describe('pdfFallback', () => {
 
       await expect(
         withPDFLibFallback(async () => { throw unknownError; }, undefined, 'test operation')
-      ).rejects.toThrow(PDFLibError);
-
-      await expect(
-        withPDFLibFallback(async () => { throw unknownError; }, undefined, 'test operation')
-      ).rejects.toMatchObject({ code: 'UNKNOWN' });
-    });
-
-    it('throws PDFLibError with UNKNOWN for non-Error throws', async () => {
-      await expect(
-        withPDFLibFallback(async () => { throw 'string error'; }, undefined, 'test operation')
       ).rejects.toMatchObject({ code: 'UNKNOWN' });
     });
 

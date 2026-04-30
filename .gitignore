@@ -2,7 +2,10 @@ node_modules/
 dist/
 coverage/
 test-results/
-e2e/
+testpdf-output/
+test-output/
+test-inputs/
+tests/e2e/
 *.log
 .vite/
 .vitest/
@@ -11,3 +14,4 @@ tool.md
 *.bat
 test-output.txt
 test-result.txt
+playwright-report/

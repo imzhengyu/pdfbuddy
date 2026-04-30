@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import styles from './PageThumbnails.module.css';
 
 interface PageThumbnailsProps {
@@ -17,7 +17,7 @@ interface PageThumbnailsProps {
 }
 
 // Cache for parsed PDFs
-const pdfCache = new Map<string, { pdf: any; arrayBuffer: ArrayBuffer }>();
+import { pdfCache } from '../../../services/pdf/pdfCache';
 
 export function PageThumbnails({
   file,
@@ -49,20 +49,17 @@ export function PageThumbnails({
 
         // Use cache if available
         let pdf = pdfRef.current;
-        let arrayBuffer: ArrayBuffer;
 
         if (!pdf) {
-          const cacheKey = file.name + file.size;
-          const cached = pdfCache.get(cacheKey);
+          const cached = pdfCache.get(file);
 
           if (cached) {
             pdf = cached.pdf;
-            arrayBuffer = cached.arrayBuffer;
           } else {
-            arrayBuffer = await file.arrayBuffer();
+            const arrayBuffer = await file.arrayBuffer();
             const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
             pdf = await loadingTask.promise;
-            pdfCache.set(cacheKey, { pdf, arrayBuffer });
+            pdfCache.set(file, { pdf });
           }
 
           if (cancelled) return;
@@ -149,36 +146,36 @@ export function PageThumbnails({
     };
   }, [file]);
 
-  const handleClick = (index: number) => {
+  const handleClick = useCallback((index: number) => {
     if (onPageClick) {
       onPageClick(index);
     } else {
       onSelect?.(index);
     }
-  };
+  }, [onPageClick, onSelect]);
 
-  const handleRotate = (e: React.MouseEvent, index: number) => {
+  const handleRotate = useCallback((e: React.MouseEvent, index: number) => {
     e.stopPropagation();
     onRotate?.(index);
-  };
+  }, [onRotate]);
 
-  const handleDragStart = (e: React.DragEvent, index: number) => {
+  const handleDragStart = useCallback((e: React.DragEvent, index: number) => {
     if (onPageDragStart) {
       onPageDragStart(e, index);
     }
-  };
+  }, [onPageDragStart]);
 
-  const handleDragOver = (e: React.DragEvent, index: number) => {
+  const handleDragOver = useCallback((e: React.DragEvent, index: number) => {
     if (onPageDragOver) {
       onPageDragOver(e, index);
     }
-  };
+  }, [onPageDragOver]);
 
-  const handleDragEnd = () => {
+  const handleDragEnd = useCallback(() => {
     if (onPageDragEnd) {
       onPageDragEnd();
     }
-  };
+  }, [onPageDragEnd]);
 
   if (error) {
     return (

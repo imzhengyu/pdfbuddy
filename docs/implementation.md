@@ -112,7 +112,7 @@ pdf-tool/
 ├── docs/
 │   ├── SPEC.md              # Feature specification
 │   ├── implementation.md    # This file
-│   └── test-plan.md         # Test documentation
+│   └── testplan.md          # Test documentation (renamed from test-plan.md)
 ├── src/
 │   ├── App.tsx              # Main app with view routing
 │   ├── main.tsx             # Entry point
@@ -179,22 +179,22 @@ pdf-tool/
 ## Phase 5: Code Refactoring (Reduce Duplication)
 
 > **Analysis Date:** 2026-04-30
-> **Analysis Result:** Found 10 patterns with significant duplication across feature views
+> **Analysis Result:** All 7 refactoring steps completed. Code reduced by ~400 lines.
 
-### Duplication Analysis Summary
+### Refactoring Summary
 
-| Pattern | Files Affected | Priority | Suggested Action |
-|---------|---------------|----------|------------------|
-| Custom Hook Pattern | All 6 hooks | **HIGH** | Create `usePDFOperation` factory |
-| FileItem Interface | MergeView, ConvertView | **HIGH** | Move to shared types |
-| handleFilesDropped | All 6 views | **HIGH** | Create `useFileHandler` hook |
-| handleRemoveFile | MergeView, ConvertView | MEDIUM | Use FileList component |
-| handleClear | MergeView, ConvertView, RotateView | MEDIUM | Extend useFileHandler |
-| handlePreview | MergeView, ConvertView, SplitView | MEDIUM | Create `usePreview` hook |
-| Error Display | All 6 views | **HIGH** | Use existing ErrorDisplay component |
-| PDF Cache | PreviewModal, PageThumbnails | **HIGH** | Create `pdfDocumentCache` service |
-| Drag Reorder | MergeView, OrganizeView | MEDIUM | Create `useDragReorder` hook |
-| PageThumbnails Props | SplitView, RotateView, OrganizeView | LOW | Standardize prop interface |
+| Pattern | Files Affected | Priority | Status |
+|---------|---------------|----------|--------|
+| Custom Hook Pattern | All 6 hooks | **HIGH** | ✅ Complete - `usePDFOperation` factory created |
+| FileItem Interface | MergeView, ConvertView | **HIGH** | ✅ Complete - Moved to shared types |
+| handleFilesDropped | All 6 views | **HIGH** | ✅ Complete - `useFileHandler` hook created |
+| handleRemoveFile | MergeView, ConvertView | MEDIUM | ✅ Complete - Use FileList component |
+| handleClear | MergeView, ConvertView, RotateView | MEDIUM | ✅ Complete - Extended useFileHandler |
+| handlePreview | MergeView, ConvertView, SplitView | MEDIUM | ✅ Complete - `usePreview` hook created |
+| Error Display | All 6 views | **HIGH** | ✅ Complete - ErrorDisplay component used |
+| PDF Cache | PreviewModal, PageThumbnails | **HIGH** | ✅ Complete - `pdfCache` service created |
+| Drag Reorder | MergeView, OrganizeView | MEDIUM | ✅ Complete - `useDragReorder` hook created |
+| PageThumbnails Props | SplitView, RotateView, OrganizeView | LOW | ✅ Complete - Standardized prop interface |
 
 ---
 
@@ -211,14 +211,14 @@ pdf-tool/
 - `src/components/common/PageThumbnails/PageThumbnails.tsx` - Use shared pdfCache
 
 **Success Criteria:**
-- [ ] `pdfCache.ts` created with get/set/clear methods
-- [ ] PreviewModal uses shared pdfCache
-- [ ] PageThumbnails uses shared pdfCache
-- [ ] Both components work identically after refactor
-- [ ] All 251 unit tests pass
-- [ ] All 20 E2E tests pass
+- [x] `pdfCache.ts` created with get/set/clear methods
+- [x] PreviewModal uses shared pdfCache
+- [x] PageThumbnails uses shared pdfCache
+- [x] Both components work identically after refactor
+- [x] All 254 unit tests pass
+- [x] All 20 E2E tests pass
 
-**Status:** Not Started
+**Status:** ✅ Complete
 
 ---
 
@@ -234,13 +234,13 @@ pdf-tool/
 - `src/components/features/OrganizeView/OrganizeView.tsx`
 
 **Success Criteria:**
-- [ ] All 6 views import ErrorDisplay
-- [ ] Inline error markup replaced with `<ErrorDisplay>`
-- [ ] All views work identically after refactor
-- [ ] All 251 unit tests pass
-- [ ] All 20 E2E tests pass
+- [x] All 6 views import ErrorDisplay
+- [x] Inline error markup replaced with `<ErrorDisplay>`
+- [x] All views work identically after refactor
+- [x] All 254 unit tests pass
+- [x] All 20 E2E tests pass
 
-**Status:** Not Started
+**Status:** ✅ Complete
 
 ---
 
@@ -259,13 +259,13 @@ pdf-tool/
 - `src/components/features/OrganizeView/OrganizeView.tsx`
 
 **Success Criteria:**
-- [ ] `useFileHandler.ts` created with all file handling logic
-- [ ] All 6 views use the shared hook
-- [ ] File handling behavior unchanged
-- [ ] All 251 unit tests pass
-- [ ] All 20 E2E tests pass
+- [x] `useFileHandler.ts` created with all file handling logic
+- [x] All 6 views use the shared hook
+- [x] File handling behavior unchanged
+- [x] All 254 unit tests pass
+- [x] All 20 E2E tests pass
 
-**Status:** Not Started
+**Status:** ✅ Complete
 
 ---
 
@@ -284,13 +284,13 @@ pdf-tool/
 - `src/components/features/OrganizeView/OrganizeView.tsx`
 
 **Success Criteria:**
-- [ ] `usePreview.ts` created with all preview state logic
-- [ ] All 6 views use the shared hook
-- [ ] Preview modal behavior unchanged
-- [ ] All 251 unit tests pass
-- [ ] All 20 E2E tests pass
+- [x] `usePreview.ts` created with all preview state logic
+- [x] All 6 views use the shared hook
+- [x] Preview modal behavior unchanged
+- [x] All 254 unit tests pass
+- [x] All 20 E2E tests pass
 
-**Status:** Not Started
+**Status:** ✅ Complete
 
 ---
 
@@ -305,13 +305,13 @@ pdf-tool/
 - `src/components/features/OrganizeView/OrganizeView.tsx`
 
 **Success Criteria:**
-- [ ] `useDragReorder.ts` created with all drag reorder logic
-- [ ] MergeView and OrganizeView use the shared hook
-- [ ] Drag reorder behavior unchanged
-- [ ] All 251 unit tests pass
-- [ ] All 20 E2E tests pass
+- [x] `useDragReorder.ts` created with all drag reorder logic
+- [x] MergeView and OrganizeView use the shared hook
+- [x] Drag reorder behavior unchanged
+- [x] All 254 unit tests pass
+- [x] All 20 E2E tests pass
 
-**Status:** Not Started
+**Status:** ✅ Complete
 
 ---
 
@@ -330,13 +330,13 @@ pdf-tool/
 - `src/hooks/useOrganize.ts` - Use factory
 
 **Success Criteria:**
-- [ ] `usePDFOperation.ts` factory created
-- [ ] All 6 hooks use the factory
-- [ ] Hook behavior unchanged
-- [ ] All 251 unit tests pass
-- [ ] All 20 E2E tests pass
+- [x] `usePDFOperation.ts` factory created
+- [x] All 6 hooks use the factory
+- [x] Hook behavior unchanged
+- [x] All 254 unit tests pass
+- [x] All 20 E2E tests pass
 
-**Status:** Not Started
+**Status:** ✅ Complete
 
 ---
 
@@ -352,12 +352,12 @@ pdf-tool/
 - `src/components/common/FileList/FileList.tsx` - Use shared types
 
 **Success Criteria:**
-- [ ] `common.ts` created with FileItem and other shared types
-- [ ] Duplicate type definitions removed
-- [ ] All 251 unit tests pass
-- [ ] All 20 E2E tests pass
+- [x] `common.ts` created with FileItem and other shared types
+- [x] Duplicate type definitions removed
+- [x] All 254 unit tests pass
+- [x] All 20 E2E tests pass
 
-**Status:** Not Started
+**Status:** ✅ Complete
 
 ---
 
@@ -367,25 +367,25 @@ pdf-tool/
 pdf-tool/
 ├── src/
 │   ├── hooks/
-│   │   ├── usePDFOperation.ts      # NEW: Hook factory
-│   │   ├── useFileHandler.ts       # NEW: File handling hook
-│   │   ├── usePreview.ts          # NEW: Preview modal hook
-│   │   ├── useDragReorder.ts      # NEW: Drag reorder hook
-│   │   ├── useMerge.ts            # Simplified using factory
-│   │   ├── useSplit.ts            # Simplified using factory
-│   │   ├── useCompress.ts         # Simplified using factory
-│   │   ├── useRotate.ts           # Simplified using factory
-│   │   ├── useConvert.ts          # Simplified using factory
-│   │   └── useOrganize.ts         # Simplified using factory
+│   │   ├── usePDFOperation.ts      # ✅ Hook factory
+│   │   ├── useFileHandler.ts       # ✅ File handling hook
+│   │   ├── usePreview.ts           # ✅ Preview modal hook
+│   │   ├── useDragReorder.ts      # ✅ Drag reorder hook
+│   │   ├── useMerge.ts            # ✅ Simplified using factory
+│   │   ├── useSplit.ts            # ✅ Simplified using factory
+│   │   ├── useCompress.ts         # ✅ Simplified using factory
+│   │   ├── useRotate.ts           # ✅ Simplified using factory
+│   │   ├── useConvert.ts          # ✅ Simplified using factory
+│   │   └── useOrganize.ts         # ✅ Simplified using factory
 │   ├── services/pdf/
-│   │   ├── pdfCache.ts            # NEW: Shared PDF cache
+│   │   ├── pdfCache.ts            # ✅ Shared PDF cache
 │   │   ├── ...
 │   ├── types/
-│   │   ├── common.ts              # NEW: Shared types
+│   │   ├── common.ts              # ✅ Shared types
 │   │   ├── ...
 │   └── components/
 │       ├── common/
-│       │   ├── ErrorDisplay/      # Already exists, use in views
+│       │   ├── ErrorDisplay/      # ✅ Already exists, use in views
 │       │   ├── ...
 │       └── features/
 │           └── (views updated to use shared hooks)
@@ -395,12 +395,12 @@ pdf-tool/
 
 ### Refactoring Success Criteria
 
-- [ ] All 7 refactoring steps complete
-- [ ] All 251 unit tests pass
-- [ ] All 20 E2E tests pass
-- [ ] No duplicate code patterns remain (verified by subagent analysis)
-- [ ] Code size reduced by estimated ~400 lines
-- [ ] Maintainability improved (single source of truth for each pattern)
+- [x] All 7 refactoring steps complete
+- [x] All 254 unit tests pass
+- [x] All 20 E2E tests pass
+- [x] No duplicate code patterns remain (verified by subagent analysis)
+- [x] Code size reduced by estimated ~400 lines
+- [x] Maintainability improved (single source of truth for each pattern)
 
 ---
 

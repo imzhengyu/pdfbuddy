@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { ClientPDFService } from '../services/pdf/ClientPDFService';
+import { useCallback } from 'react';
+import { usePDFOperation } from './usePDFOperation';
 import { ProcessingProgress } from '../services/pdf/types';
 
 interface UseConvertResult {
@@ -11,36 +11,23 @@ interface UseConvertResult {
 }
 
 export function useConvert(): UseConvertResult {
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [progress, setProgress] = useState<ProcessingProgress | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const convertToPDF = useCallback(async (imageFiles: File[]): Promise<Blob | null> => {
-    if (!imageFiles.length) {
-      setError('Please select at least one image to convert');
+  const { operation, isProcessing, progress, error, clearError } = usePDFOperation<File[]>({
+    validate: (imageFiles) => {
+      if (!imageFiles.length) {
+        return 'Please select at least one image to convert';
+      }
       return null;
-    }
+    },
+    execute: async (imageFiles, service, setProgress) => {
+      return service.convertToPDF(imageFiles, setProgress);
+    },
+    getProgressTotal: (imageFiles) => imageFiles.length,
+  });
 
-    setIsProcessing(true);
-    setError(null);
-    setProgress({ current: 0, total: imageFiles.length, percent: 0 });
-
-    try {
-      const service = new ClientPDFService();
-      const result = await service.convertToPDF(imageFiles, setProgress);
-      return result;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to convert images to PDF';
-      setError(message);
-      return null;
-    } finally {
-      setIsProcessing(false);
-    }
-  }, []);
-
-  const clearError = useCallback(() => {
-    setError(null);
-  }, []);
+  const convertToPDF = useCallback(
+    async (imageFiles: File[]) => operation(imageFiles),
+    [operation]
+  );
 
   return { convertToPDF, isProcessing, progress, error, clearError };
 }

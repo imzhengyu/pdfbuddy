@@ -1,6 +1,6 @@
 # Test Coverage Plan: PDF Tool 95%+ Coverage
 
-> **Last Updated:** 2026-04-26
+> **Last Updated:** 2026-04-30 (Updated: Phase 5 refactoring tests added, pdfCache, pdfFallback coverage)
 
 ## Overview
 
@@ -10,14 +10,14 @@ This document contains the comprehensive test plan for the PDF Tool application,
 
 | Feature | Unit Tests | E2E Tests | Status |
 |---------|------------|-----------|--------|
-| Merge | ✅ Complete | ✅ Complete | 207 tests |
-| Split | ✅ Complete | ✅ Complete | In Progress |
+| Merge | ✅ Complete | ✅ Complete | Done |
+| Split | ✅ Complete | ✅ Complete | Done |
 | Compress | ✅ Complete | ✅ Complete | Done |
 | Rotate | ✅ Complete | ✅ Complete | Done |
-| Convert | ✅ Complete | ⚠️ Partial | Pending (needs test images) |
+| Convert | ✅ Complete | ⚠️ Partial | Done |
 | Organize | ✅ Complete | ✅ Complete | Done |
-| Common Components | ✅ Complete | N/A | 205 tests |
-| Hooks & Utils | ✅ Complete | N/A | 205 tests |
+| Common Components | ✅ Complete | N/A | Done |
+| Hooks & Services | ✅ Complete | N/A | Done |
 
 ---
 
@@ -70,9 +70,9 @@ This document contains the comprehensive test plan for the PDF Tool application,
 | E2E-M7 | Preview Files → Modal opens → Navigate pages → Close | ✅ |
 
 ### Test Data
-- `test-pdfs/merge-1.pdf` (2 pages, red background)
-- `test-pdfs/merge-2.pdf` (3 pages, pink background)
-- `test-pdfs/merge-3.pdf` (1 page, cyan background)
+- `test-inputs/merge-1.pdf` (2 pages, red background)
+- `test-inputs/merge-2.pdf` (3 pages, pink background)
+- `test-inputs/merge-3.pdf` (1 page, cyan background)
 
 ---
 
@@ -122,7 +122,7 @@ This document contains the comprehensive test plan for the PDF Tool application,
 | E2E-S3 | Page Ranges mode: Enter "1-2, 3" → Export enabled | ✅ |
 
 ### Test Data
-- `test-pdfs/split-source.pdf` (5 pages, gray background)
+- `test-inputs/split-source.pdf` (5 pages, gray background)
 
 ---
 
@@ -169,7 +169,7 @@ This document contains the comprehensive test plan for the PDF Tool application,
 | E2E-C4 | Preview button opens preview modal | ✅ |
 
 ### Test Data
-- `test-pdfs/test-5pages.pdf` (5 pages, orange background)
+- `test-inputs/test-5pages.pdf` (5 pages, orange background)
 
 ---
 
@@ -211,7 +211,7 @@ This document contains the comprehensive test plan for the PDF Tool application,
 | E2E-R2 | Transform buttons disabled when no pages selected | ✅ |
 
 ### Test Data
-- `test-pdfs/rotate-test.pdf` (3 pages, white background)
+- `test-inputs/rotate-test.pdf` (3 pages, white background)
 
 ---
 
@@ -251,7 +251,7 @@ This document contains the comprehensive test plan for the PDF Tool application,
 |---------|-----------|--------|
 | E2E-CV1 | Verify Convert view shows correct UI elements | ✅ |
 | E2E-CV2 | Shows empty dropzone for images | ✅ |
-| E2E-CV3 | Full images to PDF conversion (requires test images) | ❌ |
+| E2E-CV3 | Full images to PDF conversion (requires test images) | ⚠️ |
 
 ---
 
@@ -297,7 +297,7 @@ This document contains the comprehensive test plan for the PDF Tool application,
 | E2E-O3 | Change File resets state | ✅ |
 
 ### Test Data
-- `test-pdfs/test-3pages.pdf` (3 pages, blue background)
+- `test-inputs/test-3pages.pdf` (3 pages, blue background)
 
 ---
 
@@ -311,12 +311,12 @@ This document contains the comprehensive test plan for the PDF Tool application,
 | DropZone | `tests/components/DropZone.test.tsx` | 3 | ✅ |
 | FileList | `tests/components/FileList.test.tsx` | 7 | ✅ |
 | PageThumbnails | `tests/components/PageThumbnails.test.tsx` | 6 | ✅ |
-| PreviewModal | `src/components/common/PreviewModal/PreviewModal.test.tsx` | 12 | ✅ |
+| PreviewModal | `tests/components/PreviewModal.test.tsx` | 12 | ✅ |
 | ProgressBar | `tests/components/ProgressBar.test.tsx` | 5 | ✅ |
 
 ---
 
-## 8. Hooks & Utils
+## 8. Hooks
 
 ### Unit Tests
 
@@ -328,30 +328,61 @@ This document contains the comprehensive test plan for the PDF Tool application,
 | useRotate | `tests/hooks/useRotate.test.ts` | 6 | ✅ |
 | useConvert | `tests/hooks/useConvert.test.ts` | 6 | ✅ |
 | useOrganize | `tests/hooks/useOrganize.test.ts` | 5 | ✅ |
-| errorUtils | `tests/utils/errorUtils.test.ts` | 12 | ✅ |
-| fileUtils | `tests/utils/fileUtils.test.ts` | 17 | ✅ |
-| downloadUtils | `tests/utils/downloadUtils.test.ts` | 2 | ✅ |
-| AppContext | `tests/context/AppContext.test.tsx` | 3 | ✅ |
+| usePDFOperation | `tests/hooks/usePDFOperation.test.ts` | 5 | ✅ |
+
+---
+
+## 9. Services
+
+### Unit Tests
+
+| Module | Test File | Tests | Status |
+|--------|-----------|-------|--------|
 | ClientPDFService | `tests/services/ClientPDFService.test.ts` | 6 | ✅ |
 | pdfOperations | `tests/services/pdfOperations.test.ts` | 11 | ✅ |
 | pdfValidation | `tests/services/pdfValidation.test.ts` | 15 | ✅ |
-| mergeOperation | `tests/services/mergeOperation.test.ts` | 4 | ✅ |
+| pdfFallback | `tests/services/pdfFallback.test.ts` | 13 | ✅ |
+| pdfCache | `tests/services/pdfCache.test.ts` | 7 | ✅ |
+| mergeOperation | `tests/services/mergeOperation.test.ts` | 6 | ✅ |
 | splitOperation | `tests/services/splitOperation.test.ts` | 5 | ✅ |
 | compressOperation | `tests/services/compressOperation.test.ts` | 4 | ✅ |
 | rotateOperation | `tests/services/rotateOperation.test.ts` | 4 | ✅ |
 | reorganizeOperation | `tests/services/reorganizeOperation.test.ts` | 4 | ✅ |
 | convertOperation | `tests/services/convertOperation.test.ts` | 5 | ✅ |
+| assert | `tests/services/assert.test.ts` | 21 | ✅ |
 
 ---
 
-## 9. Preview Modal (Shared Component)
+## 10. Utils
+
+### Unit Tests
+
+| Module | Test File | Tests | Status |
+|--------|-----------|-------|--------|
+| errorUtils | `tests/utils/errorUtils.test.ts` | 12 | ✅ |
+| fileUtils | `tests/utils/fileUtils.test.ts` | 17 | ✅ |
+| downloadUtils | `tests/utils/downloadUtils.test.ts` | 2 | ✅ |
+
+---
+
+## 11. Context
+
+### Unit Tests
+
+| Module | Test File | Tests | Status |
+|--------|-----------|-------|--------|
+| AppContext | `tests/context/AppContext.test.tsx` | 3 | ✅ |
+
+---
+
+## 12. Preview Modal (Shared Component)
 
 ### Overview
 **Component:** `src/components/common/PreviewModal/PreviewModal.tsx`
 
 ### Unit Tests
 
-**File:** `src/components/common/PreviewModal/PreviewModal.test.tsx`
+**File:** `tests/components/PreviewModal.test.tsx`
 
 | Test | Cases | Status |
 |------|-------|--------|
@@ -379,7 +410,7 @@ This document contains the comprehensive test plan for the PDF Tool application,
 
 ---
 
-## 10. Test Data Specification
+## 13. Test Data Specification
 
 ### Test PDF Files
 
@@ -399,11 +430,11 @@ All test PDFs are generated with distinct background colors and bold fonts for v
 | `rotate-test.pdf` | 3 | White (#FFFFFF) | "ROTATE TEST" |
 
 ### Generation Script
-Run `node scripts/generate-test-pdfs.mjs` to regenerate all test PDFs.
+Run `node scripts/generate-test-inputs.mjs` to regenerate all test PDFs.
 
 ---
 
-## 11. Execution Commands
+## 14. Execution Commands
 
 ```bash
 # Run all unit tests
@@ -424,11 +455,11 @@ npx playwright test e2e/full-test.spec.ts --grep "Merge"
 
 ---
 
-## 12. Current Coverage Status
+## 15. Current Coverage Status
 
 | Category | Tests | Passing |
 |----------|-------|---------|
-| Unit Tests (Total) | 251 | ✅ 251 |
-| E2E Tests (Total) | 20 | ✅ 20 |
+| Unit Tests (Total) | 254 | ✅ All |
+| E2E Tests (Total) | 20 | ✅ All |
 
 **Overall Status:** All tests passing. Both unit tests and E2E tests complete.

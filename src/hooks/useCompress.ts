@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { ClientPDFService } from '../services/pdf/ClientPDFService';
+import { useCallback } from 'react';
+import { usePDFOperation } from './usePDFOperation';
 import { CompressionQuality, ProcessingProgress } from '../services/pdf/types';
 
 interface UseCompressResult {
@@ -11,31 +11,22 @@ interface UseCompressResult {
 }
 
 export function useCompress(): UseCompressResult {
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [progress, setProgress] = useState<ProcessingProgress | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { operation, isProcessing, progress, error, clearError } = usePDFOperation<{
+    file: File;
+    quality: CompressionQuality;
+  }>({
+    validate: () => null,
+    execute: async ({ file, quality }, service, setProgress) => {
+      return service.compress(file, quality, setProgress);
+    },
+    getProgressTotal: () => 1,
+  });
 
-  const compress = useCallback(async (file: File, quality: CompressionQuality): Promise<Blob | null> => {
-    setIsProcessing(true);
-    setError(null);
-    setProgress({ current: 0, total: 1, percent: 0 });
-
-    try {
-      const service = new ClientPDFService();
-      const result = await service.compress(file, quality, setProgress);
-      return result;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to compress PDF';
-      setError(message);
-      return null;
-    } finally {
-      setIsProcessing(false);
-    }
-  }, []);
-
-  const clearError = useCallback(() => {
-    setError(null);
-  }, []);
+  const compress = useCallback(
+    async (file: File, quality: CompressionQuality) =>
+      operation({ file, quality }),
+    [operation]
+  );
 
   return { compress, isProcessing, progress, error, clearError };
 }

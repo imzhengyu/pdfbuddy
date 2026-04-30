@@ -9,7 +9,7 @@ interface PreviewModalProps {
 }
 
 // Cache for parsed PDFs to avoid re-parsing
-const pdfCache = new Map<string, { pdf: any; arrayBuffer: ArrayBuffer }>();
+import { pdfCache } from '../../../services/pdf/pdfCache';
 
 export function PreviewModal({ isOpen, onClose, file, title }: PreviewModalProps) {
   const [currentPage, setCurrentPage] = useState(1);
@@ -65,20 +65,17 @@ export function PreviewModal({ isOpen, onClose, file, title }: PreviewModalProps
 
         // Use cache if available
         let pdf = pdfRef.current;
-        let arrayBuffer: ArrayBuffer;
 
         if (!pdf) {
-          const cacheKey = file.name + file.size;
-          const cached = pdfCache.get(cacheKey);
+          const cached = pdfCache.get(file);
 
           if (cached) {
             pdf = cached.pdf;
-            arrayBuffer = cached.arrayBuffer;
           } else {
-            arrayBuffer = await file.arrayBuffer();
+            const arrayBuffer = await file.arrayBuffer();
             const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
             pdf = await loadingTask.promise;
-            pdfCache.set(cacheKey, { pdf, arrayBuffer });
+            pdfCache.set(file, { pdf });
           }
 
           if (cancelled) return;

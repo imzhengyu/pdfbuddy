@@ -5,7 +5,7 @@ import { withPDFLibFallback } from './pdfFallback';
 
 export async function compressPdf(
   file: File,
-  _quality: CompressionQuality,
+  quality: CompressionQuality,
   onProgress?: ProgressCallback
 ): Promise<Blob> {
   validatePDFFile(file);
@@ -20,8 +20,10 @@ export async function compressPdf(
     'PDFKit compress'
   );
 
+  // pdf-lib only supports useObjectStreams for compression
+  // Low quality would ideally disable this, but pdf-lib doesn't support fine-grained control
   const pdfBytes = await pdf.save({
-    useObjectStreams: true
+    useObjectStreams: quality !== 'low'
   });
 
   onProgress?.({ current: 1, total: 1, percent: 100 });

@@ -52,8 +52,12 @@ export async function withPDFLibFallback<T>(
     }
 
     if (isEncryptionError(error)) {
-      console.warn(`[PDF Fallback] pdf-lib failed with encryption error. Retrying with ignoreEncryption...`);
-      return await pdfLibOperation();
+      console.warn(`[PDF Fallback] pdf-lib failed with encryption error. No fallback available for encrypted PDFs.`);
+      throw new PDFLibError(
+        'This PDF is encrypted and cannot be processed. Please decrypt the PDF first.',
+        'ENCRYPTED',
+        error instanceof Error ? error : undefined
+      );
     }
 
     console.error('[PDF Fallback] Unknown error:', error);
