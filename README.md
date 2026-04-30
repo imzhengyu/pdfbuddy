@@ -2,7 +2,7 @@
 
 A colorful, friendly web app for PDF manipulation - merge, split, compress, rotate, convert, and organize your PDFs. All processing happens **client-side in your browser** - your files never leave your device.
 
-**Live Demo:** https://imzhengyu.github.io/pdfbuddy/
+**Live Demo:**  https://pdfbuddy.goodvibez.cn/
 
 ## Features
 
