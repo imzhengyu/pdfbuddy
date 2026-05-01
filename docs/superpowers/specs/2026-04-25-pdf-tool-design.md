@@ -46,7 +46,6 @@ interface IPDFService {
   split(file: File, pageRanges: PageRange[]): Promise<Blob[]>;
   compress(file: File, quality: 'low' | 'medium' | 'high'): Promise<Blob>;
   rotate(file: File, rotations: PageRotation[]): Promise<Blob>;
-  convertToImages(file: File, format: 'png' | 'jpeg'): Promise<Blob[]>;
   convertToPDF(images: File[]): Promise<Blob>;
   reorganize(file: File, newOrder: PageOrder[]): Promise<Blob>;
 }
@@ -86,7 +85,6 @@ interface IPDFService {
 - Download rotated PDF
 
 ### 5. Convert
-- **PDF to Images**: Select PDF, choose format (PNG/JPEG), download images (ZIP)
 - **Images to PDF**: Select images, reorder, download PDF
 - Support drag and drop for multiple images
 

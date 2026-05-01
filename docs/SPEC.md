@@ -48,7 +48,6 @@ A colorful, friendly React web app for PDF manipulation with client-side process
 - **Images to PDF**: Select images (PNG, JPEG), reorder, download PDF
 - **Default page size: A4** (595 x 842 points) - Images are scaled to fit A4 with margins
 - **Preview button** - Preview converted PDF before download
-- **PDF to Images**: ← NOT YET IMPLEMENTED - Requires backend service (pdf-lib cannot render PDFs to images client-side)
 
 ### 6. Organize PDF
 - Select single PDF file
@@ -152,99 +151,9 @@ interface PreviewModalProps {
 
 **Lint Before Commit:** All commits must pass lint checks before being allowed to commit. A pre-commit hook runs `npm run lint` (TypeScript type checking via `tsc --noEmit`) before any commit is accepted. If lint fails, the commit is rejected.
 
----
+### UI Design Guidelines
 
-## UI Design (Smallpdf-Inspired)
-
-This app follows a Smallpdf-inspired design system for a clean, modern look.
-
-### Design Principles
-
-| Aspect | Smallpdf Approach |
-|--------|-----------------|
-| **Hero Section** | Clean white background, centered headline, single CTA |
-| **Tool Cards** | Rounded white cards with subtle shadow, icon + title + description |
-| **Drop Zone** | Large dashed border area, icon + text, file list appears after upload |
-| **Progress** | Circular progress indicator with percentage, green checkmark on complete |
-| **Buttons** | Rounded (8px), filled primary (indigo), outlined secondary |
-| **Typography** | Inter font, generous line-height (1.5), ample spacing |
-| **Whitespace** | 48px+ vertical spacing between sections |
-| **Color Coding** | Green for success, Red for error, Amber for warning, all with icons |
-
-### Typography System
-
-```css
-:root {
-  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --text-xs: 0.75rem;    /* 12px - captions */
-  --text-sm: 0.875rem;   /* 14px - secondary text */
-  --text-base: 1rem;      /* 16px - body */
-  --text-lg: 1.125rem;    /* 18px - emphasized body */
-  --text-xl: 1.25rem;     /* 20px - section titles */
-  --text-2xl: 1.5rem;     /* 24px - page titles */
-  --text-3xl: 1.875rem;   /* 30px - hero headlines */
-}
-```
-
-### Spacing System (8px grid)
-
-```css
-:root {
-  --space-1: 0.25rem;   /* 4px */
-  --space-2: 0.5rem;     /* 8px */
-  --space-3: 0.75rem;    /* 12px */
-  --space-4: 1rem;       /* 16px */
-  --space-6: 1.5rem;     /* 24px */
-  --space-8: 2rem;       /* 32px */
-  --space-10: 2.5rem;    /* 40px */
-  --space-12: 3rem;      /* 48px */
-}
-```
-
-### Border Radius
-
-| Element | Radius |
-|---------|--------|
-| Buttons | 8px |
-| Cards | 12px |
-| Modals | 16px |
-| Thumbnails | 8px |
-
-### Shadows
-
-```css
---shadow-card: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
---shadow-dropdown: 0 4px 6px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.06);
---shadow-modal: 0 20px 25px rgba(0,0,0,0.1), 0 10px 10px rgba(0,0,0,0.04);
-```
-
-### Component Standards
-
-#### Button Hierarchy
-- **Primary:** Filled indigo (#6366f1), white text, 8px radius, 44px height
-- **Secondary:** White bg, indigo border, indigo text
-- **Tertiary:** No border, indigo text only
-- **Destructive:** Red (#ef4444) filled
-
-#### Card Component
-```css
-.card {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
-  padding: var(--space-6);
-  transition: box-shadow 0.2s ease, transform 0.2s ease;
-}
-```
-
-### Advanced UI Features (Planned)
-
-| Feature | Status | Description |
-|---------|--------|-------------|
-| Dark Mode | 📋 Planned | System preference detection + manual toggle |
-| Watermark Support | 📋 Planned | Text or image watermarks with position/opacity controls |
-| Electronic Signatures | 📋 Planned | Draw/type/upload signature with reuse |
-| PDF to Images | ⏸️ Not Implemented | Requires backend service |
+Detailed UI design guidelines (Smallpdf-inspired typography, spacing, color system, component standards) are documented in **[implementation.md](./implementation.md#ui-design-guidelines)**.
 
 ### Accessibility
 

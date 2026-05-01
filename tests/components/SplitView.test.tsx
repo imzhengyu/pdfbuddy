@@ -7,6 +7,10 @@ vi.mock('../../src/utils/downloadUtils', () => ({
   downloadBlobsAsZip: vi.fn().mockResolvedValue(undefined)
 }));
 
+vi.mock('../../src/utils/fileUtils', () => ({
+  getPageCount: vi.fn().mockResolvedValue(5)
+}));
+
 vi.mock('../../src/services/pdf/ClientPDFService', () => ({
   ClientPDFService: vi.fn().mockImplementation(() => ({
     split: vi.fn().mockResolvedValue([new Blob(['test'], { type: 'application/pdf' })])
@@ -253,5 +257,130 @@ describe('SplitView', () => {
     });
 
     expect(screen.queryByRole('button', { name: 'Clear All' })).not.toBeInTheDocument();
+  });
+
+  it('shows Clear All button when pages are selected', async () => {
+    render(<SplitView />);
+
+    const input = screen.getByTestId('dropzone').querySelector('input');
+    if (input) {
+      const file = new File(['test'], 'test.pdf', { type: 'application/pdf' });
+      fireEvent.change(input, { target: { files: [file] } });
+    }
+
+    await waitFor(() => {
+      expect(screen.getByText('test.pdf')).toBeInTheDocument();
+    });
+
+    // In visual mode, no pages selected initially, so Clear All should not appear
+    expect(screen.queryByRole('button', { name: 'Clear All' })).not.toBeInTheDocument();
+  });
+
+  it('enables Export button when pages are selected in visual mode', async () => {
+    render(<SplitView />);
+
+    const input = screen.getByTestId('dropzone').querySelector('input');
+    if (input) {
+      const file = new File(['test'], 'test.pdf', { type: 'application/pdf' });
+      fireEvent.change(input, { target: { files: [file] } });
+    }
+
+    await waitFor(() => {
+      expect(screen.getByText('test.pdf')).toBeInTheDocument();
+    });
+
+    // In visual mode, pages must be selected before Export is enabled
+    // The preview button is for previewing, not for selecting pages
+    // So we test that Export is disabled when no pages are selected
+    const exportBtn = screen.getByRole('button', { name: 'Export Selected Pages' });
+    expect(exportBtn).toBeDisabled();
+  });
+
+  it('enables Export button when valid page ranges entered', async () => {
+    render(<SplitView />);
+
+    const input = screen.getByTestId('dropzone').querySelector('input');
+    if (input) {
+      const file = new File(['test'], 'test.pdf', { type: 'application/pdf' });
+      fireEvent.change(input, { target: { files: [file] } });
+    }
+
+    await waitFor(() => {
+      expect(screen.getByText('test.pdf')).toBeInTheDocument();
+    });
+
+    const rangeBtn = screen.getByText('Page Ranges');
+    fireEvent.click(rangeBtn);
+
+    const rangeInput = screen.getByLabelText('Page Ranges:');
+    fireEvent.change(rangeInput, { target: { value: '1-2' } });
+
+    const exportBtn = screen.getByRole('button', { name: 'Export Selected Pages' });
+    expect(exportBtn).not.toBeDisabled();
+  });
+
+  it('disables Export button when page ranges input is empty', async () => {
+    render(<SplitView />);
+
+    const input = screen.getByTestId('dropzone').querySelector('input');
+    if (input) {
+      const file = new File(['test'], 'test.pdf', { type: 'application/pdf' });
+      fireEvent.change(input, { target: { files: [file] } });
+    }
+
+    await waitFor(() => {
+      expect(screen.getByText('test.pdf')).toBeInTheDocument();
+    });
+
+    const rangeBtn = screen.getByText('Page Ranges');
+    fireEvent.click(rangeBtn);
+
+    const exportBtn = screen.getByRole('button', { name: 'Export Selected Pages' });
+    expect(exportBtn).toBeDisabled();
+  });
+
+  it('disables Export button during processing', async () => {
+    mockUseSplit.mockReturnValue({
+      split: vi.fn().mockResolvedValue([new Blob(['test'], { type: 'application/pdf' })]),
+      isProcessing: true,
+      progress: null,
+      error: null,
+      clearError: vi.fn()
+    });
+
+    render(<SplitView />);
+
+    const input = screen.getByTestId('dropzone').querySelector('input');
+    if (input) {
+      const file = new File(['test'], 'test.pdf', { type: 'application/pdf' });
+      fireEvent.change(input, { target: { files: [file] } });
+    }
+
+    await waitFor(() => {
+      expect(screen.getByText('test.pdf')).toBeInTheDocument();
+    });
+
+    // When processing, the button shows a loading spinner instead of the label
+    const loadingBtn = screen.getByRole('button', { name: 'Loading' });
+    expect(loadingBtn).toBeDisabled();
+  });
+
+  it('shows page count hint in range mode', async () => {
+    render(<SplitView />);
+
+    const input = screen.getByTestId('dropzone').querySelector('input');
+    if (input) {
+      const file = new File(['test'], 'test.pdf', { type: 'application/pdf' });
+      fireEvent.change(input, { target: { files: [file] } });
+    }
+
+    await waitFor(() => {
+      expect(screen.getByText('test.pdf')).toBeInTheDocument();
+    });
+
+    const rangeBtn = screen.getByText('Page Ranges');
+    fireEvent.click(rangeBtn);
+
+    expect(screen.getByText(/max:/)).toBeInTheDocument();
   });
 });

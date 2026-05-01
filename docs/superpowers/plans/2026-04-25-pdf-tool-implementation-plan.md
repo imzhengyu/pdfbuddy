@@ -559,7 +559,6 @@ export interface IPDFService {
   split(file: File, pageRanges: PageRange[], onProgress?: (progress: ProcessingProgress) => void): Promise<Blob[]>;
   compress(file: File, quality: CompressionQuality, onProgress?: (progress: ProcessingProgress) => void): Promise<Blob>;
   rotate(file: File, rotations: PageRotation[], onProgress?: (progress: ProcessingProgress) => void): Promise<Blob>;
-  convertToImages(file: File, options: ConversionOptions, onProgress?: (progress: ProcessingProgress) => void): Promise<Blob[]>;
   convertToPDF(imageFiles: File[], onProgress?: (progress: ProcessingProgress) => void): Promise<Blob>;
   reorganize(file: File, newOrder: PageOrder[], onProgress?: (progress: ProcessingProgress) => void): Promise<Blob>;
 }
@@ -797,16 +796,6 @@ export class ClientPDFService implements IPDFService {
 
     const pdfBytes = await pdf.save();
     return new Blob([pdfBytes], { type: 'application/pdf' });
-  }
-
-  async convertToImages(file: File, options: ConversionOptions, onProgress?: (progress: ProcessingProgress) => void): Promise<Blob[]> {
-    // PDF to image conversion requires canvas/pdf.js which is heavy
-    // For MVP, return the PDF as-is with a warning
-    throw new PDFProcessingError(
-      'PDF to image conversion requires the backend service. This feature is coming soon.',
-      'PROCESSING',
-      'Use the backend API for PDF to image conversion'
-    );
   }
 
   async convertToPDF(imageFiles: File[], onProgress?: (progress: ProcessingProgress) => void): Promise<Blob> {

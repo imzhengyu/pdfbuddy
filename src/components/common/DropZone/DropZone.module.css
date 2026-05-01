@@ -1,28 +1,40 @@
 .dropzone {
   position: relative;
-  border: 2px dashed var(--color-border);
+  border: 2px dashed var(--color-primary);
   border-radius: var(--radius-xl);
   padding: var(--space-2xl);
   text-align: center;
   cursor: pointer;
   transition: all var(--transition-normal);
-  background: var(--color-surface);
+  background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-primary-light) 100%);
+  overflow: hidden;
+}
+
+.dropzone::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(ellipse at center, rgba(249, 115, 22, 0.05) 0%, transparent 70%);
+  pointer-events: none;
 }
 
 .dropzone:hover {
   border-color: var(--color-primary);
   border-style: solid;
-  background-color: var(--color-primary-light);
+  background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-surface) 100%);
   transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 8px 24px rgba(249, 115, 22, 0.15);
 }
 
 .dragOver {
-  border-color: var(--color-primary);
+  border-color: var(--color-accent);
   border-style: solid;
-  background-color: var(--color-primary-light);
+  background: linear-gradient(135deg, var(--color-accent-light) 0%, var(--color-surface) 100%);
   transform: scale(1.02);
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 8px 32px rgba(13, 148, 136, 0.25);
 }
 
 .dropzone input[type="file"] {
@@ -42,6 +54,7 @@
   align-items: center;
   gap: var(--space-md);
   pointer-events: none;
+  position: relative;
 }
 
 .icon {
@@ -49,10 +62,16 @@
   width: 64px;
   height: 64px;
   padding: var(--space-md);
-  background: var(--color-surface);
+  background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-primary-light) 100%);
   border-radius: var(--radius-full);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.2);
   margin-bottom: var(--space-sm);
+  transition: all var(--transition-fast);
+}
+
+.dropzone:hover .icon {
+  transform: scale(1.05) rotate(-3deg);
+  box-shadow: 0 6px 16px rgba(249, 115, 22, 0.3);
 }
 
 .message {

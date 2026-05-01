@@ -38,7 +38,7 @@ This document outlines the implementation approach for the PDF Tool, following t
 | `SplitView` | ✅ Done | Split with visual/range modes |
 | `CompressView` | ✅ Done | Compress with quality picker |
 | `RotateView` | ✅ Done | Rotate/mirror transformations |
-| `ConvertView` | ⚠️ Partial | Images→PDF done; PDF→Images TODO |
+| `ConvertView` | ✅ Done | Images→PDF conversion |
 | `OrganizeView` | ⚠️ Partial | Page deletion done; drag-reorder TODO |
 
 ### Phase 4: Custom Hooks
@@ -401,6 +401,114 @@ pdf-tool/
 - [x] No duplicate code patterns remain (verified by subagent analysis)
 - [x] Code size reduced by estimated ~400 lines
 - [x] Maintainability improved (single source of truth for each pattern)
+
+---
+
+## UI Design Guidelines
+
+### Color Scheme: Warm Sunset (Full Palette Splash)
+
+A vibrant, colorful design that applies the warm palette throughout for maximum visual impact.
+
+**Color Palette:**
+
+```css
+:root {
+  /* Primary - Warm Orange */
+  --color-primary: #f97316;
+  --color-primary-hover: #ea580c;
+  --color-primary-light: #fff7ed;
+
+  /* Secondary - Amber */
+  --color-secondary: #fbbf24;
+  --color-secondary-hover: #f59e0b;
+  --color-secondary-light: #fefce8;
+
+  /* Accent - Teal */
+  --color-accent: #0d9488;
+  --color-accent-hover: #0f766e;
+  --color-accent-light: #ccfbf1;
+
+  /* Semantic Colors */
+  --color-success: #10b981;
+  --color-success-light: #d1fae5;
+  --color-warning: #f59e0b;
+  --color-warning-light: #fef3c7;
+  --color-error: #ef4444;
+  --color-error-light: #fee2e2;
+
+  /* Neutrals - Warm Tones */
+  --color-background: #fffbeb;
+  --color-surface: #ffffff;
+  --color-surface-warm: #fef9f3;
+  --color-border: #fde68a;
+  --color-text: #1c1917;
+  --color-text-secondary: #57534e;
+  --color-text-muted: #a8a29e;
+
+  /* Dark Mode */
+  --color-background-dark: #1c1917;
+  --color-surface-dark: #292524;
+  --color-border-dark: #44403c;
+  --color-text-dark: #fafaf9;
+  --color-text-secondary-dark: #a8a29e;
+  --color-text-muted-dark: #78716c;
+}
+```
+
+**Visual Style Principles:**
+
+| Aspect | Design Approach |
+|--------|-----------------|
+| **Backgrounds** | Warm cream (#fffbeb) with subtle gradient overlays |
+| **Cards** | White surfaces with warm tint, soft shadows |
+| **Buttons** | Rounded (8px), filled primary (orange), secondary (teal) |
+| **Progress** | Orange-to-amber gradient progress bars, teal success states |
+| **Navigation** | Colorful nav buttons with gradient hover states |
+| **Accents** | Teal for interactive elements, amber for highlights |
+
+**Decorative Elements:**
+
+1. **Subtle Gradients** - Soft gradient overlays on backgrounds and cards
+   - Header: Linear gradient from orange to amber
+   - Cards: Subtle warm gradient overlays on hover
+
+2. **Animated Icons** - Colorful SVG icons with hover animations
+   - Rotate, scale, or bounce on hover
+   - Orange primary icons, teal accents
+
+3. **Geometric Patterns** - Subtle decorative elements
+   - Soft circles and rounded shapes as background elements
+   - Low opacity decorative shapes behind hero areas
+
+**Typography:**
+
+```css
+:root {
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+}
+```
+
+**Dark Mode Support:**
+
+```css
+[data-theme="dark"] {
+  --color-background: #1c1917;
+  --color-surface: #292524;
+  --color-border: #44403c;
+  --color-text: #fafaf9;
+  --color-primary: #f97316;
+  --color-accent: #14b8a6;
+}
+```
 
 ---
 
