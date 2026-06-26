@@ -4,22 +4,27 @@
 .description { color: var(--color-text-secondary); max-width: 600px; }
 .workspace { display: flex; flex-direction: column; gap: var(--space-lg); background: var(--color-surface); border-radius: var(--radius-lg); padding: var(--space-xl); box-shadow: var(--shadow-md); }
 .fileInfo { display: flex; align-items: center; justify-content: space-between; padding: var(--space-md); background: var(--color-background); border-radius: var(--radius-md); }
-.actions { display: flex; gap: var(--space-md); justify-content: center; align-items: center; flex-wrap: wrap; }
+.actions { display: flex; gap: var(--space-md); justify-content: center; align-items: center; flex-wrap: wrap; position: relative; z-index: 10; }
 .error { display: flex; align-items: center; justify-content: space-between; padding: var(--space-md); background: var(--color-error-light); color: var(--color-error); border-radius: var(--radius-md); }
 .error button { background: none; border: none; font-size: 1.5rem; cursor: pointer; }
 
 /* Two-column split layout - 50/50 */
-.splitContainer { display: flex; gap: var(--space-xl); height: calc(100vh - 200px); }
+.splitContainer { display: flex; gap: var(--space-xl); min-height: 400px; }
 .sourceSection {
   flex: 1;
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 200px;
+  position: relative;
+  z-index: 1;
 }
 .sourceContent {
   flex: 1;
-  overflow-y: auto;
-  padding: var(--space-md);
+  overflow: auto;
+  position: relative;
+  min-height: 150px;
+  padding: var(--space-sm);
   background: var(--color-background);
   border-radius: var(--radius-md);
 }
@@ -51,3 +56,20 @@
 .emptyResult { color: var(--color-text-secondary); font-size: 0.875rem; text-align: center; }
 .resultPreview { flex: 1; overflow-y: auto; }
 .resultActions { display: flex; justify-content: flex-end; margin-top: var(--space-md); padding: var(--space-md); }
+
+@media (max-width: 768px) {
+  .splitContainer { flex-direction: column; min-height: auto; }
+  .sourceSection,
+  .targetSection { min-height: 300px; }
+  .targetSection {
+    position: static;
+  }
+  .actions { justify-content: stretch; }
+  .actions > * { flex: 1; }
+}
+
+@media (max-width: 480px) {
+  .resultBox { min-height: 150px; }
+  .actions { flex-direction: column; }
+  .resultActions { padding: var(--space-sm); }
+}

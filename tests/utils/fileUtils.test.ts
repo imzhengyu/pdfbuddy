@@ -14,16 +14,16 @@ describe('fileUtils', () => {
       expect(formatFileSize(500)).toBe('500 B');
     });
 
-    it('formats kilobytes', () => {
-      expect(formatFileSize(1024)).toBe('1.0 KB');
+    it('formats kilobytes with 2 decimals (delegates to formatBytes)', () => {
+      expect(formatFileSize(1024)).toBe('1.00 KB');
     });
 
-    it('formats megabytes', () => {
-      expect(formatFileSize(1048576)).toBe('1.0 MB');
+    it('formats megabytes with 2 decimals (delegates to formatBytes)', () => {
+      expect(formatFileSize(1048576)).toBe('1.00 MB');
     });
 
-    it('formats gigabytes', () => {
-      expect(formatFileSize(1073741824)).toBe('1.0 GB');
+    it('formats gigabytes with 2 decimals (delegates to formatBytes)', () => {
+      expect(formatFileSize(1073741824)).toBe('1.00 GB');
     });
 
     it('handles zero', () => {

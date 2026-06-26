@@ -28,13 +28,32 @@ vi.mock('pdf-lib', () => ({
   degrees: vi.fn((angle) => ({ angle }))
 }));
 
-function createMockFile(content: string, name: string, type: string): File {
-  const file = new File([content], name, { type });
+// Minimal valid PDF content with magic bytes
+const VALID_PDF_CONTENT = new Uint8Array([
+  0x25, 0x50, 0x44, 0x46, 0x2D, 0x31, 0x2E, 0x34, 0x0A, // %PDF-1.4\n
+  0x25, 0xE2, 0xE3, 0xCF, 0xD3, 0x0A, // %EOF
+]);
+
+function createMockFile(content: string | Uint8Array, name: string, type: string): File {
+  const buffer = typeof content === 'string'
+    ? new TextEncoder().encode(content).buffer
+    : content.buffer;
+  const file = new File([buffer], name, { type });
   Object.defineProperty(file, 'arrayBuffer', {
     writable: true,
-    value: vi.fn().mockResolvedValue(new TextEncoder().encode(content).buffer)
+    value: vi.fn().mockResolvedValue(buffer)
+  });
+  Object.defineProperty(file, 'slice', {
+    writable: true,
+    value: vi.fn().mockReturnValue({
+      arrayBuffer: vi.fn().mockResolvedValue(buffer)
+    })
   });
   return file;
+}
+
+function createValidPDFFile(name: string): File {
+  return createMockFile(VALID_PDF_CONTENT, name, 'application/pdf');
 }
 
 describe('rotateOperation', () => {
@@ -48,18 +67,18 @@ describe('rotateOperation', () => {
   });
 
   it('throws error for invalid page index', async () => {
-    const pdfFile = createMockFile('', 'test.pdf', 'application/pdf');
+    const pdfFile = createValidPDFFile('test.pdf');
     await expect(rotatePdf(pdfFile, [{ pageIndex: 10, type: 'rotate', degrees: 90 }])).rejects.toThrow('Invalid page index');
   });
 
   it('rotatePdf returns blob', async () => {
-    const pdfFile = createMockFile('', 'test.pdf', 'application/pdf');
+    const pdfFile = createValidPDFFile('test.pdf');
     const result = await rotatePdf(pdfFile, [{ pageIndex: 0, type: 'rotate', degrees: 90 }]);
     expect(result).toBeInstanceOf(Blob);
   });
 
   it('calls onProgress callback', async () => {
-    const pdfFile = createMockFile('', 'test.pdf', 'application/pdf');
+    const pdfFile = createValidPDFFile('test.pdf');
     const onProgress = vi.fn();
     await rotatePdf(pdfFile, [{ pageIndex: 0, type: 'rotate', degrees: 90 }], onProgress);
     expect(onProgress).toHaveBeenCalled();

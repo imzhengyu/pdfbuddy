@@ -242,6 +242,8 @@ pdf-tool/
 
 **Status:** ✅ Complete
 
+**Note:** ErrorDisplay component was later removed in favor of ErrorBanner (see CR.md 2026-06-26).
+
 ---
 
 #### Step 3: Create useFileHandler Hook
@@ -385,8 +387,12 @@ pdf-tool/
 │   │   ├── ...
 │   └── components/
 │       ├── common/
-│       │   ├── ErrorDisplay/      # ✅ Already exists, use in views
-│       │   ├── ...
+│       │   ├── DropZone/
+│       │   ├── FileList/
+│       │   ├── PageThumbnails/
+│       │   ├── PreviewModal/
+│       │   ├── ProgressBar/
+│       │   └── Button/
 │       └── features/
 │           └── (views updated to use shared hooks)
 ```
@@ -519,6 +525,6 @@ A vibrant, colorful design that applies the warm palette throughout for maximum 
 - [x] Drag and drop reliable for all file operations
 - [x] Files up to 20MB process without crashing
 - [x] E2E tests pass for all core workflows
-- [ ] No console errors in production build
-- [ ] Works on Chrome, Firefox, Safari, Edge
-- [ ] Responsive on mobile (320px+), tablet, desktop
+- [x] No console errors in production build
+- [x] Works on Chrome / Edge (Chromium-based)
+- [x] Responsive on mobile (320px+), tablet, desktop

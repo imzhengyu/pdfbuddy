@@ -4,7 +4,11 @@ import { PageThumbnails } from '../../common/PageThumbnails/PageThumbnails';
 import { Button } from '../../common/Button/Button';
 import { ProgressBar } from '../../common/ProgressBar/ProgressBar';
 import { PreviewModal } from '../../common/PreviewModal/PreviewModal';
+import { FeatureViewShell } from '../../common/FeatureViewShell';
+import { FileInfoHeader } from '../../common/FileInfoHeader';
+import { ErrorBanner } from '../../common/ErrorBanner';
 import { useRotate } from '../../../hooks/useRotate';
+import { usePreview } from '../../../hooks/usePreview';
 import { downloadBlob } from '../../../utils/downloadUtils';
 import { PageRotation, RotationType } from '../../../services/pdf/types';
 import styles from './RotateView.module.css';
@@ -13,9 +17,8 @@ export function RotateView() {
   const [file, setFile] = useState<File | null>(null);
   const [selectedPages, setSelectedPages] = useState<number[]>([]);
   const [resultFile, setResultFile] = useState<File | null>(null);
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  // Track rotation angle (0, 90, 180, 270) for each page
   const [pageRotations, setPageRotations] = useState<Map<number, number>>(new Map());
+  const { isPreviewOpen, previewFile, openPreview, closePreview } = usePreview();
   const { rotate, isProcessing, progress, error, clearError } = useRotate();
 
   const handleFileDropped = useCallback((files: File[]) => {
@@ -40,14 +43,12 @@ export function RotateView() {
       newMap.set(pageIndex, (current + 90) % 360);
       return newMap;
     });
-    // Generate result preview when rotation changes
     setResultFile(null);
   }, []);
 
   const handleApplyRotation = useCallback(async () => {
     if (!file) return;
 
-    // Build rotations array from pageRotations map
     const rotations: PageRotation[] = [];
     pageRotations.forEach((degrees, pageIndex) => {
       if (degrees > 0) {
@@ -55,9 +56,7 @@ export function RotateView() {
       }
     });
 
-    if (rotations.length === 0) {
-      return;
-    }
+    if (rotations.length === 0) return;
 
     const result = await rotate(file, rotations);
     if (result) {
@@ -82,7 +81,8 @@ export function RotateView() {
     setSelectedPages([]);
     setResultFile(null);
     setPageRotations(new Map());
-  }, []);
+    closePreview();
+  }, [closePreview]);
 
   const hasRotations = useMemo(() => {
     for (const deg of pageRotations.values()) {
@@ -92,31 +92,23 @@ export function RotateView() {
   }, [pageRotations]);
 
   return (
-    <div className={styles.container}>
-      <div className={styles.header}>
-        <h2 className={styles.title}>Rotate PDF</h2>
-        <p className={styles.description}>
-          Click the rotate button on any page to rotate it 90°. Preview and download when done.
-        </p>
-      </div>
-
-      {!file ? (
+    <FeatureViewShell
+      title="Rotate PDF"
+      description="Click the rotate button on any page to rotate it 90°. Preview and download when done."
+      isEmpty={!file}
+      emptyView={
         <DropZone
           onFilesDropped={handleFileDropped}
           message="Drag and drop a PDF file to rotate"
           multiple={false}
         />
-      ) : (
-        <div className={styles.workspace}>
-          <div className={styles.fileInfo}>
-            <span><strong>{file.name}</strong></span>
-            <Button
-              label="Change File"
-              variant="outline"
-              size="sm"
-              onClick={handleChangeFile}
-            />
-          </div>
+      }
+      workspace={() => (
+        <>
+          <FileInfoHeader
+            fileName={file!.name}
+            onChangeFile={handleChangeFile}
+          />
 
           <div className={styles.splitContainer}>
             <div className={styles.sourceSection}>
@@ -124,7 +116,7 @@ export function RotateView() {
               <p className={styles.sectionHint}>Click pages to select, hover to rotate</p>
               <div className={styles.sourceContent}>
                 <PageThumbnails
-                  file={file}
+                  file={file!}
                   selectedPages={selectedPages}
                   onPageClick={handlePageClick}
                   onRotate={handleRotate}
@@ -159,55 +151,30 @@ export function RotateView() {
               </div>
               {resultFile && (
                 <div className={styles.resultActions}>
-                  <Button
-                    label="Download"
-                    variant="primary"
-                    onClick={handleDownload}
-                  />
+                  <Button label="Download" variant="primary" onClick={handleDownload} />
                 </div>
               )}
             </div>
           </div>
 
           <div className={styles.actions}>
-            <Button
-              label="Apply Rotation"
-              variant="primary"
-              onClick={handleApplyRotation}
-              disabled={!hasRotations || isProcessing}
-            />
-            <Button
-              label="Preview"
-              variant="outline"
-              onClick={() => setIsPreviewOpen(true)}
-              disabled={!resultFile}
-            />
-            <Button
-              label="Clear"
-              variant="outline"
-              size="sm"
-              onClick={handleClearSelection}
-              disabled={!hasRotations && selectedPages.length === 0}
-            />
+            <Button label="Apply Rotation" variant="primary" onClick={handleApplyRotation} disabled={!hasRotations || isProcessing} />
+            <Button label="Preview" variant="outline" onClick={() => resultFile && openPreview(resultFile)} disabled={!resultFile} />
+            <Button label="Clear" variant="outline" size="sm" onClick={handleClearSelection} disabled={!hasRotations && selectedPages.length === 0} />
           </div>
 
           {isProcessing && progress && <ProgressBar progress={progress} />}
 
-          {error && (
-            <div className={styles.error}>
-              <span>{error}</span>
-              <button onClick={clearError}>×</button>
-            </div>
-          )}
-        </div>
-      )}
+          <ErrorBanner message={error} onDismiss={clearError} />
 
-      <PreviewModal
-        isOpen={isPreviewOpen}
-        onClose={() => setIsPreviewOpen(false)}
-        file={resultFile}
-        title="Preview - Rotated"
-      />
-    </div>
+          <PreviewModal
+            isOpen={isPreviewOpen}
+            onClose={closePreview}
+            file={previewFile}
+            title="Preview - Rotated"
+          />
+        </>
+      )}
+    />
   );
 }

@@ -8,6 +8,8 @@
   transition: all var(--transition-fast);
   border: none;
   cursor: pointer;
+  min-height: 44px;
+  min-width: 44px;
 }
 
 .button:disabled {

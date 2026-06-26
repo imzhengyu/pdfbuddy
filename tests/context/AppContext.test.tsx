@@ -20,7 +20,7 @@ describe('AppContext', () => {
       expect(error?.message).toBe('useApp must be used within AppProvider');
     });
 
-    it('returns { state, dispatch, setView } when inside provider', () => {
+    it('returns { state, setView } when inside provider', () => {
       let contextValue: any;
       const TestComponent = () => {
         contextValue = useApp();
@@ -32,7 +32,6 @@ describe('AppContext', () => {
         </AppProvider>
       );
       expect(contextValue).toHaveProperty('state');
-      expect(contextValue).toHaveProperty('dispatch');
       expect(contextValue).toHaveProperty('setView');
       expect(contextValue.state.currentView).toBe('merge');
     });

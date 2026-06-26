@@ -1,5 +1,5 @@
 import { CompressionQuality } from './types';
-import { validatePDFFile } from './pdfValidation';
+import { validatePDF } from './pdfValidation';
 import { ProgressCallback, loadPDFFromArrayBuffer } from './pdfOperations';
 import { withPDFLibFallback } from './pdfFallback';
 
@@ -8,7 +8,11 @@ export async function compressPdf(
   quality: CompressionQuality,
   onProgress?: ProgressCallback
 ): Promise<Blob> {
-  validatePDFFile(file);
+  // Validate PDF structure using full validation
+  const validationResult = await validatePDF(file, 'full');
+  if (!validationResult.valid) {
+    throw new Error(`"${file.name}" is not a valid PDF: ${validationResult.errors.join('; ')}`);
+  }
 
   onProgress?.({ current: 0, total: 1, percent: 50 });
 

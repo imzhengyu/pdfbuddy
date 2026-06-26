@@ -3,6 +3,13 @@
 .title { font-size: 1.875rem; font-weight: 700; color: var(--color-text); margin-bottom: var(--space-sm); }
 .description { color: var(--color-text-secondary); max-width: 600px; }
 .workspace { display: flex; flex-direction: column; gap: var(--space-lg); background: var(--color-surface); border-radius: var(--radius-lg); padding: var(--space-xl); box-shadow: var(--shadow-md); }
+.options { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--space-md); }
+.optionGroup { display: flex; flex-direction: column; gap: var(--space-xs); }
+.optionGroup label { font-size: 0.875rem; font-weight: 500; color: var(--color-text-secondary); }
+.optionGroup select,
+.optionGroup input { padding: var(--space-sm); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-background); color: var(--color-text); font-size: 0.875rem; }
+.optionGroup select:disabled,
+.optionGroup input:disabled { opacity: 0.6; cursor: not-allowed; }
 .actions { display: flex; gap: var(--space-md); justify-content: flex-end; flex-wrap: wrap; }
 .error { display: flex; align-items: center; justify-content: space-between; padding: var(--space-md); background: var(--color-error-light); color: var(--color-error); border-radius: var(--radius-md); }
 .error button { background: none; border: none; font-size: 1.5rem; cursor: pointer; }

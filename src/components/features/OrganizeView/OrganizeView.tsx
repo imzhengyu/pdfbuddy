@@ -4,7 +4,11 @@ import { PageThumbnails } from '../../common/PageThumbnails/PageThumbnails';
 import { Button } from '../../common/Button/Button';
 import { ProgressBar } from '../../common/ProgressBar/ProgressBar';
 import { PreviewModal } from '../../common/PreviewModal/PreviewModal';
+import { FeatureViewShell } from '../../common/FeatureViewShell';
+import { FileInfoHeader } from '../../common/FileInfoHeader';
+import { ErrorBanner } from '../../common/ErrorBanner';
 import { useOrganize } from '../../../hooks/useOrganize';
+import { usePreview } from '../../../hooks/usePreview';
 import { downloadBlob } from '../../../utils/downloadUtils';
 import { getPageCount } from '../../../utils/fileUtils';
 import { PageOrder } from '../../../services/pdf/types';
@@ -13,10 +17,11 @@ import styles from './OrganizeView.module.css';
 export function OrganizeView() {
   const [file, setFile] = useState<File | null>(null);
   const [selectedPages, setSelectedPages] = useState<number[]>([]);
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [pageOrder, setPageOrder] = useState<number[]>([]);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
+  const { isPreviewOpen, previewFile, openPreview, closePreview } = usePreview();
   const { reorganize, isProcessing, progress, error, clearError } = useOrganize();
 
   const handleFileDropped = useCallback(async (files: File[]) => {
@@ -42,14 +47,13 @@ export function OrganizeView() {
   const handleOrganize = useCallback(async () => {
     if (!file) return;
 
-    // Build PageOrder from the current pageOrder array, excluding deleted pages
     const deletedSet = new Set(selectedPages);
     const order: PageOrder[] = pageOrder
       .filter(idx => !deletedSet.has(idx))
       .map((originalIndex, newIndex) => ({ originalIndex, newIndex }));
 
     if (order.length === 0) {
-      alert('No pages left after deletion');
+      setWarning('No pages left after deletion');
       return;
     }
     const result = await reorganize(file, order);
@@ -82,24 +86,34 @@ export function OrganizeView() {
     setDragOverIndex(null);
   }, [dragIndex, dragOverIndex]);
 
-  return (
-    <div className={styles.container}>
-      <div className={styles.header}>
-        <h2 className={styles.title}>Organize PDF</h2>
-        <p className={styles.description}>Reorder and delete pages in your PDF.</p>
-      </div>
+  const handleChangeFile = useCallback(() => {
+    setFile(null);
+    setSelectedPages([]);
+    setPageOrder([]);
+    closePreview();
+  }, [closePreview]);
 
-      {!file ? (
-        <DropZone onFilesDropped={handleFileDropped} message="Drag and drop a PDF file to organize" multiple={false} />
-      ) : (
-        <div className={styles.workspace}>
-          <div className={styles.fileInfo}>
-            <span><strong>{file.name}</strong></span>
-            <Button label="Change File" variant="outline" size="sm" onClick={() => setFile(null)} />
-          </div>
+  return (
+    <FeatureViewShell
+      title="Organize PDF"
+      description="Reorder and delete pages in your PDF."
+      isEmpty={!file}
+      emptyView={
+        <DropZone
+          onFilesDropped={handleFileDropped}
+          message="Drag and drop a PDF file to organize"
+          multiple={false}
+        />
+      }
+      workspace={() => (
+        <>
+          <FileInfoHeader
+            fileName={file!.name}
+            onChangeFile={handleChangeFile}
+          />
 
           <PageThumbnails
-            file={file}
+            file={file!}
             onSelect={handlePageSelect}
             selectedPages={selectedPages}
             onPageDragStart={handleDragStart}
@@ -109,7 +123,7 @@ export function OrganizeView() {
           />
 
           <div className={styles.actions}>
-            <Button label="Preview PDF" variant="outline" onClick={() => setIsPreviewOpen(true)} />
+            <Button label="Preview PDF" variant="outline" onClick={() => openPreview(file!)} />
           </div>
 
           {selectedPages.length > 0 && (
@@ -118,25 +132,27 @@ export function OrganizeView() {
 
           {isProcessing && progress && <ProgressBar progress={progress} />}
 
-          {error && (
-            <div className={styles.error}>
-              <span>{error}</span>
-              <button onClick={clearError}>×</button>
+          <ErrorBanner message={error} onDismiss={clearError} />
+
+          {warning && (
+            <div className={styles.warning}>
+              <span>{warning}</span>
+              <button type="button" onClick={() => setWarning(null)}>×</button>
             </div>
           )}
 
           <div className={styles.actions}>
             <Button label="Download Organized PDF" variant="primary" onClick={handleOrganize} disabled={isProcessing} loading={isProcessing} />
           </div>
-        </div>
-      )}
 
-      <PreviewModal
-        isOpen={isPreviewOpen}
-        onClose={() => setIsPreviewOpen(false)}
-        file={file}
-        title="Preview"
-      />
-    </div>
+          <PreviewModal
+            isOpen={isPreviewOpen}
+            onClose={closePreview}
+            file={previewFile}
+            title="Preview"
+          />
+        </>
+      )}
+    />
   );
 }

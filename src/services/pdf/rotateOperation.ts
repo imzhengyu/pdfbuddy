@@ -1,6 +1,6 @@
 import { PDFDocument, degrees } from 'pdf-lib';
 import { PageRotation } from './types';
-import { validatePDFFile, validatePageIndex } from './pdfValidation';
+import { validatePDF, validatePageIndex } from './pdfValidation';
 import { ProgressCallback, loadPDFFromArrayBuffer } from './pdfOperations';
 
 export async function rotatePdf(
@@ -8,7 +8,11 @@ export async function rotatePdf(
   rotations: PageRotation[],
   onProgress?: ProgressCallback
 ): Promise<Blob> {
-  validatePDFFile(file);
+  // Validate PDF structure using full validation
+  const validationResult = await validatePDF(file, 'full');
+  if (!validationResult.valid) {
+    throw new Error(`"${file.name}" is not a valid PDF: ${validationResult.errors.join('; ')}`);
+  }
 
   const arrayBuffer = await file.arrayBuffer();
   const sourcePdf = await loadPDFFromArrayBuffer(arrayBuffer);

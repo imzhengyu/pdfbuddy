@@ -1,0 +1,62 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  background: var(--color-background);
+  border-radius: var(--radius-md);
+  border: 2px solid transparent;
+  cursor: grab;
+  transition: all 0.2s;
+}
+
+.item:hover {
+  background: #f1f5f9;
+}
+
+.item.dragging {
+  opacity: 0.5;
+  cursor: grabbing;
+}
+
+.item.dragOver {
+  border-color: var(--color-primary);
+  background: #eef2ff;
+}
+
+.dragHandle {
+  color: var(--color-text-secondary);
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  padding: var(--space-xs);
+}
+
+.index {
+  font-weight: 600;
+  color: var(--color-primary);
+  min-width: 24px;
+}
+
+.name {
+  flex: 1;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.size {
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}
+
+.removeButton {
+  flex-shrink: 0;
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { convertImagesToPdf, pdfToImagesNotSupported } from '../../src/services/pdf/convertOperation';
+import { convertImagesToPdf, pdfToImagesNotSupported, convertPdfToImages } from '../../src/services/pdf/convertOperation';
 import { PDFProcessingError } from '../../src/services/pdf/types';
 
 vi.mock('pdf-lib', () => ({
@@ -13,11 +13,34 @@ vi.mock('pdf-lib', () => ({
   }
 }));
 
+// Mock pdfjs-dist module
+vi.mock('pdfjs-dist', () => ({
+  GlobalWorkerOptions: { workerSrc: '' },
+  getDocument: vi.fn().mockReturnValue({
+    promise: Promise.resolve({
+      numPages: 2,
+      getPage: vi.fn().mockResolvedValue({
+        getViewport: vi.fn().mockReturnValue({ width: 100, height: 140 }),
+        render: vi.fn().mockReturnValue({ promise: Promise.resolve() })
+      })
+    })
+  })
+}));
+
 function createMockImageFile(content: string, name: string, type: string): File {
   const file = new File([content], name, { type });
   Object.defineProperty(file, 'arrayBuffer', {
     writable: true,
     value: vi.fn().mockResolvedValue(new TextEncoder().encode(content).buffer)
+  });
+  return file;
+}
+
+function createMockPDFFile(name: string): File {
+  const file = new File(['pdf'], name, { type: 'application/pdf' });
+  Object.defineProperty(file, 'arrayBuffer', {
+    writable: true,
+    value: vi.fn().mockResolvedValue(new ArrayBuffer(8))
   });
   return file;
 }
@@ -45,6 +68,26 @@ describe('convertOperation', () => {
       const onProgress = vi.fn();
       await convertImagesToPdf([pngFile], onProgress);
       expect(onProgress).toHaveBeenCalled();
+    });
+  });
+
+  describe('convertPdfToImages', () => {
+    it('converts PDF pages to images using browser path', async () => {
+      const mockBlob = new Blob(['fake-image'], { type: 'image/png' });
+
+      // Mock canvas.toBlob
+      HTMLCanvasElement.prototype.toBlob = vi.fn((callback: BlobCallback | null) => {
+        if (callback) {
+          callback(mockBlob);
+        }
+      }) as any;
+
+      const pdfFile = createMockPDFFile('test.pdf');
+
+      const result = await convertPdfToImages(pdfFile);
+      expect(Array.isArray(result)).toBe(true);
+      expect(result.length).toBe(2);
+      expect(result[0]).toBe(mockBlob);
     });
   });
 

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { RotateView } from '../../src/components/features/RotateView/RotateView';
+import { createMockPDFFile } from '../utils/testHelpers';
 
 vi.mock('../../src/utils/downloadUtils', () => ({
   downloadBlob: vi.fn()
@@ -12,9 +13,24 @@ vi.mock('../../src/services/pdf/ClientPDFService', () => ({
   }))
 }));
 
+
+
+const originalError = console.error;
+
 describe('RotateView', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
+      const message = args.join(' ');
+      if (message.includes('Failed to load thumbnails') || message.includes('Setting up fake worker')) {
+        return;
+      }
+      originalError(...args);
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('renders with header and dropzone', () => {
@@ -33,7 +49,7 @@ describe('RotateView', () => {
 
     const input = screen.getByTestId('dropzone').querySelector('input');
     if (input) {
-      const file = new File(['test'], 'test.pdf', { type: 'application/pdf' });
+      const file = createMockPDFFile('test', 'test.pdf');
       fireEvent.change(input, { target: { files: [file] } });
     }
 
@@ -51,7 +67,7 @@ describe('RotateView', () => {
 
     const input = screen.getByTestId('dropzone').querySelector('input');
     if (input) {
-      const file = new File(['test'], 'test.pdf', { type: 'application/pdf' });
+      const file = createMockPDFFile('test', 'test.pdf');
       fireEvent.change(input, { target: { files: [file] } });
     }
 
@@ -67,7 +83,7 @@ describe('RotateView', () => {
 
     const input = screen.getByTestId('dropzone').querySelector('input');
     if (input) {
-      const file = new File(['test'], 'test.pdf', { type: 'application/pdf' });
+      const file = createMockPDFFile('test', 'test.pdf');
       fireEvent.change(input, { target: { files: [file] } });
     }
 
@@ -81,7 +97,7 @@ describe('RotateView', () => {
 
     const input = screen.getByTestId('dropzone').querySelector('input');
     if (input) {
-      const file = new File(['test'], 'test.pdf', { type: 'application/pdf' });
+      const file = createMockPDFFile('test', 'test.pdf');
       fireEvent.change(input, { target: { files: [file] } });
     }
 
@@ -95,7 +111,7 @@ describe('RotateView', () => {
 
     const input = screen.getByTestId('dropzone').querySelector('input');
     if (input) {
-      const file = new File(['test'], 'test.pdf', { type: 'application/pdf' });
+      const file = createMockPDFFile('test', 'test.pdf');
       fireEvent.change(input, { target: { files: [file] } });
     }
 

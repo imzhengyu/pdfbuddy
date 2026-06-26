@@ -1,5 +1,158 @@
 # Changelog / Bug Fixes
 
+## 2026-06-26
+
+### Fix: Mobile Responsive Layout Issues
+
+**Issue:** Several layouts did not adapt well to small screens (320px+), including header navigation wrapping, excessive padding, two-column views side-by-side on mobile, and PreviewModal overflow.
+
+**Fix:**
+1. `src/App.module.css`: ensured nav buttons and theme toggle meet 44px minimum touch target, kept nav horizontal-scrollable on small screens, reduced header/main/footer padding at 480px.
+2. `src/components/common/FeatureViewShell/FeatureViewShell.module.css`: reduced container/workspace padding and title size at 768px and 480px breakpoints.
+3. `src/components/common/PreviewModal/PreviewModal.module.css`: made modal full-screen on <=480px, reduced preview area min-width from 400px to 280px, ensured footer controls meet 44px touch target.
+4. `src/components/features/SplitView/SplitView.module.css`: stacked `.splitContainer` vertically below 768px, made mode buttons and action buttons full-width on small screens.
+5. `src/components/features/RotateView/RotateView.module.css`: stacked two-column layout below 768px, reset sticky positioning on mobile, made actions full-width.
+6. `src/components/common/DropZone/DropZone.module.css`: added min-height and reduced padding on small screens.
+7. `src/components/common/Button/Button.module.css`: added 44px min-height/min-width to all buttons for touch targets.
+
+**Files Changed:**
+- `src/App.module.css`
+- `src/components/common/FeatureViewShell/FeatureViewShell.module.css`
+- `src/components/common/PreviewModal/PreviewModal.module.css`
+- `src/components/features/SplitView/SplitView.module.css`
+- `src/components/features/RotateView/RotateView.module.css`
+- `src/components/common/DropZone/DropZone.module.css`
+- `src/components/common/Button/Button.module.css`
+
+---
+
+### Fix: Remove Console Errors/Warnings from Production Build
+
+**Issue:** Several source files contained `console.error` and `console.warn` calls that would leak into the production build, violating the "no console errors in production" success criterion.
+
+**Fix:**
+1. Removed all `console.error` and `console.warn` calls from production source code.
+2. Removed the `logToConsole` prop from `ErrorBoundary` since it no longer logged to console.
+3. Removed the corresponding `ErrorBoundary` tests that asserted console logging behavior.
+4. Unified `PageThumbnails` to use `PDF_CONFIG.pdfJsWorkerUrl` instead of a hardcoded CDN URL.
+5. Replaced unstable `key={index}` in `PageThumbnails` with a composite key based on file name, size, and page index.
+
+**Files Changed:**
+- `src/components/common/PageThumbnails/PageThumbnails.tsx`
+- `src/components/common/PreviewModal/PreviewModal.tsx`
+- `src/components/common/ErrorBoundary/ErrorBoundary.tsx`
+- `src/components/features/SplitView/SplitView.tsx`
+- `src/services/pdf/pdfFallback.ts`
+- `tests/components/ErrorBoundary.test.tsx`
+
+---
+
+### Bug Fix: PageThumbnails Unit Tests Failing
+
+**Issue:** During regression, `tests/components/PageThumbnails.test.tsx` failed with 4 tests. The error was `Cannot read properties of undefined (reading 'promise')` at `PageThumbnails.tsx:61`, caused by `pdfjs-dist.getDocument` returning undefined in the test environment. Additionally, the rotate-button accessibility test failed because it used `screen.getByRole` but the component renders one rotate button per page, producing multiple matching elements.
+
+**Root Cause:**
+1. `beforeEach` called `vi.restoreAllMocks()`, which restored the `pdfjs-dist` mock created in the `vi.mock` factory back to its default no-op implementation, making `getDocument` return undefined.
+2. The `vi.mock` factory was asynchronous and used `vi.importActual`, which interacted poorly with the component's dynamic import of `pdfjs-dist`.
+3. The rotate-button test used `getByRole('button', { name: 'Rotate page 90 degrees' })` but there are 3 such buttons (one per page in the mock PDF).
+
+**Fix:**
+1. Removed `vi.restoreAllMocks()` from `beforeEach`.
+2. Rewrote the `vi.mock('pdfjs-dist', ...)` factory as a synchronous factory without `vi.importActual`.
+3. Changed the rotate-button test to use `getAllByRole` and assert on the first button.
+
+**Files Changed:**
+- `tests/components/PageThumbnails.test.tsx`
+
+**Tests:**
+- The existing 12 PageThumbnails tests now pass (4 previously failing).
+
+---
+
+### Improvement: PageThumbnails Accessibility
+
+**Issue:** `PageThumbnails` rendered clickable page thumbnails as `<div>` elements without keyboard or screen-reader support. The rotate button had a `title` but no `aria-label`.
+
+**Fix:**
+1. Added `role="button"`, `tabIndex={0}`, and `aria-label` to each clickable thumbnail `<div>`.
+2. Added `onKeyDown` handler that triggers the click action on Enter or Space.
+3. Added `aria-label="Rotate page 90 degrees"` to the rotate button (kept existing `title`).
+
+**Files Changed:**
+- `src/components/common/PageThumbnails/PageThumbnails.tsx` - Added accessibility attributes and keyboard handler
+
+**Tests Added:**
+- `tests/components/PageThumbnails.test.tsx` - 4 new tests:
+  - Thumbnail divs have `role="button"` and `tabIndex="0"`
+  - Pressing Enter on a thumbnail triggers the click handler
+  - Pressing Space on a thumbnail triggers the click handler
+  - Rotate button has correct `aria-label`
+
+---
+
+### Improvement: Consolidate Duplicate File-Size Formatting Utilities
+
+**Issue:** Two functions (`formatFileSize` in `fileUtils.ts` and `formatBytes` in `performance.ts`) both converted bytes to human-readable sizes but used different decimal precision (1 vs 2), causing inconsistency across the UI.
+
+**Fix:**
+1. Kept the `formatBytes` implementation in `src/utils/performance.ts` (2-decimal precision) as the canonical implementation.
+2. In `src/utils/fileUtils.ts`, removed the duplicate `formatFileSize` implementation and re-exported `formatBytes` as `formatFileSize` for backward compatibility.
+3. Updated unit tests in `tests/utils/fileUtils.test.ts` to expect 2-decimal precision, matching the canonical `formatBytes` behavior.
+4. Added a test case in `tests/utils/performance.test.ts` to verify `formatBytes` handles intermediate values (e.g., 1.50 KB).
+
+**Files Changed:**
+- `src/utils/fileUtils.ts` - Replaced `formatFileSize` implementation with re-export of `formatBytes`
+- `tests/utils/fileUtils.test.ts` - Updated expectations to 2-decimal precision
+- `tests/utils/performance.test.ts` - Added intermediate-value test for `formatBytes`
+
+**Test Results:** All tests passing after consolidation.
+
+---
+
+## 2026-06-26
+
+### Cleanup: Remove unused ErrorDisplay component and AppContext bloat
+
+**Issue:** The `ErrorDisplay` component was no longer used in any feature views (replaced by `ErrorBanner`), and `AppContext` exposed `dispatch` directly as well as unused `useTheme` and `useRecentFiles` wrapper hooks.
+
+**Changes:**
+1. Deleted `src/components/common/ErrorDisplay/` (ErrorDisplay.tsx, ErrorDisplay.module.css, index.ts)
+2. Deleted `tests/components/ErrorDisplay.test.tsx`
+3. Removed `dispatch` from `AppContextValue` and provider `value`
+4. Removed `useTheme` and `useRecentFiles` exports from `AppContext.tsx`
+5. Updated `tests/context/AppContext.test.tsx` to remove assertions for `dispatch`
+
+**Files Changed:**
+- `src/context/AppContext.tsx` - Removed `dispatch`, `useTheme`, `useRecentFiles`
+- `tests/context/AppContext.test.tsx` - Updated assertions
+- `docs/implementation.md` - Removed ErrorDisplay references
+
+**Files Deleted:**
+- `src/components/common/ErrorDisplay/ErrorDisplay.tsx`
+- `src/components/common/ErrorDisplay/ErrorDisplay.module.css`
+- `src/components/common/ErrorDisplay/index.ts`
+- `tests/components/ErrorDisplay.test.tsx`
+
+---
+
+## 2026-05-01
+
+### Bug: PageThumbnails overlays RotateView buttons when window is small
+
+**Issue:** In RotateView, when the browser window is small or the screen is narrow, the PageThumbnails grid overlays and blocks the "Apply Rotation" and "Preview" buttons, making them inaccessible.
+
+**Root Cause:** PageThumbnails uses a CSS grid that may overlap other content when viewport is constrained. No z-index or overflow handling prevents this.
+
+**Files Affected:**
+- `src/components/features/RotateView/RotateView.module.css` - Need to ensure proper stacking context
+- `src/components/common/PageThumbnails/PageThumbnails.module.css` - Need to constrain overflow
+
+**Files Changed:**
+- `src/components/features/RotateView/RotateView.module.css`
+- `src/components/common/PageThumbnails/PageThumbnails.module.css`
+
+---
+
 ## 2026-04-29
 
 ### Bug Fix: Rotate page order not preserved
@@ -141,15 +294,13 @@ await page.waitForFunction(() => {
 3. **Added unit tests for assert utilities** (`tests/services/assert.test.ts`)
    - 21 tests covering all assertion functions
 
-4. **Updated SPEC.md** - Clarified that PDF→Images conversion is NOT YET IMPLEMENTED (requires backend service since pdf-lib cannot render PDFs to images client-side)
-
 **Files Added:**
 - `src/services/pdf/assert.ts` - NEW: Assertion utilities
 - `tests/services/assert.test.ts` - NEW: Assert utility tests
 - `tests/services/pdfFallback.test.ts` - NEW: pdfFallback error path tests
 
 **Files Changed:**
-- `docs/SPEC.md` - Updated Convert feature to clarify PDF→Images is not implemented
+- `docs/SPEC.md` - Updated Convert feature (removed PDF→Images note since feature is removed)
 
 **Test Results:** All 249 tests passing
 

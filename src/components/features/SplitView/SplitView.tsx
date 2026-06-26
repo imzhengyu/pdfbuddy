@@ -4,7 +4,11 @@ import { Button } from '../../common/Button/Button';
 import { ProgressBar } from '../../common/ProgressBar/ProgressBar';
 import { PageThumbnails } from '../../common/PageThumbnails/PageThumbnails';
 import { PreviewModal } from '../../common/PreviewModal/PreviewModal';
+import { FeatureViewShell } from '../../common/FeatureViewShell';
+import { FileInfoHeader } from '../../common/FileInfoHeader';
+import { ErrorBanner } from '../../common/ErrorBanner';
 import { useSplit } from '../../../hooks/useSplit';
+import { usePreview } from '../../../hooks/usePreview';
 import { downloadBlob } from '../../../utils/downloadUtils';
 import { ClientPDFService } from '../../../services/pdf/ClientPDFService';
 import { PageRange } from '../../../services/pdf/types';
@@ -19,9 +23,8 @@ export function SplitView() {
   const [selectedPages, setSelectedPages] = useState<number[]>([]);
   const [pageRanges, setPageRanges] = useState<string>('');
   const [selectionMode, setSelectionMode] = useState<SelectionMode>('visual');
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [previewFile, setPreviewFile] = useState<File | null>(null);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const { isPreviewOpen, previewFile, openPreview, closePreview } = usePreview();
   const { split, isProcessing, progress, error, clearError } = useSplit();
 
   const handleFileDropped = useCallback(async (files: File[]) => {
@@ -30,7 +33,7 @@ export function SplitView() {
       setFile(f);
       setSelectedPages([]);
       setPageRanges('');
-      setPreviewFile(null);
+      closePreview();
       try {
         const count = await getPageCount(f);
         setPageCount(count);
@@ -38,7 +41,14 @@ export function SplitView() {
         setPageCount(0);
       }
     }
-  }, []);
+  }, [closePreview]);
+
+  const handleChangeFile = useCallback(() => {
+    setFile(null);
+    setSelectedPages([]);
+    setPageRanges('');
+    closePreview();
+  }, [closePreview]);
 
   const handlePageDrop = useCallback((pageIndex: number) => {
     setSelectedPages(prev => {
@@ -57,18 +67,20 @@ export function SplitView() {
     setSelectedPages([]);
   }, []);
 
+  const getSelectedPageNumbers = useCallback((): number[] | null => {
+    if (selectionMode === 'range' && pageRanges.trim()) {
+      return parsePageRanges(pageRanges, pageCount);
+    } else if (selectedPages.length > 0) {
+      return selectedPages.map(p => p + 1);
+    }
+    return null;
+  }, [selectionMode, pageRanges, pageCount, selectedPages]);
+
   const handlePreview = useCallback(async () => {
     if (!file) return;
 
-    let pagesToPreview: number[];
-    if (selectionMode === 'range' && pageRanges.trim()) {
-      pagesToPreview = parsePageRanges(pageRanges, pageCount);
-    } else if (selectedPages.length > 0) {
-      // selectedPages is 0-based, convert to 1-based for split
-      pagesToPreview = selectedPages.map(p => p + 1);
-    } else {
-      return;
-    }
+    const pagesToPreview = getSelectedPageNumbers();
+    if (!pagesToPreview) return;
 
     try {
       const service = new ClientPDFService();
@@ -80,18 +92,16 @@ export function SplitView() {
         if (result.length === 1) {
           previewBlob = result[0];
         } else {
-          // Merge all split pages into a single PDF for preview
           const files = result.map((blob, i) => new File([blob], `page_${i}.pdf`, { type: 'application/pdf' }));
           previewBlob = await service.merge(files);
         }
         const previewFileObj = new File([previewBlob], 'split-preview.pdf', { type: 'application/pdf' });
-        setPreviewFile(previewFileObj);
-        setIsPreviewOpen(true);
+        openPreview(previewFileObj);
       }
     } catch (err) {
-      console.error('Preview failed:', err);
+      // Preview failures are silently ignored; the user can retry via the UI.
     }
-  }, [file, selectedPages, pageRanges, selectionMode, pageCount]);
+  }, [file, getSelectedPageNumbers, openPreview]);
 
   const parsePageRanges = (input: string, maxPages: number): number[] => {
     const pages: number[] = [];
@@ -118,15 +128,8 @@ export function SplitView() {
   const handleExport = useCallback(async () => {
     if (!file) return;
 
-    let pagesToExport: number[];
-    if (selectionMode === 'range' && pageRanges.trim()) {
-      pagesToExport = parsePageRanges(pageRanges, pageCount);
-    } else if (selectedPages.length > 0) {
-      // selectedPages is 0-based, convert to 1-based for split
-      pagesToExport = selectedPages.map(p => p + 1);
-    } else {
-      return;
-    }
+    const pagesToExport = getSelectedPageNumbers();
+    if (!pagesToExport) return;
 
     const ranges: PageRange[] = pagesToExport.map(page => ({ start: page, end: page }));
     const results = await split(file, ranges);
@@ -141,7 +144,31 @@ export function SplitView() {
         await downloadBlobsAsZip(zipBlobs, `${baseName}_selected.zip`);
       }
     }
-  }, [file, selectedPages, pageRanges, selectionMode, split, pageCount]);
+  }, [file, getSelectedPageNumbers, split]);
+
+  const handleExportAsImages = useCallback(async () => {
+    if (!file) return;
+
+    const pagesToExport = getSelectedPageNumbers();
+    if (!pagesToExport) return;
+
+    const service = new ClientPDFService();
+    const images = await service.convertToImages(file, { format: 'png', scale: 2 });
+
+    if (images && images.length > 0) {
+      const baseName = file.name.replace('.pdf', '');
+      if (images.length === 1) {
+        downloadBlob(images[0], `${baseName}_page_${pagesToExport[0]}.png`);
+      } else {
+        const zipBlobs = images.map((blob, i) => ({
+          name: `page_${i + 1}.png`,
+          blob
+        }));
+        const { downloadBlobsAsZip } = await import('../../../utils/downloadUtils');
+        await downloadBlobsAsZip(zipBlobs, `${baseName}_images.zip`);
+      }
+    }
+  }, [file, getSelectedPageNumbers]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -169,44 +196,39 @@ export function SplitView() {
     handlePageDrop(pageIndex);
   }, [handlePageDrop]);
 
-  const hasSelection = selectionMode === 'visual'
-    ? selectedPages.length > 0
-    : pageRanges.trim().length > 0;
+  const hasSelection = getSelectedPageNumbers() !== null;
 
   return (
-    <div className={styles.container}>
-      <div className={styles.header}>
-        <h2 className={styles.title}>Split PDF</h2>
-        <p className={styles.description}>
-          Select pages to export using visual selection or page ranges. Preview shows the result after split.
-        </p>
-      </div>
-
-      {!file ? (
+    <FeatureViewShell
+      title="Split PDF"
+      description="Select pages to export using visual selection or page ranges. Preview shows the result after split."
+      isEmpty={!file}
+      emptyView={
         <DropZone
           onFilesDropped={handleFileDropped}
           message="Drag and drop a PDF file to split"
           multiple={false}
         />
-      ) : (
-        <div className={styles.workspace}>
-          <div className={styles.fileInfo}>
-            <span><strong>{file.name}</strong></span>
-            <Button label="Change File" variant="outline" size="sm" onClick={() => { setFile(null); setSelectedPages([]); setPageRanges(''); setPreviewFile(null); }} />
-          </div>
+      }
+      workspace={() => (
+        <>
+          <FileInfoHeader
+            fileName={file!.name}
+            onChangeFile={handleChangeFile}
+          />
 
           <div className={styles.modeToggle}>
             <button
+              type="button"
               className={`${styles.modeBtn} ${selectionMode === 'visual' ? styles.active : ''}`}
               onClick={() => setSelectionMode('visual')}
-              type="button"
             >
               Visual Selection
             </button>
             <button
+              type="button"
               className={`${styles.modeBtn} ${selectionMode === 'range' ? styles.active : ''}`}
               onClick={() => setSelectionMode('range')}
-              type="button"
             >
               Page Ranges
             </button>
@@ -219,7 +241,7 @@ export function SplitView() {
                 <p className={styles.sectionHint}>Click pages to select them</p>
                 <div className={styles.sourceContent}>
                   <PageThumbnails
-                    file={file}
+                    file={file!}
                     selectedPages={selectedPages}
                     onPageClick={handlePageClick}
                     onPageDragStart={handlePageDragStart}
@@ -252,9 +274,9 @@ export function SplitView() {
                           <span className={styles.pageIndex}>{idx + 1}</span>
                           <span className={styles.pageLabel}>Page {pageIndex + 1}</span>
                           <button
+                            type="button"
                             className={styles.removeBtn}
                             onClick={() => handlePageRemove(pageIndex)}
-                            type="button"
                           >
                             ×
                           </button>
@@ -264,12 +286,7 @@ export function SplitView() {
                   )}
                 </div>
                 {selectedPages.length > 0 && (
-                  <Button
-                    label="Clear All"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleClearSelected}
-                  />
+                  <Button label="Clear All" variant="outline" size="sm" onClick={handleClearSelected} />
                 )}
               </div>
             </div>
@@ -291,41 +308,26 @@ export function SplitView() {
           )}
 
           <div className={styles.actions}>
-            <Button
-              label="Preview Selected"
-              variant="outline"
-              onClick={handlePreview}
-              disabled={!hasSelection || isProcessing}
-            />
+            <Button label="Preview Selected" variant="outline" onClick={handlePreview} disabled={!hasSelection || isProcessing} />
+            <Button label="Export as Images" variant="outline" onClick={handleExportAsImages} disabled={!hasSelection || isProcessing} />
           </div>
 
           {isProcessing && progress && <ProgressBar progress={progress} />}
 
-          {error && (
-            <div className={styles.error}>
-              <span>{error}</span>
-              <button onClick={clearError}>×</button>
-            </div>
-          )}
+          <ErrorBanner message={error} onDismiss={clearError} />
 
           <div className={styles.actions}>
-            <Button
-              label="Export Selected Pages"
-              variant="primary"
-              onClick={handleExport}
-              disabled={!hasSelection || isProcessing}
-              loading={isProcessing}
-            />
+            <Button label="Export Selected Pages" variant="primary" onClick={handleExport} disabled={!hasSelection || isProcessing} loading={isProcessing} />
           </div>
-        </div>
-      )}
 
-      <PreviewModal
-        isOpen={isPreviewOpen}
-        onClose={() => setIsPreviewOpen(false)}
-        file={previewFile}
-        title="Preview - After Split"
-      />
-    </div>
+          <PreviewModal
+            isOpen={isPreviewOpen}
+            onClose={closePreview}
+            file={previewFile}
+            title="Preview - After Split"
+          />
+        </>
+      )}
+    />
   );
 }

@@ -8,3 +8,5 @@
 .actions { display: flex; gap: var(--space-md); justify-content: flex-end; }
 .error { display: flex; align-items: center; justify-content: space-between; padding: var(--space-md); background: var(--color-error-light); color: var(--color-error); border-radius: var(--radius-md); }
 .error button { background: none; border: none; font-size: 1.5rem; cursor: pointer; }
+.warning { display: flex; align-items: center; justify-content: space-between; padding: var(--space-md); background: var(--color-warning-light); color: var(--color-warning); border-radius: var(--radius-md); }
+.warning button { background: none; border: none; font-size: 1.5rem; cursor: pointer; }

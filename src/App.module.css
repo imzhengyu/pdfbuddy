@@ -50,6 +50,8 @@
   color: white;
   transition: all var(--transition-fast);
   backdrop-filter: blur(4px);
+  min-height: 44px;
+  min-width: 44px;
 }
 
 .navButton:hover {
@@ -69,8 +71,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   background: rgba(255, 255, 255, 0.15);
   border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: var(--radius-md);
@@ -171,9 +173,27 @@
   .nav {
     width: 100%;
     overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: var(--space-xs);
   }
 
   .main {
     padding: var(--space-md);
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  .main {
+    padding: var(--space-sm);
+  }
+
+  .footer {
+    flex-direction: column;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
   }
 }

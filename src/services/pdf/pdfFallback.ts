@@ -34,13 +34,12 @@ export function isEncryptionError(error: unknown): boolean {
 export async function withPDFLibFallback<T>(
   pdfLibOperation: () => Promise<T>,
   fallbackOperation?: () => Promise<T>,
-  fallbackName?: string
+  _fallbackName?: string
 ): Promise<T> {
   try {
     return await pdfLibOperation();
   } catch (error) {
     if (isPDFDict2Error(error)) {
-      console.warn(`[PDF Fallback] pdf-lib failed with PDFDict2 error. ${fallbackName ? `Attempting ${fallbackName}...` : 'No fallback available.'}`);
       if (fallbackOperation) {
         return await fallbackOperation();
       }
@@ -52,7 +51,6 @@ export async function withPDFLibFallback<T>(
     }
 
     if (isEncryptionError(error)) {
-      console.warn(`[PDF Fallback] pdf-lib failed with encryption error. No fallback available for encrypted PDFs.`);
       throw new PDFLibError(
         'This PDF is encrypted and cannot be processed. Please decrypt the PDF first.',
         'ENCRYPTED',
@@ -60,7 +58,6 @@ export async function withPDFLibFallback<T>(
       );
     }
 
-    console.error('[PDF Fallback] Unknown error:', error);
     throw new PDFLibError(
       error instanceof Error ? error.message : 'Unknown PDF processing error',
       'UNKNOWN',

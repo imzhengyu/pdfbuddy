@@ -1,4 +1,3 @@
-import { useState, ReactNode, useEffect } from 'react';
 import { AppProvider, useApp, View } from './context/AppContext';
 import { MergeView } from './components/features/MergeView/MergeView';
 import { SplitView } from './components/features/SplitView/SplitView';
@@ -6,6 +5,7 @@ import { CompressView } from './components/features/CompressView/CompressView';
 import { RotateView } from './components/features/RotateView/RotateView';
 import { ConvertView } from './components/features/ConvertView/ConvertView';
 import { OrganizeView } from './components/features/OrganizeView/OrganizeView';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 import styles from './App.module.css';
 
 const VIEWS: { key: View; label: string }[] = [
@@ -17,41 +17,10 @@ const VIEWS: { key: View; label: string }[] = [
   { key: 'organize', label: 'Organize' }
 ];
 
-function ErrorBoundary({ children }: { children: ReactNode }) {
-  const [error, setError] = useState<Error | null>(null);
-
-  if (error) {
-    return (
-      <div className={styles.errorContainer}>
-        <h2>Something went wrong</h2>
-        <p>{error.message}</p>
-        <button onClick={() => window.location.reload()}>Reload</button>
-      </div>
-    );
-  }
-
-  try {
-    return <>{children}</>;
-  } catch (e) {
-    setError(e instanceof Error ? e : new Error('Unknown error'));
-    return null;
-  }
-}
-
 function AppContent() {
-  const { state, setView } = useApp();
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    const saved = localStorage.getItem('theme');
-    if (saved === 'dark' || saved === 'light') return saved;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  });
+  const { state, setView, theme, setTheme } = useApp();
 
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
-  }, [theme]);
-
-  const toggleTheme = () => setTheme(t => t === 'light' ? 'dark' : 'light');
+  const toggleTheme = () => setTheme(theme === 'light' ? 'dark' : 'light');
 
   const renderView = () => {
     switch (state.currentView) {
@@ -82,6 +51,7 @@ function AppContent() {
           {VIEWS.map(view => (
             <button
               key={view.key}
+              type="button"
               className={`${styles.navButton} ${state.currentView === view.key ? styles.active : ''}`}
               onClick={() => setView(view.key)}
             >
@@ -89,7 +59,7 @@ function AppContent() {
             </button>
           ))}
         </nav>
-        <button className={styles.themeToggle} onClick={toggleTheme} aria-label="Toggle theme">
+        <button type="button" className={styles.themeToggle} onClick={toggleTheme} aria-label="Toggle theme">
           {theme === 'dark' ? (
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="12" cy="12" r="5" />

@@ -75,7 +75,7 @@ describe('OrganizeView', () => {
       expect(screen.getByText('Organize failed')).toBeInTheDocument();
     });
 
-    const closeBtn = screen.getByRole('button', { name: '×' });
+    const closeBtn = screen.getByRole('button', { name: 'Dismiss error' });
     fireEvent.click(closeBtn);
     expect(clearErrorMock).toHaveBeenCalled();
   });

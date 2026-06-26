@@ -1,0 +1,1 @@
+export { FileInfoHeader } from './FileInfoHeader';

@@ -1,3 +1,7 @@
+/**
+ * PDF Services barrel export.
+ * Re-exports all PDF-related types, services, and operations.
+ */
 export * from './types';
 export * from './pdfValidation';
 export * from './pdfOperations';

@@ -1,5 +1,5 @@
 import { PDFDocument } from 'pdf-lib';
-import { validatePDFFile } from './pdfValidation';
+import { validatePDF } from './pdfValidation';
 import { ProgressCallback, loadPDFFromArrayBuffer } from './pdfOperations';
 import { withPDFLibFallback, PDFLibError } from './pdfFallback';
 
@@ -16,7 +16,12 @@ export async function mergePdfs(
 
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
-    validatePDFFile(file);
+
+    // Validate PDF structure using full validation
+    const validationResult = await validatePDF(file, 'full');
+    if (!validationResult.valid) {
+      throw new Error(`"${file.name}" is not a valid PDF: ${validationResult.errors.join('; ')}`);
+    }
 
     let pdf;
     try {

@@ -1,6 +1,6 @@
 import { PDFDocument } from 'pdf-lib';
 import { PageRange } from './types';
-import { validatePDFFile, validatePageRange } from './pdfValidation';
+import { validatePDF, validatePageRange } from './pdfValidation';
 import { ProgressCallback, loadPDFFromArrayBuffer } from './pdfOperations';
 import { withPDFLibFallback } from './pdfFallback';
 
@@ -9,7 +9,11 @@ export async function splitPdf(
   pageRanges: PageRange[],
   onProgress?: ProgressCallback
 ): Promise<Blob[]> {
-  validatePDFFile(file);
+  // Validate PDF structure using full validation
+  const validationResult = await validatePDF(file, 'full');
+  if (!validationResult.valid) {
+    throw new Error(`"${file.name}" is not a valid PDF: ${validationResult.errors.join('; ')}`);
+  }
 
   const arrayBuffer = await file.arrayBuffer();
 

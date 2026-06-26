@@ -61,3 +61,18 @@
 .input { padding: var(--space-sm) var(--space-md); border: 1px solid var(--color-border); border-radius: var(--radius-md); font-size: 1rem; }
 .input:focus { outline: none; border-color: var(--color-primary); }
 .rangeHint { font-size: 0.75rem; color: var(--color-text-secondary); margin: 0; }
+
+@media (max-width: 768px) {
+  .splitContainer { flex-direction: column; height: auto; min-height: auto; }
+  .sourceSection,
+  .targetSection { min-height: 300px; }
+  .actions { justify-content: stretch; }
+  .actions > * { flex: 1; }
+}
+
+@media (max-width: 480px) {
+  .modeToggle { flex-wrap: wrap; }
+  .modeBtn { flex: 1; min-width: 120px; min-height: 44px; }
+  .targetBox { min-height: 150px; }
+  .actions { flex-direction: column; }
+}

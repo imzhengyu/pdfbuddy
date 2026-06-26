@@ -8,6 +8,23 @@
   transition: all var(--transition-normal);
   background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-primary-light) 100%);
   overflow: hidden;
+  min-height: 120px;
+}
+
+@media (max-width: 480px) {
+  .dropzone {
+    padding: var(--space-lg);
+    min-height: 100px;
+  }
+
+  .icon {
+    width: 48px;
+    height: 48px;
+  }
+
+  .message {
+    font-size: var(--font-size-base);
+  }
 }
 
 .dropzone::before {

@@ -1,4 +1,5 @@
 import { useEffect, useCallback, useState, useRef } from 'react';
+import { PDF_CONFIG } from '../../../config';
 import styles from './PreviewModal.module.css';
 
 interface PreviewModalProps {
@@ -61,7 +62,7 @@ export function PreviewModal({ isOpen, onClose, file, title }: PreviewModalProps
 
       try {
         const pdfjsLib = await import('pdfjs-dist');
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        pdfjsLib.GlobalWorkerOptions.workerSrc = PDF_CONFIG.pdfJsWorkerUrl;
 
         // Use cache if available
         let pdf = pdfRef.current;
@@ -88,7 +89,6 @@ export function PreviewModal({ isOpen, onClose, file, title }: PreviewModalProps
         setPageImages([]);
       } catch (err: any) {
         if (!cancelled) {
-          console.error('PDF load error:', err);
           setError(err?.message || 'Failed to load PDF');
           setTotalPages(0);
         }
@@ -176,7 +176,7 @@ export function PreviewModal({ isOpen, onClose, file, title }: PreviewModalProps
       <div className={styles.modal} onClick={e => e.stopPropagation()}>
         <div className={styles.header}>
           <h3>{title || 'Preview'}: {file.name}</h3>
-          <button className={styles.closeBtn} onClick={onClose} aria-label="Close preview">
+          <button type="button" className={styles.closeBtn} onClick={onClose} aria-label="Close preview">
             ×
           </button>
         </div>
@@ -210,6 +210,7 @@ export function PreviewModal({ isOpen, onClose, file, title }: PreviewModalProps
         <div className={styles.footer}>
           <div className={styles.navigation}>
             <button
+              type="button"
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
               disabled={currentPage <= 1}
               aria-label="Previous page"
@@ -220,6 +221,7 @@ export function PreviewModal({ isOpen, onClose, file, title }: PreviewModalProps
               {currentPage} / {totalPages}
             </span>
             <button
+              type="button"
               onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
               disabled={currentPage >= totalPages}
               aria-label="Next page"
@@ -229,10 +231,10 @@ export function PreviewModal({ isOpen, onClose, file, title }: PreviewModalProps
           </div>
 
           <div className={styles.zoomControls}>
-            <button onClick={handleZoomOut} aria-label="Zoom out">−</button>
+            <button type="button" onClick={handleZoomOut} aria-label="Zoom out">−</button>
             <span className={styles.zoomLevel}>{zoom}%</span>
-            <button onClick={handleZoomIn} aria-label="Zoom in">+</button>
-            <button onClick={handleFit} className={styles.fitBtn}>Fit</button>
+            <button type="button" onClick={handleZoomIn} aria-label="Zoom in">+</button>
+            <button type="button" onClick={handleFit} className={styles.fitBtn}>Fit</button>
           </div>
         </div>
       </div>

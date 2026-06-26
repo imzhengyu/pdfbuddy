@@ -1,0 +1,27 @@
+.fileInfo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md);
+  background: var(--color-background);
+  border-radius: var(--radius-md);
+  gap: var(--space-md);
+}
+
+.name {
+  color: var(--color-text);
+  word-break: break-word;
+  min-width: 0;
+}
+
+.info {
+  color: var(--color-text-secondary);
+  font-weight: 400;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex-shrink: 0;
+}

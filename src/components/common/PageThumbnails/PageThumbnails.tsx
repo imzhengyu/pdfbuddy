@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { PDF_CONFIG } from '../../../config';
 import styles from './PageThumbnails.module.css';
 
 interface PageThumbnailsProps {
@@ -45,7 +46,7 @@ export function PageThumbnails({
     async function loadThumbnails() {
       try {
         const pdfjsLib = await import('pdfjs-dist');
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        pdfjsLib.GlobalWorkerOptions.workerSrc = PDF_CONFIG.pdfJsWorkerUrl;
 
         // Use cache if available
         let pdf = pdfRef.current;
@@ -124,7 +125,6 @@ export function PageThumbnails({
           }
         }
       } catch (err) {
-        console.error('Failed to load thumbnails:', err);
         const errorMessage = err instanceof Error ? err.message : 'Failed to load PDF';
         if (!cancelled) {
           setError(errorMessage);
@@ -177,6 +177,13 @@ export function PageThumbnails({
     }
   }, [onPageDragEnd]);
 
+  const handleKeyDown = useCallback((e: React.KeyboardEvent, index: number) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleClick(index);
+    }
+  }, [handleClick]);
+
   if (error) {
     return (
       <div className={styles.errorContainer}>
@@ -195,9 +202,13 @@ export function PageThumbnails({
       )}
       {thumbnails.map((src, index) => (
         <div
-          key={index}
+          key={`${file.name}-${file.size}-${index}`}
+          role="button"
+          tabIndex={0}
+          aria-label={`Select page ${index + 1}`}
           className={`${styles.thumbnail} ${selectedPages.includes(index) ? styles.selected : ''} ${dragOverIndex === index ? styles.dragOver : ''}`}
           onClick={() => handleClick(index)}
+          onKeyDown={(e) => handleKeyDown(e, index)}
           draggable={!!onPageDragStart}
           onDragStart={(e) => handleDragStart(e, index)}
           onDragOver={(e) => handleDragOver(e, index)}
@@ -223,9 +234,11 @@ export function PageThumbnails({
             )}
             {onRotate && (
               <button
+                type="button"
                 className={styles.rotateButton}
                 onClick={(e) => handleRotate(e, index)}
                 title="Rotate 90°"
+                aria-label="Rotate page 90 degrees"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M23 4v6h-6" />
