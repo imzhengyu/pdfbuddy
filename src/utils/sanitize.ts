@@ -1,3 +1,5 @@
+import { CONST_SANITIZE_CONFIG } from '../config';
+
 /**
  * Sanitization Utilities
  *
@@ -29,10 +31,10 @@ export function sanitizeFilename(filename: string): string {
   // Remove leading/trailing dots and spaces
   sanitized = sanitized.replace(/^[\s.]+|[\s.]+$/g, '');
 
-  // Limit length to 255 characters (common filesystem limit)
-  if (sanitized.length > 255) {
+  // Limit length to a common filesystem limit
+  if (sanitized.length > CONST_SANITIZE_CONFIG.maxFilenameLength) {
     const ext = sanitized.split('.').pop();
-    const name = sanitized.slice(0, 250);
+    const name = sanitized.slice(0, CONST_SANITIZE_CONFIG.maxFilenameLength - 5);
     sanitized = ext ? `${name}.${ext}` : name;
   }
 
@@ -79,7 +81,7 @@ export function sanitizePathComponent(pathComponent: string): string {
   }
 
   // Remove any path separators
-  return pathComponent.replace(/[/\\]/g, '_').slice(0, 255);
+  return pathComponent.replace(/[/\\]/g, '_').slice(0, CONST_SANITIZE_CONFIG.maxFilenameLength);
 }
 
 /**
@@ -99,7 +101,7 @@ export function isValidFilename(filename: string): boolean {
   }
 
   // Check length
-  if (filename.length > 255) {
+  if (filename.length > CONST_SANITIZE_CONFIG.maxFilenameLength) {
     return false;
   }
 

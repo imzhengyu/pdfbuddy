@@ -39,7 +39,46 @@ global.matchMedia = vi.fn((query: string) => ({
 })) as unknown as typeof window.matchMedia;
 
 // Mock canvas for thumbnail generation if needed
-HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
-  drawImage: vi.fn(),
-  fillText: vi.fn()
-}));
+HTMLCanvasElement.prototype.getContext = vi.fn((contextId: string) => {
+  if (contextId === '2d') {
+    return {
+      drawImage: vi.fn(),
+      fillText: vi.fn(),
+      fillRect: vi.fn(),
+      clearRect: vi.fn(),
+      getImageData: vi.fn().mockReturnValue({
+        data: new Uint8ClampedArray(4 * 100 * 100),
+        width: 100,
+        height: 100,
+      }),
+      putImageData: vi.fn(),
+      createImageData: vi.fn().mockReturnValue({
+        data: new Uint8ClampedArray(4 * 100 * 100),
+        width: 100,
+        height: 100,
+      }),
+      scale: vi.fn(),
+      translate: vi.fn(),
+      save: vi.fn(),
+      restore: vi.fn(),
+      beginPath: vi.fn(),
+      closePath: vi.fn(),
+      stroke: vi.fn(),
+      fill: vi.fn(),
+      arc: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      rect: vi.fn(),
+      measureText: vi.fn().mockReturnValue({ width: 0 }),
+      canvas: { width: 100, height: 100 },
+    };
+  }
+  return null;
+});
+
+HTMLCanvasElement.prototype.toDataURL = vi.fn(() => 'data:image/png;base64,mock');
+HTMLCanvasElement.prototype.toBlob = vi.fn((callback: BlobCallback | null) => {
+  if (callback) {
+    callback(new Blob(['mock'], { type: 'image/png' }));
+  }
+});

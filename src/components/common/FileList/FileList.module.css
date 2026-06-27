@@ -36,7 +36,7 @@
   width: 28px;
   height: 28px;
   background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
-  color: white;
+  color: var(--color-white);
   border-radius: var(--radius-full);
   font-size: var(--font-size-sm);
   font-weight: 600;

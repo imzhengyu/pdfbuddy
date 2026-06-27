@@ -1,5 +1,5 @@
 import { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
-import { UI_CONFIG } from '../config';
+import { CONST_UI_CONFIG, CONST_STORAGE_KEYS } from '../config';
 
 export type View = 'merge' | 'split' | 'compress' | 'rotate' | 'convert' | 'organize';
 
@@ -24,11 +24,6 @@ type AppAction =
   | { type: 'ADD_RECENT_FILE'; payload: RecentFile }
   | { type: 'CLEAR_RECENT_FILES' }
   | { type: 'RESET' };
-
-const STORAGE_KEYS = {
-  theme: 'pdf-tool-theme',
-  recentFiles: 'pdf-tool-recent-files',
-} as const;
 
 function isLocalStorageAvailable(): boolean {
   try {
@@ -57,7 +52,7 @@ function safeSetItem(key: string, value: string): void {
 }
 
 function getInitialTheme(): Theme {
-  const saved = safeGetItem(STORAGE_KEYS.theme);
+  const saved = safeGetItem(CONST_STORAGE_KEYS.theme);
   if (saved === 'light' || saved === 'dark' || saved === 'system') {
     return saved;
   }
@@ -68,7 +63,7 @@ function getInitialTheme(): Theme {
 }
 
 function getInitialRecentFiles(): RecentFile[] {
-  const saved = safeGetItem(STORAGE_KEYS.recentFiles);
+  const saved = safeGetItem(CONST_STORAGE_KEYS.recentFiles);
   if (!saved) return [];
   try {
     const parsed = JSON.parse(saved);
@@ -104,7 +99,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, theme: action.payload };
     case 'ADD_RECENT_FILE': {
       const filtered = state.recentFiles.filter(f => f.path !== action.payload.path);
-      const updated = [action.payload, ...filtered].slice(0, UI_CONFIG.maxRecentFiles);
+      const updated = [action.payload, ...filtered].slice(0, CONST_UI_CONFIG.maxRecentFiles);
       return { ...state, recentFiles: updated };
     }
     case 'CLEAR_RECENT_FILES':
@@ -133,14 +128,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Persist theme to localStorage and update document attribute
   useEffect(() => {
-    safeSetItem(STORAGE_KEYS.theme, state.theme);
+    safeSetItem(CONST_STORAGE_KEYS.theme, state.theme);
     const resolved = getResolvedTheme(state.theme);
     document.documentElement.setAttribute('data-theme', resolved);
   }, [state.theme]);
 
   // Persist recentFiles to localStorage
   useEffect(() => {
-    safeSetItem(STORAGE_KEYS.recentFiles, JSON.stringify(state.recentFiles));
+    safeSetItem(CONST_STORAGE_KEYS.recentFiles, JSON.stringify(state.recentFiles));
   }, [state.recentFiles]);
 
   const setView = (view: View) => {

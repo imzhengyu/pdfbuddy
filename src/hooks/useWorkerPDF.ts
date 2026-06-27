@@ -36,19 +36,10 @@ export function useWorkerPDF(options: UseWorkerPDFOptions = {}): UseWorkerPDFRet
   const workerRef = useRef<Worker | null>(null);
   const currentIdRef = useRef<string | null>(null);
 
-  // Cleanup worker on unmount
-  useEffect(() => {
-    return () => {
-      if (workerRef.current) {
-        workerRef.current.terminate();
-        workerRef.current = null;
-      }
-    };
-  }, []);
-
-  const createWorker = useCallback(() => {
+  // Initialize worker once and reuse across operations
+  const getWorker = useCallback(() => {
     if (workerRef.current) {
-      workerRef.current.terminate();
+      return workerRef.current;
     }
 
     const worker = new Worker(
@@ -58,6 +49,10 @@ export function useWorkerPDF(options: UseWorkerPDFOptions = {}): UseWorkerPDFRet
 
     worker.onmessage = (event: MessageEvent<WorkerOutgoingMessage>) => {
       const message = event.data;
+      // Ignore messages from stale operations
+      if (currentIdRef.current && message.id !== currentIdRef.current) {
+        return;
+      }
 
       switch (message.type) {
         case 'progress': {
@@ -93,6 +88,16 @@ export function useWorkerPDF(options: UseWorkerPDFOptions = {}): UseWorkerPDFRet
     return worker;
   }, [onProgress, onError, onSuccess]);
 
+  // Cleanup worker on unmount
+  useEffect(() => {
+    return () => {
+      if (workerRef.current) {
+        workerRef.current.terminate();
+        workerRef.current = null;
+      }
+    };
+  }, []);
+
   const startOperation = useCallback(
     (operation: WorkerOperationType, payload: unknown) => {
       const id = crypto.randomUUID();
@@ -103,19 +108,17 @@ export function useWorkerPDF(options: UseWorkerPDFOptions = {}): UseWorkerPDFRet
       setError(null);
       setResult(null);
 
-      const worker = createWorker();
+      const worker = getWorker();
       const request: WorkerRequest = { id, operation, payload };
 
       worker.postMessage(request);
     },
-    [createWorker]
+    [getWorker]
   );
 
   const cancel = useCallback(() => {
-    if (workerRef.current) {
-      workerRef.current.postMessage({ type: 'cancel' });
-      workerRef.current.terminate();
-      workerRef.current = null;
+    if (workerRef.current && currentIdRef.current) {
+      workerRef.current.postMessage({ type: 'cancel', id: currentIdRef.current });
       setIsProcessing(false);
       setProgress(null);
     }

@@ -24,8 +24,8 @@ body {
   min-height: 100vh;
   overflow-x: auto;
   background-image:
-    radial-gradient(ellipse at top left, rgba(249, 115, 22, 0.08) 0%, transparent 50%),
-    radial-gradient(ellipse at bottom right, rgba(13, 148, 136, 0.06) 0%, transparent 50%);
+    radial-gradient(ellipse at top left, rgb(from var(--color-primary) r g b / 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at bottom right, rgb(from var(--color-accent) r g b / 0.06) 0%, transparent 50%);
   background-attachment: fixed;
 }
 

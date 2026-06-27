@@ -6,7 +6,7 @@ import { rotatePdf } from './rotateOperation';
 import { convertImagesToPdf, ConvertToPDFOptions, convertPdfToImages, ConvertToImagesOptions } from './convertOperation';
 import { reorganizePdf } from './reorganizeOperation';
 import { withRetry, isRetryFailure, RetryResult } from '../../utils/retry';
-import { OPERATION_CONFIG, ERROR_CODES, ErrorCode } from '../../config/constants';
+import { CONST_OPERATION_CONFIG, CONST_ERROR_CODES, ErrorCode } from '../../config';
 
 /**
  * Client-side PDF service that wraps pdf-lib operations with retry logic.
@@ -23,12 +23,12 @@ export class ClientPDFService implements IPDFService {
    */
   private async executeWithRetry<T>(
     operation: () => Promise<T>,
-    _errorCode: ErrorCode = ERROR_CODES.PROCESSING_FAILED
+    _errorCode: ErrorCode = CONST_ERROR_CODES.PROCESSING_FAILED
   ): Promise<T> {
     const result: RetryResult<T> = await withRetry(operation, {
-      maxAttempts: OPERATION_CONFIG.retryAttempts,
-      delay: OPERATION_CONFIG.retryDelay,
-      backoff: OPERATION_CONFIG.retryBackoff,
+      maxAttempts: CONST_OPERATION_CONFIG.retryAttempts,
+      delay: CONST_OPERATION_CONFIG.retryDelay,
+      backoff: CONST_OPERATION_CONFIG.retryBackoff,
       context: _errorCode,
     });
 
@@ -52,7 +52,7 @@ export class ClientPDFService implements IPDFService {
   async merge(files: File[], onProgress?: (progress: ProcessingProgress) => void): Promise<Blob> {
     return this.executeWithRetry(
       () => mergePdfs(files, onProgress),
-      ERROR_CODES.PROCESSING_FAILED
+      CONST_ERROR_CODES.PROCESSING_FAILED
     );
   }
 
@@ -66,7 +66,7 @@ export class ClientPDFService implements IPDFService {
   async split(file: File, pageRanges: PageRange[], onProgress?: (progress: ProcessingProgress) => void): Promise<Blob[]> {
     return this.executeWithRetry(
       () => splitPdf(file, pageRanges, onProgress),
-      ERROR_CODES.PROCESSING_FAILED
+      CONST_ERROR_CODES.PROCESSING_FAILED
     );
   }
 
@@ -80,7 +80,7 @@ export class ClientPDFService implements IPDFService {
   async compress(file: File, quality: CompressionQuality, onProgress?: (progress: ProcessingProgress) => void): Promise<Blob> {
     return this.executeWithRetry(
       () => compressPdf(file, quality, onProgress),
-      ERROR_CODES.PROCESSING_FAILED
+      CONST_ERROR_CODES.PROCESSING_FAILED
     );
   }
 
@@ -94,7 +94,7 @@ export class ClientPDFService implements IPDFService {
   async rotate(file: File, rotations: PageRotation[], onProgress?: (progress: ProcessingProgress) => void): Promise<Blob> {
     return this.executeWithRetry(
       () => rotatePdf(file, rotations, onProgress),
-      ERROR_CODES.PROCESSING_FAILED
+      CONST_ERROR_CODES.PROCESSING_FAILED
     );
   }
 
@@ -108,7 +108,7 @@ export class ClientPDFService implements IPDFService {
   async convertToImages(file: File, options?: ConvertToImagesOptions, onProgress?: (progress: ProcessingProgress) => void): Promise<Blob[]> {
     return this.executeWithRetry(
       () => convertPdfToImages(file, onProgress, options),
-      ERROR_CODES.PROCESSING_FAILED
+      CONST_ERROR_CODES.PROCESSING_FAILED
     );
   }
 
@@ -125,7 +125,7 @@ export class ClientPDFService implements IPDFService {
   ): Promise<Blob> {
     return this.executeWithRetry(
       () => convertImagesToPdf(imageFiles, onProgress, options),
-      ERROR_CODES.PROCESSING_FAILED
+      CONST_ERROR_CODES.PROCESSING_FAILED
     );
   }
 
@@ -139,7 +139,7 @@ export class ClientPDFService implements IPDFService {
   async reorganize(file: File, newOrder: PageOrder[], onProgress?: (progress: ProcessingProgress) => void): Promise<Blob> {
     return this.executeWithRetry(
       () => reorganizePdf(file, newOrder, onProgress),
-      ERROR_CODES.PROCESSING_FAILED
+      CONST_ERROR_CODES.PROCESSING_FAILED
     );
   }
 }

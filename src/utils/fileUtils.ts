@@ -1,4 +1,5 @@
 import { formatBytes } from './performance';
+import { CONST_MIME_TYPES, CONST_SUPPORTED_IMAGE_MIME_TYPES, CONST_PDF_CONFIG } from '../config';
 export { formatBytes as formatFileSize };
 
 export function getFileExtension(filename: string): string {
@@ -7,12 +8,11 @@ export function getFileExtension(filename: string): string {
 }
 
 export function validatePDFFile(file: File): boolean {
-  return file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+  return file.type === CONST_MIME_TYPES.pdf || file.name.toLowerCase().endsWith(CONST_PDF_CONFIG.supportedExtensions[0]);
 }
 
 export function validateImageFile(file: File): boolean {
-  return file.type.startsWith('image/') &&
-    ['image/png', 'image/jpeg', 'image/jpg'].includes(file.type);
+  return file.type.startsWith('image/') && CONST_SUPPORTED_IMAGE_MIME_TYPES.some(type => type === file.type);
 }
 
 export async function getPageCount(file: File): Promise<number> {

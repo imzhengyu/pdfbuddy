@@ -1,3 +1,5 @@
+import { CONST_PERFORMANCE_CONFIG } from '../config';
+
 /**
  * Performance benchmarking utilities for tracking operation times and memory usage.
  * Provides a foundation for establishing performance baselines and monitoring PDF operations.
@@ -69,7 +71,7 @@ export interface MemorySnapshot {
  */
 export class MemoryMonitor {
   private snapshots: MemorySnapshot[] = [];
-  private readonly maxSnapshots = 10;
+  private readonly maxSnapshots = CONST_PERFORMANCE_CONFIG.maxSnapshots;
 
   /**
    * Get current memory usage if available.
@@ -222,7 +224,7 @@ export function createBenchmark(
  * @returns Formatted string (e.g., "1.23s" or "456ms")
  */
 export function formatDuration(ms: number): string {
-  if (ms >= 1000) {
+  if (ms >= CONST_PERFORMANCE_CONFIG.formatDurationThresholdMs) {
     return `${(ms / 1000).toFixed(2)}s`;
   }
   return `${Math.round(ms)}ms`;

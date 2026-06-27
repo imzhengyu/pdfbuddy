@@ -1,5 +1,23 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ClientPDFService } from '../../src/services/pdf/ClientPDFService';
+import * as mergeOperation from '../../src/services/pdf/mergeOperation';
+import * as splitOperation from '../../src/services/pdf/splitOperation';
+import * as compressOperation from '../../src/services/pdf/compressOperation';
+import * as rotateOperation from '../../src/services/pdf/rotateOperation';
+import * as convertOperation from '../../src/services/pdf/convertOperation';
+import * as reorganizeOperation from '../../src/services/pdf/reorganizeOperation';
+
+vi.mock('../../src/config/constants', async () => {
+  const actual = await vi.importActual<typeof import('../../src/config/constants')>('../../src/config/constants');
+  return {
+    ...actual,
+    CONST_OPERATION_CONFIG: {
+      ...actual.CONST_OPERATION_CONFIG,
+      retryDelay: 0,
+      retryBackoff: 1,
+    },
+  };
+});
 
 vi.mock('../../src/services/pdf/convertOperation', async () => {
   const actual = await vi.importActual<typeof import('../../src/services/pdf/convertOperation')>('../../src/services/pdf/convertOperation');
@@ -38,22 +56,13 @@ function createValidPDFFile(name: string): File {
   return createMockFile(VALID_PDF_CONTENT, name, 'application/pdf');
 }
 
+import { PDFDocument } from 'pdf-lib';
+
 // Mock pdf-lib module
-vi.mock('pdf-lib', () => ({
-  PDFDocument: {
-    create: vi.fn().mockResolvedValue({
-      copyPages: vi.fn().mockResolvedValue([{ addPage: vi.fn() }]),
-      addPage: vi.fn(),
-      save: vi.fn().mockResolvedValue(new Uint8Array([1, 2, 3]))
-    }),
-    load: vi.fn().mockResolvedValue({
-      getPageIndices: vi.fn().mockReturnValue([0]),
-      getPageCount: vi.fn().mockReturnValue(1),
-      getPages: vi.fn().mockReturnValue([{ getRotation: () => ({ angle: 0 }), setRotation: vi.fn() }]),
-      copyPages: vi.fn().mockResolvedValue([{ addPage: vi.fn() }])
-    })
-  }
-}));
+vi.mock('pdf-lib', async () => {
+  const { createMockPDFLib } = await import('../mocks/pdfLib');
+  return createMockPDFLib({ pageCount: 1 });
+});
 
 describe('ClientPDFService', () => {
   let service: ClientPDFService;
@@ -110,92 +119,107 @@ describe('ClientPDFService', () => {
       vi.clearAllMocks();
     });
 
-    it('wraps merge with retry', async () => {
-      const mergeSpy = vi.spyOn(service, 'merge');
-
-      const mockBlob = new Blob(['pdf'], { type: 'application/pdf' });
-      mergeSpy.mockResolvedValue(mockBlob);
+    it('retries merge when underlying operation fails transiently', async () => {
+      const mergeSpy = vi.spyOn(mergeOperation, 'mergePdfs')
+        .mockRejectedValueOnce(new Error('transient failure'))
+        .mockRejectedValueOnce(new Error('transient failure'))
+        .mockResolvedValueOnce(new Blob(['merged'], { type: 'application/pdf' }));
 
       const file1 = createValidPDFFile('test1.pdf');
       const file2 = createValidPDFFile('test2.pdf');
 
-      await service.merge([file1, file2]);
+      const result = await service.merge([file1, file2]);
 
-      expect(mergeSpy).toHaveBeenCalled();
+      expect(result).toBeInstanceOf(Blob);
+      expect(mergeSpy).toHaveBeenCalledTimes(3);
     });
 
-    it('wraps split with retry', async () => {
-      const splitSpy = vi.spyOn(service, 'split');
-
-      const mockBlobs = [new Blob(['pdf'], { type: 'application/pdf' })];
-      splitSpy.mockResolvedValue(mockBlobs);
+    it('retries split when underlying operation fails transiently', async () => {
+      const splitSpy = vi.spyOn(splitOperation, 'splitPdf')
+        .mockRejectedValueOnce(new Error('transient failure'))
+        .mockResolvedValueOnce([new Blob(['split'], { type: 'application/pdf' })]);
 
       const file = createValidPDFFile('test.pdf');
 
-      await service.split(file, [{ start: 1, end: 1 }]);
+      const result = await service.split(file, [{ start: 1, end: 1 }]);
 
-      expect(splitSpy).toHaveBeenCalled();
+      expect(result).toHaveLength(1);
+      expect(splitSpy).toHaveBeenCalledTimes(2);
     });
 
-    it('wraps compress with retry', async () => {
-      const compressSpy = vi.spyOn(service, 'compress');
-
-      const mockBlob = new Blob(['pdf'], { type: 'application/pdf' });
-      compressSpy.mockResolvedValue(mockBlob);
+    it('retries compress when underlying operation fails transiently', async () => {
+      const compressSpy = vi.spyOn(compressOperation, 'compressPdf')
+        .mockRejectedValueOnce(new Error('transient failure'))
+        .mockResolvedValueOnce(new Blob(['compressed'], { type: 'application/pdf' }));
 
       const file = createValidPDFFile('test.pdf');
 
-      await service.compress(file, 'medium');
+      const result = await service.compress(file, 'medium');
 
-      expect(compressSpy).toHaveBeenCalled();
+      expect(result).toBeInstanceOf(Blob);
+      expect(compressSpy).toHaveBeenCalledTimes(2);
     });
 
-    it('wraps rotate with retry', async () => {
-      const rotateSpy = vi.spyOn(service, 'rotate');
-
-      const mockBlob = new Blob(['pdf'], { type: 'application/pdf' });
-      rotateSpy.mockResolvedValue(mockBlob);
+    it('retries rotate when underlying operation fails transiently', async () => {
+      const rotateSpy = vi.spyOn(rotateOperation, 'rotatePdf')
+        .mockRejectedValueOnce(new Error('transient failure'))
+        .mockResolvedValueOnce(new Blob(['rotated'], { type: 'application/pdf' }));
 
       const file = createValidPDFFile('test.pdf');
 
-      await service.rotate(file, [{ pageIndex: 0, type: 'rotate', degrees: 90 }]);
+      const result = await service.rotate(file, [{ pageIndex: 0, degrees: 90 }]);
 
-      expect(rotateSpy).toHaveBeenCalled();
+      expect(result).toBeInstanceOf(Blob);
+      expect(rotateSpy).toHaveBeenCalledTimes(2);
     });
 
-    it('wraps convertToPDF with retry', async () => {
-      const convertToPDFSpy = vi.spyOn(service, 'convertToPDF');
+    it('retries convertToPDF when underlying operation fails transiently', async () => {
+      const convertSpy = vi.spyOn(convertOperation, 'convertImagesToPdf')
+        .mockRejectedValueOnce(new Error('transient failure'))
+        .mockResolvedValueOnce(new Blob(['converted'], { type: 'application/pdf' }));
 
-      const mockBlob = new Blob(['pdf'], { type: 'application/pdf' });
-      convertToPDFSpy.mockResolvedValue(mockBlob);
+      const imageFile = createMockFile('image', 'test.png', { type: 'image/png' });
 
-      const imageFile = createMockFile('image', 'test.png', 'image/png');
+      const result = await service.convertToPDF([imageFile]);
 
-      await service.convertToPDF([imageFile]);
-
-      expect(convertToPDFSpy).toHaveBeenCalled();
+      expect(result).toBeInstanceOf(Blob);
+      expect(convertSpy).toHaveBeenCalledTimes(2);
     });
 
-    it('wraps reorganize with retry', async () => {
-      const reorganizeSpy = vi.spyOn(service, 'reorganize');
-
-      const mockBlob = new Blob(['pdf'], { type: 'application/pdf' });
-      reorganizeSpy.mockResolvedValue(mockBlob);
+    it('retries reorganize when underlying operation fails transiently', async () => {
+      const reorganizeSpy = vi.spyOn(reorganizeOperation, 'reorganizePdf')
+        .mockRejectedValueOnce(new Error('transient failure'))
+        .mockResolvedValueOnce(new Blob(['reorganized'], { type: 'application/pdf' }));
 
       const file = createValidPDFFile('test.pdf');
 
-      await service.reorganize(file, [{ originalIndex: 0, newIndex: 0 }]);
+      const result = await service.reorganize(file, [{ originalIndex: 0, newIndex: 0 }]);
 
-      expect(reorganizeSpy).toHaveBeenCalled();
+      expect(result).toBeInstanceOf(Blob);
+      expect(reorganizeSpy).toHaveBeenCalledTimes(2);
     });
 
-    it('wraps convertToImages with retry', async () => {
-      const convertToImagesSpy = vi.spyOn(service, 'convertToImages');
+    it('retries convertToImages when underlying operation fails transiently', async () => {
+      const convertImagesSpy = vi.spyOn(convertOperation, 'convertPdfToImages')
+        .mockRejectedValueOnce(new Error('transient failure'))
+        .mockResolvedValueOnce([new Blob(['image'], { type: 'image/png' })]);
 
       const pdfFile = createValidPDFFile('test.pdf');
 
-      await service.convertToImages(pdfFile, { format: 'png' });
-      expect(convertToImagesSpy).toHaveBeenCalled();
+      const result = await service.convertToImages(pdfFile, { format: 'png' });
+
+      expect(result).toHaveLength(1);
+      expect(convertImagesSpy).toHaveBeenCalledTimes(2);
+    });
+
+    it('throws after exhausting all retry attempts', async () => {
+      vi.spyOn(mergeOperation, 'mergePdfs')
+        .mockRejectedValue(new Error('persistent failure'));
+
+      const file1 = createValidPDFFile('test1.pdf');
+      const file2 = createValidPDFFile('test2.pdf');
+
+      await expect(service.merge([file1, file2])).rejects.toThrow('persistent failure');
     });
   });
 });

@@ -1,6 +1,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
+  /* Breakpoints */
+  --breakpoint-sm: 480px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+
   /* Primary - Warm Orange */
   --color-primary: #f97316;
   --color-primary-hover: #ea580c;
@@ -25,6 +30,8 @@
   --color-error-light: #fee2e2;
 
   /* Neutrals - Warm Tones */
+  --color-white: #ffffff;
+  --color-black: #000000;
   --color-background: #fffbeb;
   --color-surface: #ffffff;
   --color-surface-warm: #fef9f3;
@@ -57,7 +64,63 @@
   --shadow-card: 0 4px 12px -2px rgb(249 115 22 / 0.15), 0 2px 6px -2px rgb(249 115 22 / 0.1);
   --shadow-glow: 0 0 20px rgb(249 115 22 / 0.25);
 
-  /* Transitions */
+  /* Component Shadows */
+  --shadow-button: 0 2px 4px rgb(from var(--color-primary) r g b / 0.2);
+  --shadow-button-hover: 0 4px 12px rgb(from var(--color-primary) r g b / 0.35);
+  --shadow-button-secondary: 0 2px 4px rgb(from var(--color-secondary) r g b / 0.2);
+  --shadow-button-secondary-hover: 0 4px 12px rgb(from var(--color-secondary) r g b / 0.35);
+  --shadow-button-accent: 0 2px 4px rgb(from var(--color-accent) r g b / 0.2);
+  --shadow-button-accent-hover: 0 4px 12px rgb(from var(--color-accent) r g b / 0.35);
+  --shadow-modal: 0 20px 60px rgb(from var(--color-black) r g b / 0.3);
+  --shadow-preview: 0 4px 20px rgb(from var(--color-black) r g b / 0.1);
+  --shadow-dropzone-hover: 0 8px 24px rgb(from var(--color-primary) r g b / 0.15);
+  --shadow-dropzone-dragover: 0 8px 32px rgb(from var(--color-accent) r g b / 0.25);
+  --shadow-dropzone-icon: 0 4px 12px rgb(from var(--color-primary) r g b / 0.2);
+  --shadow-dropzone-icon-hover: 0 6px 16px rgb(from var(--color-primary) r g b / 0.3);
+  --shadow-badge: 0 2px 4px rgb(from var(--color-secondary) r g b / 0.3);
+  --shadow-nav-button-hover: 0 4px 8px rgb(from var(--color-black) r g b / 0.15);
+
+  /* Z-Index Scale */
+  --z-sticky: 10;
+  --z-header: 100;
+  --z-modal: 1000;
+
+  /* Touch Targets & Badges */
+  --touch-target-min: 44px;
+  --size-badge-sm: 24px;
+  --size-badge-md: 28px;
+  --size-dot: 10px;
+  --size-control-sm: 32px;
+  --size-control-md: 36px;
+
+  /* Thumbnail Sizes */
+  --thumbnail-width: 100px;
+  --thumbnail-height: 130px;
+
+  /* Modal & Preview Sizes */
+  --modal-width: 90%;
+  --modal-max-width: 800px;
+  --modal-max-height: 90vh;
+  --preview-min-width: 280px;
+  --preview-min-height: 400px;
+
+  /* Layout Constraints */
+  --max-width-container: 1200px;
+  --max-width-text: 600px;
+  --max-width-card: 400px;
+  --min-height-panel: 200px;
+  --min-height-error: 400px;
+
+  /* Transforms */
+  --transform-lift: translateY(-1px);
+  --transform-lift-lg: translateY(-2px);
+  --transform-lift-xl: translateY(-4px);
+  --transform-scale-up: scale(1.05);
+  --transform-scale-down: scale(0.95);
+
+  /* Animation Durations */
+  --duration-spin: 0.6s;
+  --duration-pulse: 2s;
   --transition-fast: 150ms ease;
   --transition-normal: 200ms ease;
   --transition-slow: 300ms ease;

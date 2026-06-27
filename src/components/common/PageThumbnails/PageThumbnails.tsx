@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { PDF_CONFIG } from '../../../config';
+import { CONST_PDF_CONFIG, CONST_THUMBNAIL_CONFIG } from '../../../config';
 import styles from './PageThumbnails.module.css';
 
 interface PageThumbnailsProps {
@@ -46,7 +46,7 @@ export function PageThumbnails({
     async function loadThumbnails() {
       try {
         const pdfjsLib = await import('pdfjs-dist');
-        pdfjsLib.GlobalWorkerOptions.workerSrc = PDF_CONFIG.pdfJsWorkerUrl;
+        pdfjsLib.GlobalWorkerOptions.workerSrc = CONST_PDF_CONFIG.pdfJsWorkerUrl;
 
         // Use cache if available
         let pdf = pdfRef.current;
@@ -75,9 +75,10 @@ export function PageThumbnails({
           setIsInitialLoad(false);
         }
 
-        // Load pages in chunks of 10 for faster initial render
-        const chunkSize = 10;
-        const scale = 0.25;
+        // Load pages in chunks for faster initial render
+        const chunkSize = CONST_THUMBNAIL_CONFIG.chunkSize;
+        const concurrencyLimit = CONST_THUMBNAIL_CONFIG.concurrencyLimit;
+        const scale = CONST_THUMBNAIL_CONFIG.scale;
 
         for (let chunk = 0; chunk < Math.ceil(count / chunkSize); chunk++) {
           if (cancelled) break;
@@ -94,7 +95,10 @@ export function PageThumbnails({
 
           if (cancelled) break;
 
-          const renderPromises = pages.map(async (page) => {
+          // Render with limited concurrency to avoid overwhelming the main thread
+          const chunkImages: (string | null)[] = new Array(pages.length).fill(null);
+
+          async function renderPage(page: any, index: number): Promise<void> {
             const viewport = page.getViewport({ scale });
 
             const canvas = document.createElement('canvas');
@@ -107,12 +111,25 @@ export function PageThumbnails({
                 canvasContext: ctx,
                 viewport: viewport,
               }).promise;
-              return canvas.toDataURL('image/jpeg', 0.85);
+              chunkImages[index] = canvas.toDataURL('image/jpeg', CONST_THUMBNAIL_CONFIG.jpegQuality);
             }
-            return null;
-          });
 
-          const chunkImages = await Promise.all(renderPromises);
+            // Clear canvas dimensions to release memory
+            canvas.width = 0;
+            canvas.height = 0;
+          }
+
+          // Process pages with concurrency limit
+          let pageIndex = 0;
+          async function worker(): Promise<void> {
+            while (pageIndex < pages.length) {
+              const currentIndex = pageIndex++;
+              await renderPage(pages[currentIndex], currentIndex);
+            }
+          }
+
+          const workers = Array.from({ length: concurrencyLimit }, () => worker());
+          await Promise.all(workers);
 
           if (!cancelled) {
             setThumbnails(prev => {
@@ -198,7 +215,7 @@ export function PageThumbnails({
   return (
     <div className={styles.grid} ref={gridRef}>
       {isInitialLoad && thumbnails.length === 0 && (
-        <div className={styles.loading}>Loading pages...</div>
+        <div className={styles.loading} data-testid="thumbnail-loading">Loading pages...</div>
       )}
       {thumbnails.map((src, index) => (
         <div
@@ -214,6 +231,7 @@ export function PageThumbnails({
           onDragOver={(e) => handleDragOver(e, index)}
           onDragEnd={handleDragEnd}
           data-page-index={index}
+          data-testid="thumbnail-item"
         >
           <div className={styles.box}>
             {src ? (

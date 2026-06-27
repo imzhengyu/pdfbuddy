@@ -2,7 +2,7 @@ import { PDFDocument } from 'pdf-lib';
 import { PDFProcessingError } from './types';
 import { validateImageFile, validateImageFormat } from './pdfValidation';
 import { ProgressCallback } from './pdfOperations';
-import { PDF_CONFIG } from '../../config';
+import { CONST_PDF_CONFIG, CONST_CONVERT_CONFIG, CONST_MIME_TYPES } from '../../config';
 
 /** Supported output page sizes. */
 export type PageSize = 'a4' | 'letter' | 'original';
@@ -27,14 +27,14 @@ export interface ConvertToPDFOptions {
 
 // Page sizes in points (72 DPI)
 const PAGE_SIZES: Record<Exclude<PageSize, 'original'>, { width: number; height: number }> = {
-  a4: { width: 595, height: 842 },
-  letter: { width: 612, height: 792 },
+  a4: CONST_CONVERT_CONFIG.pageSizes.a4,
+  letter: CONST_CONVERT_CONFIG.pageSizes.letter,
 };
 
 const DEFAULT_OPTIONS: Required<ConvertToPDFOptions> = {
   pageSize: 'a4',
   orientation: 'portrait',
-  margin: 20,
+  margin: CONST_CONVERT_CONFIG.defaultMargin,
   fitMode: 'fit',
 };
 
@@ -102,9 +102,9 @@ export async function convertImagesToPdf(
     const arrayBuffer = await file.arrayBuffer();
     let image;
 
-    if (file.type === 'image/png') {
+    if (file.type === CONST_MIME_TYPES.png) {
       image = await mergedPdf.embedPng(arrayBuffer);
-    } else if (file.type === 'image/jpeg' || file.type === 'image/jpg') {
+    } else if (file.type === CONST_MIME_TYPES.jpeg || file.type === 'image/jpg') {
       image = await mergedPdf.embedJpg(arrayBuffer);
     } else {
       throw new PDFProcessingError(
@@ -144,7 +144,7 @@ export async function convertImagesToPdf(
   }
 
   const pdfBytes = await mergedPdf.save();
-  return new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' });
+  return new Blob([new Uint8Array(pdfBytes)], { type: CONST_MIME_TYPES.pdf });
 }
 
 /** Options for converting PDF pages to images. */
@@ -159,8 +159,8 @@ export interface ConvertToImagesOptions {
 
 const DEFAULT_IMAGE_OPTIONS: Required<ConvertToImagesOptions> = {
   format: 'png',
-  quality: 0.92,
-  scale: 2,
+  quality: CONST_CONVERT_CONFIG.defaultImageQuality,
+  scale: CONST_CONVERT_CONFIG.defaultImageScale,
 };
 
 /**
@@ -175,7 +175,7 @@ export async function convertPdfToImages(
   const opts = { ...DEFAULT_IMAGE_OPTIONS, ...options };
 
   const pdfjsLib = await import('pdfjs-dist');
-  pdfjsLib.GlobalWorkerOptions.workerSrc = PDF_CONFIG.pdfJsWorkerUrl;
+  pdfjsLib.GlobalWorkerOptions.workerSrc = CONST_PDF_CONFIG.pdfJsWorkerUrl;
 
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
@@ -197,7 +197,7 @@ export async function convertPdfToImages(
 
     await page.render({ canvasContext: ctx, viewport }).promise;
 
-    const mimeType = opts.format === 'jpeg' ? 'image/jpeg' : 'image/png';
+    const mimeType = opts.format === 'jpeg' ? CONST_MIME_TYPES.jpeg : CONST_MIME_TYPES.png;
     const blob = await new Promise<Blob>((resolve, reject) => {
       canvas.toBlob(
         (b) => (b ? resolve(b) : reject(new Error('Canvas export failed'))),

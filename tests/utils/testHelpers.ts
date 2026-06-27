@@ -1,4 +1,6 @@
 import { vi } from 'vitest';
+import { act, fireEvent } from '@testing-library/react';
+import { CONST_MIME_TYPES, CONST_TEST_CONFIG } from '../../src/config/constants';
 import type { ProcessingProgress, PageRange, PageRotation, PageOrder, CompressionQuality } from '../../src/services/pdf/types';
 
 /**
@@ -18,14 +20,14 @@ export function createMockFile(
     ? content
     : new TextEncoder().encode(content);
 
-  const blob = new Blob([data], { type: options?.type || 'application/pdf' });
+  const blob = new Blob([data], { type: options?.type || CONST_MIME_TYPES.pdf });
 
   // Create a mock file with explicit properties
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mockFile: any = {
     name,
     size: options?.size ?? data.byteLength,
-    type: options?.type || 'application/pdf',
+    type: options?.type || CONST_MIME_TYPES.pdf,
     lastModified: options?.lastModified || Date.now(),
     webkitRelativePath: '',
     [Symbol.toStringTag]: 'File',
@@ -53,7 +55,7 @@ export function createMockFile(
  * Creates a mock File specifically for PDF files.
  */
 export function createMockPDFFile(content: string | Uint8Array, name: string): File {
-  return createMockFile(content, name, { type: 'application/pdf' });
+  return createMockFile(content, name, { type: CONST_MIME_TYPES.pdf });
 }
 
 /**
@@ -187,7 +189,7 @@ export function createMockClientPDFService(config: MockClientPDFServiceConfig = 
       }
       // Default: return single blob, call progress if provided
       if (onProgress) onProgress({ current: 1, total: 1, progress: 100 });
-      return [new Blob(['split'], { type: 'application/pdf' })];
+      return [new Blob(['split'], { type: CONST_MIME_TYPES.pdf })];
     }),
     compress: vi.fn().mockImplementation(async (file: File, quality: CompressionQuality, onProgress?: (progress: ProcessingProgress) => void) => {
       if (config.compress?.delay) {
@@ -200,7 +202,7 @@ export function createMockClientPDFService(config: MockClientPDFServiceConfig = 
         return config.compress.result;
       }
       if (onProgress) onProgress({ current: 1, total: 1, progress: 100 });
-      return new Blob(['compressed'], { type: 'application/pdf' });
+      return new Blob(['compressed'], { type: CONST_MIME_TYPES.pdf });
     }),
     rotate: vi.fn().mockImplementation(async (file: File, rotations: PageRotation[], onProgress?: (progress: ProcessingProgress) => void) => {
       if (config.rotate?.delay) {
@@ -213,7 +215,7 @@ export function createMockClientPDFService(config: MockClientPDFServiceConfig = 
         return config.rotate.result;
       }
       if (onProgress) onProgress({ current: 1, total: 1, progress: 100 });
-      return new Blob(['rotated'], { type: 'application/pdf' });
+      return new Blob(['rotated'], { type: CONST_MIME_TYPES.pdf });
     }),
     convertToPDF: vi.fn().mockImplementation(async (files: File[], onProgress?: (progress: ProcessingProgress) => void) => {
       if (config.convertToPDF?.delay) {
@@ -226,7 +228,7 @@ export function createMockClientPDFService(config: MockClientPDFServiceConfig = 
         return config.convertToPDF.result;
       }
       if (onProgress) onProgress({ current: 1, total: 1, progress: 100 });
-      return new Blob(['converted'], { type: 'application/pdf' });
+      return new Blob(['converted'], { type: CONST_MIME_TYPES.pdf });
     }),
     reorganize: vi.fn().mockImplementation(async (file: File, newOrder: PageOrder[], onProgress?: (progress: ProcessingProgress) => void) => {
       if (config.reorganize?.delay) {
@@ -239,7 +241,7 @@ export function createMockClientPDFService(config: MockClientPDFServiceConfig = 
         return config.reorganize.result;
       }
       if (onProgress) onProgress({ current: 1, total: 1, progress: 100 });
-      return new Blob(['reorganized'], { type: 'application/pdf' });
+      return new Blob(['reorganized'], { type: CONST_MIME_TYPES.pdf });
     }),
     convertToImages: vi.fn().mockImplementation(async () => {
       if (config.convertToImages?.error) {
@@ -282,8 +284,36 @@ export function createMockPDFJSDocument(options?: {
 }
 
 /**
- * Helper to wait for a condition with better error messaging.
+ * Uploads a file to a dropzone input inside a given container.
+ * Wraps the change event in act() so tests stay React-18 safe.
+ *
+ * @param container - The element containing the dropzone input (defaults to document.body)
+ * @param file - The File to upload
+ * @param options - Optional testId or selector to find the input
+ * @returns Promise resolving after the upload change event
  */
+export async function uploadFileToDropzone(
+  container: HTMLElement = document.body,
+  file: File,
+  options?: {
+    testId?: string;
+    selector?: string;
+  }
+): Promise<void> {
+  const { testId = 'dropzone', selector = 'input' } = options || {};
+  const dropzone = container.querySelector(`[data-testid="${testId}"]`) as HTMLElement | null;
+  if (!dropzone) {
+    throw new Error(`Dropzone with data-testid="${testId}" not found`);
+  }
+  const input = dropzone.querySelector(selector) as HTMLInputElement | null;
+  if (!input) {
+    throw new Error(`Input matching selector "${selector}" not found inside dropzone`);
+  }
+  await act(async () => {
+    fireEvent.change(input, { target: { files: [file] } });
+  });
+}
+
 export async function waitForCondition(
   condition: () => boolean | Promise<boolean>,
   options?: {
@@ -292,8 +322,8 @@ export async function waitForCondition(
     onTimeout?: () => void;
   }
 ): Promise<void> {
-  const timeout = options?.timeout || 1000;
-  const interval = options?.interval || 50;
+  const timeout = options?.timeout || CONST_TEST_CONFIG.waitForTimeout;
+  const interval = options?.interval || CONST_TEST_CONFIG.waitForInterval;
   const startTime = Date.now();
 
   while (Date.now() - startTime < timeout) {

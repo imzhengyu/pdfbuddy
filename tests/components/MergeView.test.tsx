@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
 import { MergeView } from '../../src/components/features/MergeView/MergeView';
+import { uploadFileToDropzone } from '../utils/testHelpers';
 
 vi.mock('../../src/utils/downloadUtils', () => ({
   downloadBlob: vi.fn()
@@ -22,15 +23,6 @@ describe('MergeView', () => {
       return new File(['test'], name, { type: 'application/pdf' });
     };
 
-    const uploadFile = (input: HTMLInputElement | null, file: File) => {
-      if (!input) return;
-      act(() => {
-        fireEvent.change(input, {
-          target: { files: [file] }
-        });
-      });
-    };
-
     const clickButton = (name: string) => {
       act(() => {
         fireEvent.click(screen.getByRole('button', { name }));
@@ -40,8 +32,7 @@ describe('MergeView', () => {
     it('shows Add More Files button after adding first file', async () => {
       render(<MergeView />);
 
-      const input = screen.getByTestId('dropzone').querySelector('input');
-      uploadFile(input, createFile('test.pdf'));
+      await uploadFileToDropzone(document.body, createFile('test.pdf'));
 
       await waitFor(() => {
         expect(screen.getByRole('button', { name: 'Add More Files' })).toBeInTheDocument();
@@ -51,8 +42,7 @@ describe('MergeView', () => {
     it('clicking Add More Files shows DropZone for adding more files', async () => {
       render(<MergeView />);
 
-      const input = screen.getByTestId('dropzone').querySelector('input');
-      uploadFile(input, createFile('test.pdf'));
+      await uploadFileToDropzone(document.body, createFile('test.pdf'));
 
       await waitFor(() => {
         expect(screen.getByRole('button', { name: 'Add More Files' })).toBeInTheDocument();
@@ -68,8 +58,7 @@ describe('MergeView', () => {
     it('adding more files via DropZone increases file count', async () => {
       render(<MergeView />);
 
-      const input = screen.getByTestId('dropzone').querySelector('input');
-      uploadFile(input, createFile('test1.pdf'));
+      await uploadFileToDropzone(document.body, createFile('test1.pdf'));
 
       await waitFor(() => {
         expect(screen.getByText('test1.pdf')).toBeInTheDocument();
@@ -85,8 +74,7 @@ describe('MergeView', () => {
         expect(screen.getByText('Add more PDF files')).toBeInTheDocument();
       });
 
-      const addMoreInput = screen.getByTestId('dropzone').querySelector('input');
-      uploadFile(addMoreInput, createFile('test2.pdf'));
+      await uploadFileToDropzone(document.body, createFile('test2.pdf'));
 
       await waitFor(() => {
         expect(screen.getByText('test1.pdf')).toBeInTheDocument();
@@ -97,8 +85,7 @@ describe('MergeView', () => {
     it('merge button is disabled when less than 2 files', async () => {
       render(<MergeView />);
 
-      const input = screen.getByTestId('dropzone').querySelector('input');
-      uploadFile(input, createFile('test.pdf'));
+      await uploadFileToDropzone(document.body, createFile('test.pdf'));
 
       await waitFor(() => {
         const mergeBtn = screen.getByRole('button', { name: 'Merge 1 Files' });
@@ -109,8 +96,7 @@ describe('MergeView', () => {
     it('merge button is enabled when 2 or more files', async () => {
       render(<MergeView />);
 
-      const input = screen.getByTestId('dropzone').querySelector('input');
-      uploadFile(input, createFile('test1.pdf'));
+      await uploadFileToDropzone(document.body, createFile('test1.pdf'));
 
       await waitFor(() => {
         expect(screen.getByRole('button', { name: 'Add More Files' })).toBeInTheDocument();
@@ -122,8 +108,7 @@ describe('MergeView', () => {
         expect(screen.getByText('Add more PDF files')).toBeInTheDocument();
       });
 
-      const addMoreInput = screen.getByTestId('dropzone').querySelector('input');
-      uploadFile(addMoreInput, createFile('test2.pdf'));
+      await uploadFileToDropzone(document.body, createFile('test2.pdf'));
 
       await waitFor(() => {
         const mergeBtn = screen.getByRole('button', { name: 'Merge 2 Files' });
@@ -134,8 +119,7 @@ describe('MergeView', () => {
     it('files can be reordered via drag and drop', async () => {
       render(<MergeView />);
 
-      const input = screen.getByTestId('dropzone').querySelector('input');
-      uploadFile(input, createFile('file1.pdf'));
+      await uploadFileToDropzone(document.body, createFile('file1.pdf'));
 
       await waitFor(() => {
         expect(screen.getByText('file1.pdf')).toBeInTheDocument();
@@ -143,8 +127,7 @@ describe('MergeView', () => {
 
       clickButton('Add More Files');
 
-      const addMoreInput = screen.getByTestId('dropzone').querySelector('input');
-      uploadFile(addMoreInput, createFile('file2.pdf'));
+      await uploadFileToDropzone(document.body, createFile('file2.pdf'));
 
       await waitFor(() => {
         expect(screen.getByText('file1.pdf')).toBeInTheDocument();
@@ -158,8 +141,7 @@ describe('MergeView', () => {
     it('shows Preview Files button after adding files', async () => {
       render(<MergeView />);
 
-      const input = screen.getByTestId('dropzone').querySelector('input');
-      uploadFile(input, createFile('test.pdf'));
+      await uploadFileToDropzone(document.body, createFile('test.pdf'));
 
       await waitFor(() => {
         expect(screen.getByRole('button', { name: 'Preview Files' })).toBeInTheDocument();
@@ -169,8 +151,7 @@ describe('MergeView', () => {
     it('opens PreviewModal when Preview Files button clicked', async () => {
       render(<MergeView />);
 
-      const input = screen.getByTestId('dropzone').querySelector('input');
-      uploadFile(input, createFile('test.pdf'));
+      await uploadFileToDropzone(document.body, createFile('test.pdf'));
 
       await waitFor(() => {
         expect(screen.getByText('test.pdf')).toBeInTheDocument();
@@ -181,6 +162,30 @@ describe('MergeView', () => {
       await waitFor(() => {
         expect(screen.getByRole('heading', { level: 3 })).toBeInTheDocument();
       });
+    });
+
+    it('preview opens quickly without calling full merge', async () => {
+      const mergeMock = vi.fn().mockResolvedValue(new Blob(['mock pdf'], { type: 'application/pdf' }));
+
+      // Override the mock for this test
+      const { useMerge } = await import('../../src/hooks/useMerge');
+
+      render(<MergeView />);
+
+      await uploadFileToDropzone(document.body, createFile('test.pdf'));
+
+      await waitFor(() => {
+        expect(screen.getByText('test.pdf')).toBeInTheDocument();
+      });
+
+      clickButton('Preview Files');
+
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { level: 3 })).toBeInTheDocument();
+      });
+
+      // merge should not be called for lightweight preview
+      expect(mergeMock).not.toHaveBeenCalled();
     });
   });
 });

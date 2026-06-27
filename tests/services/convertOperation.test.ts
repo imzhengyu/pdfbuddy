@@ -2,16 +2,11 @@ import { describe, it, expect, vi } from 'vitest';
 import { convertImagesToPdf, pdfToImagesNotSupported, convertPdfToImages } from '../../src/services/pdf/convertOperation';
 import { PDFProcessingError } from '../../src/services/pdf/types';
 
-vi.mock('pdf-lib', () => ({
-  PDFDocument: {
-    create: vi.fn().mockResolvedValue({
-      embedPng: vi.fn().mockResolvedValue({ width: 100, height: 100 }),
-      embedJpg: vi.fn().mockResolvedValue({ width: 100, height: 100 }),
-      addPage: vi.fn().mockReturnValue({ drawImage: vi.fn() }),
-      save: vi.fn().mockResolvedValue(new Uint8Array([1, 2, 3]))
-    })
-  }
-}));
+
+vi.mock('pdf-lib', async () => {
+  const { createMockPDFLib } = await import('../mocks/pdfLib');
+  return createMockPDFLib({ pageCount: 2 });
+});
 
 // Mock pdfjs-dist module
 vi.mock('pdfjs-dist', () => ({

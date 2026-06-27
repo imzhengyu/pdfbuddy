@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useState, useRef } from 'react';
-import { PDF_CONFIG } from '../../../config';
+import { CONST_PDF_CONFIG, CONST_PREVIEW_CONFIG, CONST_ZOOM_CONFIG } from '../../../config';
 import styles from './PreviewModal.module.css';
 
 interface PreviewModalProps {
@@ -15,7 +15,7 @@ import { pdfCache } from '../../../services/pdf/pdfCache';
 export function PreviewModal({ isOpen, onClose, file, title }: PreviewModalProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
-  const [zoom, setZoom] = useState(100);
+  const [zoom, setZoom] = useState<number>(CONST_ZOOM_CONFIG.default);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pageImages, setPageImages] = useState<string[]>([]);
@@ -62,7 +62,7 @@ export function PreviewModal({ isOpen, onClose, file, title }: PreviewModalProps
 
       try {
         const pdfjsLib = await import('pdfjs-dist');
-        pdfjsLib.GlobalWorkerOptions.workerSrc = PDF_CONFIG.pdfJsWorkerUrl;
+        pdfjsLib.GlobalWorkerOptions.workerSrc = CONST_PDF_CONFIG.pdfJsWorkerUrl;
 
         // Use cache if available
         let pdf = pdfRef.current;
@@ -112,7 +112,7 @@ export function PreviewModal({ isOpen, onClose, file, title }: PreviewModalProps
 
     let cancelled = false;
     const pdf = pdfRef.current;
-    const scale = 1.0;
+    const scale = CONST_PREVIEW_CONFIG.scale;
 
     async function loadPage(pageNum: number) {
       if (cancelled || pageNum < 1 || pageNum > totalPages) return null;
@@ -131,7 +131,7 @@ export function PreviewModal({ isOpen, onClose, file, title }: PreviewModalProps
           canvasContext: ctx,
           viewport: viewport,
         }).promise;
-        return canvas.toDataURL('image/jpeg', 0.85);
+        return canvas.toDataURL('image/jpeg', CONST_PREVIEW_CONFIG.jpegQuality);
       } catch {
         return null;
       }
@@ -167,15 +167,15 @@ export function PreviewModal({ isOpen, onClose, file, title }: PreviewModalProps
 
   if (!isOpen || !file) return null;
 
-  const handleZoomIn = () => setZoom(prev => Math.min(200, prev + 25));
-  const handleZoomOut = () => setZoom(prev => Math.max(25, prev - 25));
-  const handleFit = () => setZoom(100);
+  const handleZoomIn = () => setZoom(prev => Math.min(CONST_ZOOM_CONFIG.max, prev + CONST_ZOOM_CONFIG.step));
+  const handleZoomOut = () => setZoom(prev => Math.max(CONST_ZOOM_CONFIG.min, prev - CONST_ZOOM_CONFIG.step));
+  const handleFit = () => setZoom(CONST_ZOOM_CONFIG.default);
 
   return (
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.modal} onClick={e => e.stopPropagation()}>
         <div className={styles.header}>
-          <h3>{title || 'Preview'}: {file.name}</h3>
+          <h3 data-testid="preview-modal-header">{title || 'Preview'}: {file.name}</h3>
           <button type="button" className={styles.closeBtn} onClick={onClose} aria-label="Close preview">
             ×
           </button>
@@ -183,7 +183,7 @@ export function PreviewModal({ isOpen, onClose, file, title }: PreviewModalProps
 
         <div className={styles.content} onWheel={handleWheel}>
           {isLoading && (
-            <div className={styles.loading}>Loading PDF...</div>
+            <div className={styles.loading} data-testid="preview-loading">Loading PDF...</div>
           )}
           {error && (
             <div className={styles.error}>

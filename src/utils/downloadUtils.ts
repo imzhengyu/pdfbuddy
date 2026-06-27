@@ -1,4 +1,5 @@
 import { sanitizeFilename, sanitizeExtension, isValidFilename } from './sanitize';
+import { CONST_DOWNLOAD_CONFIG, CONST_PDF_CONFIG } from '../config';
 
 /**
  * Downloads a Blob as a file with sanitized filename.
@@ -22,13 +23,13 @@ export function downloadBlob(
       throw new Error(`Invalid filename: ${filename}`);
     }
     // Fallback to sanitized default
-    filename = 'document.pdf';
+    filename = CONST_DOWNLOAD_CONFIG.defaultFilename;
   }
 
   const sanitized = sanitizeFilename(filename);
 
   // Validate extension is safe
-  const safeExtension = sanitizeExtension(sanitized, ['.pdf']);
+  const safeExtension = sanitizeExtension(sanitized, [...CONST_PDF_CONFIG.supportedExtensions]);
   const baseName = sanitized.replace(/\.[^.]+$/, '');
   const finalFilename = baseName + safeExtension;
 
@@ -56,7 +57,7 @@ export async function downloadBlobsAsZip(
   // Sanitize each blob name to prevent path traversal in zip entries
   for (const { name, blob } of blobs) {
     const sanitizedName = sanitizeFilename(name);
-    const safeExtension = sanitizeExtension(sanitizedName, ['.pdf']);
+    const safeExtension = sanitizeExtension(sanitizedName, [...CONST_PDF_CONFIG.supportedExtensions]);
     const baseName = sanitizedName.replace(/\.[^.]+$/, '');
     zip.file(baseName + safeExtension, blob);
   }

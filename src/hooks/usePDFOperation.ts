@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { ClientPDFService } from '../services/pdf/ClientPDFService';
 import { ProcessingProgress } from '../services/pdf/types';
 
@@ -46,6 +46,8 @@ export function usePDFOperation<T>(config: PDFOperationConfig<T>) {
   const [progress, setProgress] = useState<ProcessingProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const service = useMemo(() => new ClientPDFService(), []);
+
   const operation = useCallback(
     async (params: T): Promise<any> => {
       const validationError = config.validate(params);
@@ -60,7 +62,6 @@ export function usePDFOperation<T>(config: PDFOperationConfig<T>) {
       setProgress({ current: 0, total, percent: 0 });
 
       try {
-        const service = new ClientPDFService();
         const result = await config.execute(params, service, setProgress);
         setProgress({ current: total, total, percent: 100 });
         return result;
@@ -72,7 +73,7 @@ export function usePDFOperation<T>(config: PDFOperationConfig<T>) {
         setIsProcessing(false);
       }
     },
-    [config]
+    [config, service]
   );
 
   const clearError = useCallback(() => {

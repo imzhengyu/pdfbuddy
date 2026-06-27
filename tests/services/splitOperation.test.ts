@@ -3,20 +3,11 @@ import { splitPdf } from '../../src/services/pdf/splitOperation';
 import { createMockFile, createMockPDFFile, createValidPDFContent } from '../utils/testHelpers';
 import { PDFDocument } from 'pdf-lib';
 
-// Mock pdf-lib module - must use inline factory to avoid hoisting issues
-vi.mock('pdf-lib', () => ({
-  PDFDocument: {
-    create: vi.fn().mockResolvedValue({
-      copyPages: vi.fn().mockResolvedValue([{ addPage: vi.fn() }]),
-      addPage: vi.fn(),
-      save: vi.fn().mockResolvedValue(new Uint8Array([1, 2, 3]))
-    }),
-    load: vi.fn().mockResolvedValue({
-      getPageCount: vi.fn().mockReturnValue(5),
-      copyPages: vi.fn().mockResolvedValue([{ addPage: vi.fn() }])
-    })
-  }
-}));
+
+vi.mock('pdf-lib', async () => {
+  const { createMockPDFLib } = await import('../mocks/pdfLib');
+  return createMockPDFLib({ pageCount: 5 });
+});
 
 // Valid PDF content with magic bytes
 const VALID_PDF_CONTENT = createValidPDFContent();

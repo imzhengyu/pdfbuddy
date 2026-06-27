@@ -245,4 +245,35 @@ describe('PageThumbnails', () => {
     expect(rotateButtons.length).toBeGreaterThan(0);
     expect(rotateButtons[0]).toHaveAttribute('title', 'Rotate 90°');
   });
+
+  it('handles large PDFs with throttled rendering', async () => {
+    const getPageMock = vi.fn().mockResolvedValue({
+      getViewport: vi.fn().mockReturnValue({ width: 100, height: 140 }),
+      render: vi.fn().mockReturnValue({ promise: Promise.resolve() })
+    });
+
+    (getDocument as any).mockReturnValueOnce({
+      promise: Promise.resolve({
+        numPages: 15,
+        getPage: getPageMock
+      })
+    });
+
+    const largePdfFile = createMockPDFFile('large pdf content', 'large.pdf');
+
+    render(
+      <PageThumbnails
+        file={largePdfFile}
+        onSelect={() => {}}
+        selectedPages={[]}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByText('Loading pages...')).toBeNull();
+    });
+
+    // All 15 pages should be rendered despite throttling
+    expect(getPageMock).toHaveBeenCalledTimes(15);
+  });
 });

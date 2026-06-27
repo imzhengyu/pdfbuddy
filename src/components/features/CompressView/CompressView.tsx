@@ -11,6 +11,7 @@ import { usePreview } from '../../../hooks/usePreview';
 import { downloadBlob } from '../../../utils/downloadUtils';
 import { formatFileSize } from '../../../utils/fileUtils';
 import { CompressionQuality } from '../../../services/pdf/types';
+import shellStyles from '../../common/FeatureViewShell/FeatureViewShell.module.css';
 import styles from './CompressView.module.css';
 
 export function CompressView() {
@@ -108,7 +109,7 @@ export function CompressView() {
             </div>
           )}
 
-          <div className={styles.actions}>
+          <div className={shellStyles.actions}>
             <Button label="Compress PDF" variant="primary" onClick={handleCompress} disabled={isProcessing} loading={isProcessing} />
           </div>
 

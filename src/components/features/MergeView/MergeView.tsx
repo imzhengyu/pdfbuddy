@@ -9,6 +9,7 @@ import { ErrorBanner } from '../../common/ErrorBanner';
 import { useMerge } from '../../../hooks/useMerge';
 import { usePreview } from '../../../hooks/usePreview';
 import { downloadBlob } from '../../../utils/downloadUtils';
+import shellStyles from '../../common/FeatureViewShell/FeatureViewShell.module.css';
 import styles from './MergeView.module.css';
 
 interface FileItem {
@@ -67,14 +68,10 @@ export function MergeView() {
   const handlePreview = useCallback(async () => {
     if (files.length < 1) return;
 
-    const fileList = files.map(f => f.file);
-    const mergedBlob = await merge(fileList);
-
-    if (mergedBlob) {
-      const mergedFile = new File([mergedBlob], 'merged-preview.pdf', { type: 'application/pdf' });
-      openPreview(mergedFile);
-    }
-  }, [files, merge, openPreview]);
+    // Lightweight preview: just show the first file instead of merging all files
+    const firstFile = files[0].file;
+    openPreview(firstFile);
+  }, [files, openPreview]);
 
   return (
     <FeatureViewShell
@@ -101,7 +98,7 @@ export function MergeView() {
 
           <ErrorBanner message={error} onDismiss={clearError} />
 
-          <div className={styles.actions}>
+          <div className={shellStyles.actions}>
             {isAddingMore ? (
               <DropZone
                 onFilesDropped={handleFilesDropped}

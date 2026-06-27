@@ -13,6 +13,7 @@ import { downloadBlob } from '../../../utils/downloadUtils';
 import { ClientPDFService } from '../../../services/pdf/ClientPDFService';
 import { PageRange } from '../../../services/pdf/types';
 import { getPageCount } from '../../../utils/fileUtils';
+import shellStyles from '../../common/FeatureViewShell/FeatureViewShell.module.css';
 import styles from './SplitView.module.css';
 
 type SelectionMode = 'visual' | 'range';
@@ -307,7 +308,7 @@ export function SplitView() {
             </div>
           )}
 
-          <div className={styles.actions}>
+          <div className={`${shellStyles.actions} ${styles.actionsStretch}`}>
             <Button label="Preview Selected" variant="outline" onClick={handlePreview} disabled={!hasSelection || isProcessing} />
             <Button label="Export as Images" variant="outline" onClick={handleExportAsImages} disabled={!hasSelection || isProcessing} />
           </div>
@@ -316,7 +317,7 @@ export function SplitView() {
 
           <ErrorBanner message={error} onDismiss={clearError} />
 
-          <div className={styles.actions}>
+          <div className={`${shellStyles.actions} ${styles.actionsStretch}`}>
             <Button label="Export Selected Pages" variant="primary" onClick={handleExport} disabled={!hasSelection || isProcessing} loading={isProcessing} />
           </div>
 

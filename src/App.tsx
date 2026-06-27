@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { AppProvider, useApp, View } from './context/AppContext';
 import { MergeView } from './components/features/MergeView/MergeView';
 import { SplitView } from './components/features/SplitView/SplitView';
@@ -22,7 +23,7 @@ function AppContent() {
 
   const toggleTheme = () => setTheme(theme === 'light' ? 'dark' : 'light');
 
-  const renderView = () => {
+  const viewElement = useMemo(() => {
     switch (state.currentView) {
       case 'merge': return <MergeView />;
       case 'split': return <SplitView />;
@@ -32,7 +33,7 @@ function AppContent() {
       case 'organize': return <OrganizeView />;
       default: return <MergeView />;
     }
-  };
+  }, [state.currentView]);
 
   return (
     <div className={styles.container}>
@@ -81,7 +82,7 @@ function AppContent() {
       </header>
       <main className={styles.main}>
         <ErrorBoundary>
-          {renderView()}
+          {viewElement}
         </ErrorBoundary>
       </main>
       <footer className={styles.footer}>

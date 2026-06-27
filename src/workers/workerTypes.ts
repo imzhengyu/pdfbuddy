@@ -81,4 +81,11 @@ export interface WorkerErrorMessage {
   error: string;
 }
 
+export interface WorkerCancelMessage {
+  id: string;
+  type: 'cancel';
+}
+
 export type WorkerOutgoingMessage = WorkerProgressMessage | WorkerSuccessMessage | WorkerErrorMessage;
+
+export type WorkerIncomingMessage = WorkerRequest | WorkerCancelMessage;

@@ -1,15 +1,8 @@
-.container { padding: var(--space-xl); }
-.header { margin-bottom: var(--space-xl); }
-.title { font-size: 1.875rem; font-weight: 700; color: var(--color-text); margin-bottom: var(--space-sm); }
-.description { color: var(--color-text-secondary); max-width: 600px; }
-.workspace { display: flex; flex-direction: column; gap: var(--space-lg); background: var(--color-surface); border-radius: var(--radius-lg); padding: var(--space-xl); box-shadow: var(--shadow-md); }
+.actionsCenter { justify-content: center; align-items: center; position: relative; z-index: var(--z-sticky); }
 .fileInfo { display: flex; align-items: center; justify-content: space-between; padding: var(--space-md); background: var(--color-background); border-radius: var(--radius-md); }
-.actions { display: flex; gap: var(--space-md); justify-content: center; align-items: center; flex-wrap: wrap; position: relative; z-index: 10; }
-.error { display: flex; align-items: center; justify-content: space-between; padding: var(--space-md); background: var(--color-error-light); color: var(--color-error); border-radius: var(--radius-md); }
-.error button { background: none; border: none; font-size: 1.5rem; cursor: pointer; }
 
 /* Two-column split layout - 50/50 */
-.splitContainer { display: flex; gap: var(--space-xl); min-height: 400px; }
+.splitContainer { display: flex; gap: var(--space-xl); min-height: var(--min-height-error); }
 .sourceSection {
   flex: 1;
   display: flex;
@@ -64,12 +57,9 @@
   .targetSection {
     position: static;
   }
-  .actions { justify-content: stretch; }
-  .actions > * { flex: 1; }
 }
 
 @media (max-width: 480px) {
   .resultBox { min-height: 150px; }
-  .actions { flex-direction: column; }
   .resultActions { padding: var(--space-sm); }
 }

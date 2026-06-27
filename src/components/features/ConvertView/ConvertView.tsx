@@ -11,6 +11,8 @@ import { usePreview } from '../../../hooks/usePreview';
 import { downloadBlob } from '../../../utils/downloadUtils';
 import { validateImageFile } from '../../../utils/fileUtils';
 import { ConvertToPDFOptions } from '../../../services/pdf/convertOperation';
+import { CONST_CONVERT_CONFIG, CONST_MIME_TYPES } from '../../../config';
+import shellStyles from '../../common/FeatureViewShell/FeatureViewShell.module.css';
 import styles from './ConvertView.module.css';
 
 interface FileItem {
@@ -41,7 +43,7 @@ export function ConvertView() {
   const [convertOptions, setConvertOptions] = useState<ConvertToPDFOptions>({
     pageSize: 'a4',
     orientation: 'portrait',
-    margin: 20,
+    margin: CONST_CONVERT_CONFIG.defaultMargin,
     fitMode: 'fit',
   });
   const [pendingAction, setPendingAction] = useState<'download' | 'preview' | null>(null);
@@ -61,7 +63,7 @@ export function ConvertView() {
   useEffect(() => {
     if (!result || !(result instanceof Blob) || !pendingAction) return;
 
-    const convertedFile = new File([result], 'converted-preview.pdf', { type: 'application/pdf' });
+    const convertedFile = new File([result], 'converted-preview.pdf', { type: CONST_MIME_TYPES.pdf });
 
     if (pendingAction === 'download') {
       downloadBlob(result, 'converted.pdf');
@@ -190,7 +192,7 @@ export function ConvertView() {
 
           <ErrorBanner message={error} onDismiss={reset} />
 
-          <div className={styles.actions}>
+          <div className={shellStyles.actions}>
             {isAddingMore ? (
               <DropZone
                 onFilesDropped={handleFilesDropped}

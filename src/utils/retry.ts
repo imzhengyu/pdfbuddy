@@ -1,3 +1,5 @@
+import { CONST_OPERATION_CONFIG } from '../config';
+
 /**
  * Retry Utilities
  *
@@ -37,7 +39,7 @@ export interface RetryResult<T> {
  * @example
  * const result = await withRetry(
  *   () => fetch('/api/data'),
- *   { maxAttempts: 3, delay: 1000, backoff: 2 }
+ *   { maxAttempts: CONST_OPERATION_CONFIG.retryAttempts, delay: CONST_OPERATION_CONFIG.retryDelay, backoff: CONST_OPERATION_CONFIG.retryBackoff }
  * );
  * if (result.success) {
  *   console.log('Data:', result.result);
@@ -50,9 +52,9 @@ export async function withRetry<T>(
   options: RetryOptions = {}
 ): Promise<RetryResult<T>> {
   const {
-    maxAttempts = 3,
-    delay = 1000,
-    backoff = 2,
+    maxAttempts = CONST_OPERATION_CONFIG.retryAttempts,
+    delay = CONST_OPERATION_CONFIG.retryDelay,
+    backoff = CONST_OPERATION_CONFIG.retryBackoff,
     onRetry,
     retryOn,
   } = options;
@@ -119,7 +121,7 @@ export async function withRetry<T>(
  * @returns A wrapped function that automatically retries
  *
  * @example
- * const safeFetch = withRetryWrapper(fetch, { maxAttempts: 3 });
+ * const safeFetch = withRetryWrapper(fetch, { maxAttempts: CONST_OPERATION_CONFIG.retryAttempts });
  * const result = await safeFetch('/api/data');
  */
 export function withRetryWrapper<T extends (...args: any[]) => Promise<any>>(

@@ -11,7 +11,20 @@ import {
 } from './workerTypes';
 import { convertImagesToPdf } from '../services/pdf/convertOperation';
 
-let cancelled = false;
+// Track cancelled operation IDs
+const cancelledIds = new Set<string>();
+
+function isCancelled(id: string): boolean {
+  return cancelledIds.has(id);
+}
+
+function cancelOperation(id: string): void {
+  cancelledIds.add(id);
+}
+
+function clearCancelled(id: string): void {
+  cancelledIds.delete(id);
+}
 
 function sendProgress(id: string, progress: ProcessingProgress): void {
   const msg: WorkerOutgoingMessage = { id, type: 'progress', progress };
@@ -40,7 +53,8 @@ async function mergePdfs(payload: MergePayload, id: string): Promise<void> {
   const total = files.length;
 
   for (let i = 0; i < files.length; i++) {
-    if (cancelled) {
+    if (isCancelled(id)) {
+      clearCancelled(id);
       sendError(id, 'Operation cancelled');
       return;
     }
@@ -93,7 +107,8 @@ async function splitPdf(payload: SplitPayload, id: string): Promise<void> {
   const total = pageRanges.length;
 
   for (let i = 0; i < pageRanges.length; i++) {
-    if (cancelled) {
+    if (isCancelled(id)) {
+      clearCancelled(id);
       sendError(id, 'Operation cancelled');
       return;
     }
@@ -143,7 +158,8 @@ async function convertToPDF(payload: ConvertPayload, id: string): Promise<void> 
 
 self.onmessage = async (event: MessageEvent<WorkerRequest>) => {
   const { id, operation, payload } = event.data;
-  cancelled = false;
+  // Clear any stale cancellation for this id before starting
+  clearCancelled(id);
 
   try {
     switch (operation) {
@@ -167,8 +183,8 @@ self.onmessage = async (event: MessageEvent<WorkerRequest>) => {
 
 // Handle cancellation messages
 self.addEventListener('message', (event: MessageEvent) => {
-  if (event.data?.type === 'cancel') {
-    cancelled = true;
+  if (event.data?.type === 'cancel' && event.data?.id) {
+    cancelOperation(event.data.id);
   }
 });
 

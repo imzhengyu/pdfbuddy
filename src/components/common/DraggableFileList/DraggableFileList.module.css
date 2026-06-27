@@ -13,11 +13,11 @@
   border-radius: var(--radius-md);
   border: 2px solid transparent;
   cursor: grab;
-  transition: all 0.2s;
+  transition: background-color, border-color, opacity var(--transition-fast);
 }
 
 .item:hover {
-  background: #f1f5f9;
+  background: var(--color-surface-warm);
 }
 
 .item.dragging {
@@ -27,7 +27,7 @@
 
 .item.dragOver {
   border-color: var(--color-primary);
-  background: #eef2ff;
+  background: var(--color-primary-light);
 }
 
 .dragHandle {

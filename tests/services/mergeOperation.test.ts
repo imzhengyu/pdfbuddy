@@ -3,21 +3,11 @@ import { mergePdfs } from '../../src/services/pdf/mergeOperation';
 import { PDFDocument } from 'pdf-lib';
 import { createMockFile, createValidPDFContent } from '../utils/testHelpers';
 
-vi.mock('pdf-lib', () => ({
-  PDFDocument: {
-    create: vi.fn().mockResolvedValue({
-      copyPages: vi.fn().mockResolvedValue([{ addPage: vi.fn() }]),
-      addPage: vi.fn(),
-      save: vi.fn().mockResolvedValue(new Uint8Array([1, 2, 3]))
-    }),
-    load: vi.fn().mockResolvedValue({
-      getPageIndices: vi.fn().mockReturnValue([0, 1]),
-      getPageCount: vi.fn().mockReturnValue(2),
-      getPages: vi.fn().mockReturnValue([]),
-      copyPages: vi.fn().mockResolvedValue([{ addPage: vi.fn() }])
-    })
-  }
-}));
+
+vi.mock('pdf-lib', async () => {
+  const { createMockPDFLib } = await import('../mocks/pdfLib');
+  return createMockPDFLib({ pageCount: 2 });
+});
 
 // Valid PDF content with magic bytes
 const VALID_PDF_CONTENT = createValidPDFContent();

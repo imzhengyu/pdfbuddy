@@ -11,6 +11,8 @@ import { useRotate } from '../../../hooks/useRotate';
 import { usePreview } from '../../../hooks/usePreview';
 import { downloadBlob } from '../../../utils/downloadUtils';
 import { PageRotation, RotationType } from '../../../services/pdf/types';
+import { CONST_ROTATION_CONFIG, CONST_MIME_TYPES, CONST_DOWNLOAD_CONFIG } from '../../../config';
+import shellStyles from '../../common/FeatureViewShell/FeatureViewShell.module.css';
 import styles from './RotateView.module.css';
 
 export function RotateView() {
@@ -40,7 +42,7 @@ export function RotateView() {
     setPageRotations(prev => {
       const newMap = new Map(prev);
       const current = newMap.get(pageIndex) || 0;
-      newMap.set(pageIndex, (current + 90) % 360);
+      newMap.set(pageIndex, (current + CONST_ROTATION_CONFIG.stepDegrees) % 360);
       return newMap;
     });
     setResultFile(null);
@@ -60,14 +62,14 @@ export function RotateView() {
 
     const result = await rotate(file, rotations);
     if (result) {
-      const transformedFile = new File([result], `rotated_${file.name}`, { type: 'application/pdf' });
+      const transformedFile = new File([result], `rotated_${file.name}`, { type: CONST_MIME_TYPES.pdf });
       setResultFile(transformedFile);
     }
   }, [file, pageRotations, rotate]);
 
   const handleDownload = useCallback(() => {
     if (!resultFile) return;
-    downloadBlob(resultFile, `rotated_${file?.name || 'document.pdf'}`);
+    downloadBlob(resultFile, `rotated_${file?.name || CONST_DOWNLOAD_CONFIG.defaultFilename}`);
   }, [resultFile, file]);
 
   const handleClearSelection = useCallback(() => {
@@ -157,7 +159,7 @@ export function RotateView() {
             </div>
           </div>
 
-          <div className={styles.actions}>
+          <div className={`${shellStyles.actions} ${styles.actionsCenter}`}>
             <Button label="Apply Rotation" variant="primary" onClick={handleApplyRotation} disabled={!hasRotations || isProcessing} />
             <Button label="Preview" variant="outline" onClick={() => resultFile && openPreview(resultFile)} disabled={!resultFile} />
             <Button label="Clear" variant="outline" size="sm" onClick={handleClearSelection} disabled={!hasRotations && selectedPages.length === 0} />

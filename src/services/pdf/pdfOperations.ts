@@ -1,5 +1,6 @@
 import { PDFDocument, PDFPage } from 'pdf-lib';
 import { ProcessingProgress } from './types';
+import { CONST_MIME_TYPES } from '../../config';
 
 export type ProgressCallback = (progress: ProcessingProgress) => void;
 
@@ -26,7 +27,7 @@ export function savePDF(pdf: PDFDocument): Promise<Blob> {
 
 export function savePDFWithOptions(pdf: PDFDocument, options: object): Promise<Blob> {
   return pdf.save(options).then(bytes =>
-    new Blob([new Uint8Array(bytes)], { type: 'application/pdf' })
+    new Blob([new Uint8Array(bytes)], { type: CONST_MIME_TYPES.pdf })
   );
 }
 

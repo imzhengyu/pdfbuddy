@@ -1,32 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { rotatePdf } from '../../src/services/pdf/rotateOperation';
 
-vi.mock('pdf-lib', () => ({
-  PDFDocument: {
-    create: vi.fn().mockResolvedValue({
-      copyPages: vi.fn().mockResolvedValue([{
-        getRotation: () => ({ angle: 0 }),
-        setRotation: vi.fn()
-      }]),
-      addPage: vi.fn(),
-      save: vi.fn().mockResolvedValue(new Uint8Array([1, 2, 3]))
-    }),
-    load: vi.fn().mockResolvedValue({
-      getPageCount: vi.fn().mockReturnValue(1),
-      getPages: vi.fn().mockReturnValue([{
-        getRotation: () => ({ angle: 0 }),
-        setRotation: vi.fn()
-      }]),
-      embedPage: vi.fn().mockResolvedValue({ width: 100, height: 100 }),
-      copyPages: vi.fn().mockResolvedValue([{
-        getRotation: () => ({ angle: 0 }),
-        setRotation: vi.fn()
-      }]),
-      save: vi.fn().mockResolvedValue(new Uint8Array([1, 2, 3]))
-    })
-  },
-  degrees: vi.fn((angle) => ({ angle }))
-}));
+
+vi.mock('pdf-lib', async () => {
+  const { createMockPDFLib } = await import('../mocks/pdfLib');
+  return createMockPDFLib({ pageCount: 1 });
+});
 
 // Minimal valid PDF content with magic bytes
 const VALID_PDF_CONTENT = new Uint8Array([

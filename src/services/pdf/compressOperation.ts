@@ -2,6 +2,7 @@ import { CompressionQuality } from './types';
 import { validatePDF } from './pdfValidation';
 import { ProgressCallback, loadPDFFromArrayBuffer } from './pdfOperations';
 import { withPDFLibFallback } from './pdfFallback';
+import { CONST_ERROR_MESSAGES, CONST_MIME_TYPES } from '../../config';
 
 export async function compressPdf(
   file: File,
@@ -11,7 +12,7 @@ export async function compressPdf(
   // Validate PDF structure using full validation
   const validationResult = await validatePDF(file, 'full');
   if (!validationResult.valid) {
-    throw new Error(`"${file.name}" is not a valid PDF: ${validationResult.errors.join('; ')}`);
+    throw new Error(CONST_ERROR_MESSAGES.invalidPdf(file.name, validationResult.errors.join('; ')));
   }
 
   onProgress?.({ current: 0, total: 1, percent: 50 });
@@ -32,5 +33,5 @@ export async function compressPdf(
 
   onProgress?.({ current: 1, total: 1, percent: 100 });
 
-  return new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' });
+  return new Blob([new Uint8Array(pdfBytes)], { type: CONST_MIME_TYPES.pdf });
 }

@@ -1,5 +1,6 @@
 import { PDFDocument } from 'pdf-lib';
 import { PDFProcessingError } from './types';
+import { CONST_CACHE_CONFIG } from '../../config';
 
 /**
  * Result of PDF validation with detailed information.
@@ -28,6 +29,27 @@ export interface ValidationResult {
 export type ValidationLevel = 'basic' | 'full';
 
 const PDF_MAGIC_BYTES = new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2D]); // %PDF-
+
+const validationCache = new Map<string, Promise<ValidationResult>>();
+
+function getValidationCacheKey(file: File): string {
+  return `${file.name}:${file.size}:${file.lastModified}`;
+}
+
+function getCachedValidation(file: File): Promise<ValidationResult> | undefined {
+  return validationCache.get(getValidationCacheKey(file));
+}
+
+function setCachedValidation(file: File, result: Promise<ValidationResult>): void {
+  const key = getValidationCacheKey(file);
+  if (validationCache.size >= CONST_CACHE_CONFIG.validationCacheSize && !validationCache.has(key)) {
+    const firstKey = validationCache.keys().next().value;
+    if (firstKey !== undefined) {
+      validationCache.delete(firstKey);
+    }
+  }
+  validationCache.set(key, result);
+}
 
 /**
  * Checks if buffer starts with PDF magic bytes.
@@ -88,8 +110,20 @@ export async function validatePDFBasic(file: File): Promise<ValidationResult> {
 /**
  * Performs FULL validation - complete validation before processing.
  * Loads the PDF with pdf-lib to validate structure and pages.
+ * Results are cached per file metadata to avoid re-parsing the same file.
  */
 export async function validatePDFFull(file: File): Promise<ValidationResult> {
+  const cached = getCachedValidation(file);
+  if (cached) {
+    return cached;
+  }
+
+  const resultPromise = validatePDFFullUncached(file);
+  setCachedValidation(file, resultPromise);
+  return resultPromise;
+}
+
+async function validatePDFFullUncached(file: File): Promise<ValidationResult> {
   const errors: string[] = [];
   const warnings: string[] = [];
   let pdfInfo: ValidationResult['pdfInfo'] = {};

@@ -1,3 +1,5 @@
+import { CONST_CACHE_CONFIG } from '../../config';
+
 /** Internal cache entry storing parsed PDF data */
 interface CacheEntry {
   /** Parsed PDF document from pdfjs-dist */
@@ -7,7 +9,7 @@ interface CacheEntry {
 /**
  * LRU cache for parsed PDF documents.
  * Avoids re-parsing the same PDF file multiple times during preview operations.
- * Tracks access order to evict least recently used entries when capacity (5) is reached.
+ * Tracks access order to evict least recently used entries when capacity is reached.
  */
 class PDFCache {
   private cache = new Map<string, CacheEntry>();
@@ -41,7 +43,7 @@ class PDFCache {
 
   /**
    * Stores a parsed PDF in the cache.
-   * Evicts least recently used entry if cache is at capacity (5).
+   * Evicts least recently used entry if cache is at capacity.
    * @param file - File object the PDF was parsed from
    * @param entry - Cache entry containing parsed PDF document
    */
@@ -49,7 +51,7 @@ class PDFCache {
     const key = this.getCacheKey(file);
     if (this.cache.has(key)) {
       this.accessOrder = this.accessOrder.filter(k => k !== key);
-    } else if (this.cache.size >= 5) {
+    } else if (this.cache.size >= CONST_CACHE_CONFIG.pdfCacheCapacity) {
       const lruKey = this.accessOrder.shift();
       if (lruKey) {
         this.cache.delete(lruKey);

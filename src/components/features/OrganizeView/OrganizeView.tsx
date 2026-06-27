@@ -12,6 +12,7 @@ import { usePreview } from '../../../hooks/usePreview';
 import { downloadBlob } from '../../../utils/downloadUtils';
 import { getPageCount } from '../../../utils/fileUtils';
 import { PageOrder } from '../../../services/pdf/types';
+import shellStyles from '../../common/FeatureViewShell/FeatureViewShell.module.css';
 import styles from './OrganizeView.module.css';
 
 export function OrganizeView() {
@@ -122,7 +123,7 @@ export function OrganizeView() {
             dragOverIndex={dragOverIndex}
           />
 
-          <div className={styles.actions}>
+          <div className={shellStyles.actions}>
             <Button label="Preview PDF" variant="outline" onClick={() => openPreview(file!)} />
           </div>
 
@@ -141,7 +142,7 @@ export function OrganizeView() {
             </div>
           )}
 
-          <div className={styles.actions}>
+          <div className={shellStyles.actions}>
             <Button label="Download Organized PDF" variant="primary" onClick={handleOrganize} disabled={isProcessing} loading={isProcessing} />
           </div>
 

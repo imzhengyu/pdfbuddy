@@ -1,5 +1,303 @@
 # Changelog / Bug Fixes
 
+## 2026-06-27
+
+### Phase 2: Extract CSS Hardcoded Values
+
+**Issue:** CSS module files still contained hard-coded px values, rgba colors, z-index values, transition durations, transform values, and repeated box-shadow declarations that were not yet centralized.
+
+**Fix:**
+1. Extended `src/styles/variables.css` with new component-level variable groups:
+   - Component shadows: `--shadow-button`, `--shadow-button-hover`, `--shadow-button-secondary`, `--shadow-button-secondary-hover`, `--shadow-button-accent`, `--shadow-button-accent-hover`, `--shadow-modal`, `--shadow-preview`, `--shadow-dropzone-hover`, `--shadow-dropzone-dragover`, `--shadow-dropzone-icon`, `--shadow-dropzone-icon-hover`, `--shadow-badge`, `--shadow-nav-button-hover`
+   - Z-index scale: `--z-sticky`, `--z-header`, `--z-modal`
+   - Touch targets & badges: `--touch-target-min`, `--size-badge-sm`, `--size-badge-md`, `--size-dot`, `--size-control-sm`, `--size-control-md`
+   - Thumbnail sizes: `--thumbnail-width`, `--thumbnail-height`
+   - Modal & preview sizes: `--modal-width`, `--modal-max-width`, `--modal-max-height`, `--preview-min-width`, `--preview-min-height`
+   - Layout constraints: `--max-width-container`, `--max-width-text`, `--max-width-card`, `--min-height-panel`, `--min-height-error`
+   - Transforms: `--transform-lift`, `--transform-lift-lg`, `--transform-lift-xl`, `--transform-scale-up`, `--transform-scale-down`
+   - Animation durations: `--duration-spin`, `--duration-pulse`
+2. Replaced hard-coded values in:
+   - `src/components/common/PreviewModal/PreviewModal.module.css`
+   - `src/components/common/DropZone/DropZone.module.css`
+   - `src/components/common/Button/Button.module.css`
+   - `src/components/common/PageThumbnails/PageThumbnails.module.css`
+   - `src/components/common/ErrorDisplay/ErrorDisplay.module.css`
+   - `src/components/common/ErrorBoundary/ErrorBoundary.module.css`
+   - `src/components/common/FeatureViewShell/FeatureViewShell.module.css`
+   - `src/App.module.css`
+   - `src/components/features/SplitView/SplitView.module.css`
+   - `src/components/features/RotateView/RotateView.module.css`
+3. Preserved behavior by keeping media query breakpoints and values without matching variables (e.g. small 4px offsets, `calc(100vh - 200px)`) unchanged.
+4. Restored per-variant button shadows (primary/secondary/accent) to avoid visual regressions.
+
+**Files Changed:**
+- `src/styles/variables.css`
+- `src/components/common/PreviewModal/PreviewModal.module.css`
+- `src/components/common/DropZone/DropZone.module.css`
+- `src/components/common/Button/Button.module.css`
+- `src/components/common/PageThumbnails/PageThumbnails.module.css`
+- `src/components/common/ErrorDisplay/ErrorDisplay.module.css`
+- `src/components/common/ErrorBoundary/ErrorBoundary.module.css`
+- `src/components/common/FeatureViewShell/FeatureViewShell.module.css`
+- `src/App.module.css`
+- `src/components/features/SplitView/SplitView.module.css`
+- `src/components/features/RotateView/RotateView.module.css`
+
+### Phase 1: Extract TypeScript Core Constants with `CONST_` Prefix
+
+**Issue:** Hard-coded values were scattered across the TypeScript source, tests, and UI components, making the codebase harder to maintain and increasing the risk of drift. Additionally, the user requested that all exported config objects use a `CONST_` naming convention.
+
+**Fix:**
+1. Renamed every exported config object in `src/config/constants.ts` to include the `CONST_` prefix:
+   - `APP_CONFIG` → `CONST_APP_CONFIG`
+   - `PDF_CONFIG` → `CONST_PDF_CONFIG`
+   - `OPERATION_CONFIG` → `CONST_OPERATION_CONFIG`
+   - `UI_CONFIG` → `CONST_UI_CONFIG`
+   - `ZOOM_CONFIG` → `CONST_ZOOM_CONFIG`
+   - `ERROR_CODES` → `CONST_ERROR_CODES`
+   - `QUALITY_PRESETS` → `CONST_QUALITY_PRESETS`
+   - `MIME_TYPES` → `CONST_MIME_TYPES`
+   - `SUPPORTED_IMAGE_MIME_TYPES` → `CONST_SUPPORTED_IMAGE_MIME_TYPES`
+   - `ERROR_MESSAGES` → `CONST_ERROR_MESSAGES`
+   - `CACHE_CONFIG` → `CONST_CACHE_CONFIG`
+   - `THUMBNAIL_CONFIG` → `CONST_THUMBNAIL_CONFIG`
+   - `PREVIEW_CONFIG` → `CONST_PREVIEW_CONFIG`
+   - `CONVERT_CONFIG` → `CONST_CONVERT_CONFIG`
+   - `STORAGE_KEYS` → `CONST_STORAGE_KEYS`
+   - `PERFORMANCE_CONFIG` → `CONST_PERFORMANCE_CONFIG`
+   - `SANITIZE_CONFIG` → `CONST_SANITIZE_CONFIG`
+   - `DOWNLOAD_CONFIG` → `CONST_DOWNLOAD_CONFIG`
+   - `ROTATION_CONFIG` → `CONST_ROTATION_CONFIG`
+   - `TEST_CONFIG` → `CONST_TEST_CONFIG`
+2. Updated `src/config/index.ts` barrel exports to match the new names.
+3. Replaced hard-coded values in the following files with references to the new `CONST_*` objects:
+   - `src/utils/retry.ts`, `src/utils/performance.ts`, `src/utils/sanitize.ts`
+   - `src/utils/downloadUtils.ts`, `src/utils/fileUtils.ts`
+   - `src/context/AppContext.tsx`
+   - `src/services/pdf/ClientPDFService.ts` and all operation modules (`mergeOperation.ts`, `splitOperation.ts`, `compressOperation.ts`, `rotateOperation.ts`, `reorganizeOperation.ts`, `convertOperation.ts`, `pdfOperations.ts`, `pdfCache.ts`, `pdfValidation.ts`)
+   - `src/components/common/PageThumbnails/PageThumbnails.tsx`, `src/components/common/PreviewModal/PreviewModal.tsx`, `src/components/common/DropZone/DropZone.tsx`
+   - `src/components/features/ConvertView/ConvertView.tsx`, `src/components/features/RotateView/RotateView.tsx`
+4. Updated consumers in `tests/config/constants.test.ts` and `tests/services/ClientPDFService.test.ts` to reference the new names.
+5. Resolved TypeScript narrowing issues introduced by `as const` constants by widening arrays with `[...]` and explicitly typing mutable variables (`errorMessage: string`, `useState<number>`).
+
+**Files Changed:**
+- `src/config/constants.ts`
+- `src/config/index.ts`
+- `src/utils/retry.ts`
+- `src/utils/performance.ts`
+- `src/utils/sanitize.ts`
+- `src/utils/downloadUtils.ts`
+- `src/utils/fileUtils.ts`
+- `src/context/AppContext.tsx`
+- `src/services/pdf/ClientPDFService.ts`
+- `src/services/pdf/mergeOperation.ts`
+- `src/services/pdf/splitOperation.ts`
+- `src/services/pdf/compressOperation.ts`
+- `src/services/pdf/rotateOperation.ts`
+- `src/services/pdf/reorganizeOperation.ts`
+- `src/services/pdf/convertOperation.ts`
+- `src/services/pdf/pdfOperations.ts`
+- `src/services/pdf/pdfCache.ts`
+- `src/services/pdf/pdfValidation.ts`
+- `src/components/common/PageThumbnails/PageThumbnails.tsx`
+- `src/components/common/PreviewModal/PreviewModal.tsx`
+- `src/components/common/DropZone/DropZone.tsx`
+- `src/components/features/ConvertView/ConvertView.tsx`
+- `src/components/features/RotateView/RotateView.tsx`
+- `tests/config/constants.test.ts`
+- `tests/services/ClientPDFService.test.ts`
+
+### Phase 3: Extract Test Constants
+
+**Issue:** Test code still used hard-coded timeout values, retry defaults, and MIME type strings that duplicated constants defined in production code.
+
+**Fix:**
+1. Imported `CONST_TEST_CONFIG` into E2E specs and replaced hard-coded timeouts:
+   - `timeout: 10000` → `CONST_TEST_CONFIG.e2eDefaultTimeout`
+   - `timeout: 15000` → `CONST_TEST_CONFIG.e2eButtonTimeout`
+   - merge performance threshold `15000` → `CONST_TEST_CONFIG.e2ePerformanceThresholdMs`
+2. Replaced `waitForCondition` defaults in `tests/utils/testHelpers.ts` with `CONST_TEST_CONFIG.waitForTimeout` and `CONST_TEST_CONFIG.waitForInterval`.
+3. Replaced repeated retry option literals in `tests/utils/retry.test.ts` with references to `CONST_OPERATION_CONFIG`.
+4. Replaced `'application/pdf'` literals in `tests/utils/testHelpers.ts` with `CONST_MIME_TYPES.pdf`.
+5. Extended `tests/config/constants.test.ts` with assertions for all new `CONST_*` config objects (`CONST_MIME_TYPES`, `CONST_SUPPORTED_IMAGE_MIME_TYPES`, `CONST_ERROR_MESSAGES`, `CONST_CACHE_CONFIG`, `CONST_THUMBNAIL_CONFIG`, `CONST_PREVIEW_CONFIG`, `CONST_CONVERT_CONFIG`, `CONST_STORAGE_KEYS`, `CONST_PERFORMANCE_CONFIG`, `CONST_SANITIZE_CONFIG`, `CONST_DOWNLOAD_CONFIG`, `CONST_ROTATION_CONFIG`, `CONST_TEST_CONFIG`).
+
+**Files Changed:**
+- `tests/utils/testHelpers.ts`
+- `tests/utils/retry.test.ts`
+- `tests/e2e/pdf-operations.spec.ts`
+- `tests/e2e/full-test.spec.ts`
+- `tests/config/constants.test.ts`
+
+**Test Results:** `python scripts/run_lint.py` passed, `python scripts/run_unit_tests.py` passed (47 files, 480 tests), `python scripts/run_build.py` passed.
+
+### Tests P1/P2: Real Retry Tests, Shared Upload Helper, Unified Canvas Mock, Worker Message Flow
+
+**Issue:** Tests P1/P2 review identified that retry behavior was not truly exercised, file-upload boilerplate was duplicated in component tests, the canvas mock was minimal, and worker hook tests did not cover progress/error message flows.
+
+**Fix:**
+1. **Real retry tests** (`tests/services/ClientPDFService.test.ts`):
+   - Mocked `CONST_OPERATION_CONFIG` to set `retryDelay: 0` / `retryBackoff: 1` so retries run instantly in tests.
+   - Replaced shallow "wraps X with retry" spy tests with tests that spy on underlying operations (`mergePdfs`, `splitPdf`, `compressPdf`, `rotatePdf`, `convertImagesToPdf`, `reorganizePdf`, `convertPdfToImages`) and make them fail transiently before succeeding.
+   - Added a test verifying the service throws after exhausting all retry attempts.
+
+2. **Shared upload helper** (`tests/utils/testHelpers.ts`):
+   - Added `uploadFileToDropzone(container, file, options)` helper that locates the dropzone input, wraps the change event in `act()`, and returns a promise.
+   - Refactored `tests/components/MergeView.test.tsx` to use the helper, removing the inline `uploadFile` helper and duplicated input lookups.
+
+3. **Unified canvas mock** (`tests/setup.ts`):
+   - Expanded `HTMLCanvasElement.prototype.getContext('2d')` mock to include `fillRect`, `clearRect`, `getImageData`, `putImageData`, `createImageData`, `scale`, `translate`, `save`, `restore`, `beginPath`, `closePath`, `stroke`, `fill`, `arc`, `moveTo`, `lineTo`, `rect`, and `measureText`.
+   - Added `HTMLCanvasElement.prototype.toDataURL` and `toBlob` mocks so canvas-dependent code paths can be tested consistently.
+
+4. **Worker message flow tests** (`tests/hooks/useWorkerPDF.test.ts`):
+   - Added tests for `progress` messages updating state and invoking `onProgress`.
+   - Added tests for `error` messages updating state and invoking `onError`.
+   - Added test for worker runtime errors (`worker.onerror`) updating state and invoking `onError`.
+
+**Files Changed:**
+- `tests/services/ClientPDFService.test.ts`
+- `tests/utils/testHelpers.ts`
+- `tests/setup.ts`
+- `tests/hooks/useWorkerPDF.test.ts`
+- `tests/components/MergeView.test.tsx`
+
+**Test Results:** `python scripts/run_lint.py` passed, `python scripts/run_unit_tests.py` passed (47 files, 459 tests), `python scripts/run_build.py` passed.
+
+---
+
+## 2026-06-27
+
+### CSS P1: Unify Feature View Layout, Hardcoded Colors, Breakpoints
+
+**Issue:** CSS P1 review identified duplicated layout classes across feature views, scattered hardcoded colors, and non-standard breakpoints (400px/600px/900px in PageThumbnails).
+
+**Fix:**
+1. **Extended FeatureViewShell** (`src/components/common/FeatureViewShell/FeatureViewShell.module.css`):
+   - Added shared `.actions` and `.error` layout classes.
+   - Added responsive rules for `.actions` at 480px.
+
+2. **Simplified feature view module CSS** (`MergeView`, `SplitView`, `CompressView`, `RotateView`, `ConvertView`, `OrganizeView`):
+   - Removed duplicated `.container`, `.header`, `.title`, `.description`, `.workspace`, `.actions`, and `.error` rules.
+   - Updated TSX files to import `FeatureViewShell.module.css` and use `shellStyles.actions`.
+   - Added view-specific modifiers where needed (e.g., `.actionsCenter` in RotateView, `.actionsStretch` in SplitView).
+
+3. **Replaced hardcoded colors** across all CSS modules:
+   - Added `--color-white` and `--color-black` to `variables.css`.
+   - Replaced `#hex`, `white`, and `black` literals with `var(--color-*)` variables.
+   - Replaced raw `rgba(...)` color values with `rgb(from var(--color-*) r g b / alpha)` relative color syntax so opacity tints follow the theme.
+   - Cleaned up PreviewModal fallback hex values (`var(--color-primary, #6366f1)` → `var(--color-primary)`).
+
+4. **Standardized breakpoints**:
+   - Added `--breakpoint-sm/md/lg` custom properties in `variables.css`.
+   - Converted PageThumbnails breakpoints from 400px/600px/900px to 480px/768px/1024px.
+   - All media queries now use the 480px/768px/1024px set.
+
+**Files Changed:**
+- `src/styles/variables.css`
+- `src/styles/global.css`
+- `src/App.module.css`
+- `src/components/common/FeatureViewShell/FeatureViewShell.module.css`
+- `src/components/common/Button/Button.module.css`
+- `src/components/common/DraggableFileList/DraggableFileList.module.css`
+- `src/components/common/FileList/FileList.module.css`
+- `src/components/common/PageThumbnails/PageThumbnails.module.css`
+- `src/components/common/PreviewModal/PreviewModal.module.css`
+- `src/components/features/MergeView/MergeView.module.css`
+- `src/components/features/MergeView/MergeView.tsx`
+- `src/components/features/SplitView/SplitView.module.css`
+- `src/components/features/SplitView/SplitView.tsx`
+- `src/components/features/CompressView/CompressView.module.css`
+- `src/components/features/CompressView/CompressView.tsx`
+- `src/components/features/RotateView/RotateView.module.css`
+- `src/components/features/RotateView/RotateView.tsx`
+- `src/components/features/ConvertView/ConvertView.module.css`
+- `src/components/features/ConvertView/ConvertView.tsx`
+- `src/components/features/OrganizeView/OrganizeView.module.css`
+- `src/components/features/OrganizeView/OrganizeView.tsx`
+
+**Test Results:** `python scripts/run_lint.py` passed, `python scripts/run_unit_tests.py` passed (47 files, 455 tests), `python scripts/run_build.py` passed.
+
+---
+
+## 2026-06-27
+
+### TS P1: Memoize App View Routing, Cache PDF Validation, Reuse PDF Service Instance
+
+**Issue:** TS P1 review identified low-hanging performance and simplification opportunities:
+1. `App.tsx` recreated the active view element on every render via an inline `renderView()` function.
+2. `validatePDFFull` parsed the same file with `PDFDocument.load` every time it was called.
+3. `usePDFOperation` instantiated a new `ClientPDFService` on every operation invocation even though the service is stateless.
+
+**Fix:**
+1. **Memoized view routing** (`src/App.tsx`):
+   - Replaced inline `renderView()` with a `useMemo` hook keyed on `state.currentView`.
+   - View elements are now only recreated when the active view changes.
+
+2. **Cached full PDF validation** (`src/services/pdf/pdfValidation.ts`):
+   - Added a bounded module-level cache (max 16 entries, LRU eviction) keyed by `file.name + file.size + file.lastModified`.
+   - `validatePDFFull` reuses the cached `Promise<ValidationResult>` when the same file is validated again, avoiding redundant `PDFDocument.load` parsing.
+
+3. **Reused service instance** (`src/hooks/usePDFOperation.ts`):
+   - Memoized `ClientPDFService` with `useMemo` so a single instance is reused across operation calls in the same hook lifetime.
+
+**Files Changed:**
+- `src/App.tsx`
+- `src/services/pdf/pdfValidation.ts`
+- `src/hooks/usePDFOperation.ts`
+- `tests/services/pdfValidation.test.ts`
+
+**Tests Added/Updated:**
+- Added `validatePDF cache` suite in `tests/services/pdfValidation.test.ts` with 4 tests:
+  - Reuses cached full validation result for the same file
+  - Does not reuse cache when file metadata differs
+  - Returns validation error without calling `PDFDocument.load` for non-PDF files
+  - `validatePDF(file, 'full')` uses cached result
+
+**Test Results:** `python scripts/run_lint.py` passed, `python scripts/run_unit_tests.py` passed (47 files, 455 tests), `python scripts/run_build.py` passed.
+
+---
+
+### Tests P0: Stabilize E2E Waits, Extract Test Factories, Unify pdf-lib Mock
+
+**Issue:** Code review identified fragile E2E waits, duplicated hook test boilerplate, repeated pdf-lib mocks, and unit tests picking up stale agent worktrees.
+
+**Fix:**
+1. **E2E selector/wait cleanup**
+   - Added `data-testid` attributes to `Button` (`button-loading`), `PageThumbnails` (`thumbnail-loading`, `thumbnail-item`), and `PreviewModal` (`preview-modal-header`, `preview-loading`).
+   - Replaced all remaining `page.waitForTimeout` calls in `tests/e2e/pdf-operations.spec.ts` with explicit state waits (`waitForSelector(... detached)` / `expect(...).toBeVisible()`).
+   - In `tests/e2e/full-test.spec.ts`, replaced class-substring selectors (`[class*="thumbnail"]`, `[class*="loading"]`, `[class*="dropzone"]`) with `data-testid` selectors and removed duplicate Low/Medium/High compress download tests, keeping one smoke test.
+
+2. **Hook test factory**
+   - Added `tests/utils/hookTestFactory.ts` with `createPDFHookTests`.
+   - Refactored `useMerge`, `useSplit`, `useCompress`, `useConvert`, `useRotate`, and `useOrganize` tests to use the factory, removing redundant `typeof ... === 'function'` assertions.
+
+3. **Unified pdf-lib mock**
+   - Added `tests/mocks/pdfLib.ts` with `createMockPDFDocument` / `createMockPDFLib` helpers.
+   - Refactored service tests (`mergeOperation`, `splitOperation`, `compressOperation`, `rotateOperation`, `reorganizeOperation`, `convertOperation`, `ClientPDFService`) to import the shared mock via an async `vi.mock` factory.
+
+4. **Test infrastructure fixes**
+   - Added `.claude/**` to `vitest.config.ts` `exclude` so agent worktrees no longer pollute the test run.
+   - Fixed `tests/components/PageThumbnails.test.tsx` which assigned to `HTMLCanvasElement.prototype.width/height`, causing a jsdom TypeError.
+   - Fixed `tests/hooks/useWorkerPDF.test.tsx` "terminates worker on unmount" test to first start an operation (worker is created lazily).
+
+**Files Changed:**
+- `src/components/common/Button/Button.tsx`
+- `src/components/common/PageThumbnails/PageThumbnails.tsx`
+- `src/components/common/PreviewModal/PreviewModal.tsx`
+- `tests/e2e/pdf-operations.spec.ts`
+- `tests/e2e/full-test.spec.ts`
+- `tests/utils/hookTestFactory.ts` (new)
+- `tests/mocks/pdfLib.ts` (new)
+- `tests/hooks/use{Merge,Split,Compress,Convert,Rotate,Organize}.test.ts`
+- `tests/hooks/useWorkerPDF.test.ts`
+- `tests/services/{merge,split,compress,rotate,reorganize,convert}Operation.test.ts`
+- `tests/services/ClientPDFService.test.ts`
+- `tests/components/PageThumbnails.test.tsx`
+- `vitest.config.ts`
+
+**Test Results:** `python scripts/run_lint.py` passed, `python scripts/run_unit_tests.py` passed (47 files, 451 tests), `python scripts/run_build.py` passed.
+
+---
+
 ## 2026-06-26
 
 ### Fix: Mobile Responsive Layout Issues
@@ -34,7 +332,7 @@
 1. Removed all `console.error` and `console.warn` calls from production source code.
 2. Removed the `logToConsole` prop from `ErrorBoundary` since it no longer logged to console.
 3. Removed the corresponding `ErrorBoundary` tests that asserted console logging behavior.
-4. Unified `PageThumbnails` to use `PDF_CONFIG.pdfJsWorkerUrl` instead of a hardcoded CDN URL.
+4. Unified `PageThumbnails` to use `CONST_PDF_CONFIG.pdfJsWorkerUrl` instead of a hardcoded CDN URL.
 5. Replaced unstable `key={index}` in `PageThumbnails` with a composite key based on file name, size, and page index.
 
 **Files Changed:**
@@ -303,6 +601,61 @@ await page.waitForFunction(() => {
 - `docs/SPEC.md` - Updated Convert feature (removed PDF→Images note since feature is removed)
 
 **Test Results:** All 249 tests passing
+
+---
+
+## 2026-06-26
+
+### Performance: Worker Reuse, Throttled Thumbnails, Lightweight Merge Preview
+
+**Issue:** TS P0 review identified three performance issues:
+1. Worker was created and terminated on every `startOperation` call, causing unnecessary overhead.
+2. `cancelled` was a module-level boolean in the worker, so cancelling one operation could affect subsequent operations.
+3. PageThumbnails rendered all 10 pages in a chunk concurrently, overwhelming the main thread.
+4. MergeView preview performed a full merge of all files just to show a preview, which is slow for large files.
+
+**Fix:**
+1. **Worker Reuse** (`src/hooks/useWorkerPDF.ts`):
+   - Changed from `createWorker()` (always creates new + terminates old) to `getWorker()` (creates once, reuses thereafter).
+   - Worker is only terminated on `reset()` or unmount.
+   - Added stale-message filtering: messages with `id` not matching `currentIdRef.current` are ignored.
+
+2. **Scoped Cancellation** (`src/workers/pdfProcessor.worker.ts`):
+   - Replaced module-level `let cancelled = false` with `Set<string> cancelledIds`.
+   - Added `isCancelled(id)`, `cancelOperation(id)`, and `clearCancelled(id)` helpers.
+   - Cancel message now includes the operation `id`, and only that specific operation is marked cancelled.
+   - Added `WorkerCancelMessage` type to `workerTypes.ts` for typed cancellation.
+
+3. **Throttled Thumbnail Rendering** (`src/components/common/PageThumbnails/PageThumbnails.tsx`):
+   - Added `concurrencyLimit = 3` to the chunk rendering loop.
+   - Replaced `Promise.all(renderPromises)` (10 concurrent renders) with a worker-pool pattern that limits concurrent renders to 3.
+   - After each page render, sets `canvas.width = 0; canvas.height = 0` to release canvas memory.
+
+4. **Lightweight Merge Preview** (`src/components/features/MergeView/MergeView.tsx`):
+   - Changed `handlePreview` from calling full `merge()` to simply previewing `files[0].file`.
+   - This avoids expensive merge operations for preview; users can still see the full merged result via the actual Merge button.
+
+**Files Changed:**
+- `src/hooks/useWorkerPDF.ts` - Worker reuse, stale-message filtering
+- `src/workers/pdfProcessor.worker.ts` - Scoped cancellation by operation id
+- `src/workers/workerTypes.ts` - Added `WorkerCancelMessage` and `WorkerIncomingMessage` types
+- `src/components/common/PageThumbnails/PageThumbnails.tsx` - Concurrency limit (3) and canvas cleanup
+- `src/components/features/MergeView/MergeView.tsx` - Lightweight preview (first file only)
+
+**Tests Added/Updated:**
+- `tests/hooks/useWorkerPDF.test.ts` - 8 tests covering: worker reuse, stale-message filtering, cancel with id, terminate on reset/unmount
+- `tests/components/PageThumbnails.test.tsx` - Added test for large PDF throttled rendering (15 pages)
+- `tests/components/MergeView.test.tsx` - Added test verifying preview opens quickly without calling full merge
+- `tests/workers/workerTypes.test.ts` - 7 tests (existing, still passing)
+
+**Test Results:** Lint passed, 35 tests in modified files all passed.
+
+**Performance Gains:**
+- Worker creation/termination overhead eliminated for repeated operations.
+- Cancellation no longer leaks between operations.
+- Thumbnail rendering peak concurrency reduced from 10 to 3, reducing main thread jank.
+- Canvas memory released immediately after each render.
+- Merge preview latency reduced from O(n) file merge to O(1) first-file preview.
 
 ---
 

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { CONST_OPERATION_CONFIG } from '../../src/config/constants';
 import { withRetry, withRetryWrapper, isRetrySuccess, isRetryFailure } from '../../src/utils/retry';
 
 describe('retry', () => {
@@ -10,7 +11,7 @@ describe('retry', () => {
     it('returns result on first success', async () => {
       const fn = vi.fn().mockResolvedValue('success');
 
-      const result = await withRetry(fn, { maxAttempts: 3 });
+      const result = await withRetry(fn, { maxAttempts: CONST_OPERATION_CONFIG.retryAttempts });
 
       expect(result.success).toBe(true);
       expect(result.result).toBe('success');
@@ -24,7 +25,7 @@ describe('retry', () => {
         .mockRejectedValueOnce(new Error('fail'))
         .mockResolvedValue('success');
 
-      const resultPromise = withRetry(fn, { maxAttempts: 3, delay: 1000, backoff: 2 });
+      const resultPromise = withRetry(fn, { maxAttempts: CONST_OPERATION_CONFIG.retryAttempts, delay: CONST_OPERATION_CONFIG.retryDelay, backoff: CONST_OPERATION_CONFIG.retryBackoff });
 
       // Wait for all retries
       await vi.advanceTimersByTimeAsync(3000);
@@ -38,7 +39,7 @@ describe('retry', () => {
     it('returns error after max attempts', async () => {
       const fn = vi.fn().mockRejectedValue(new Error('always fails'));
 
-      const resultPromise = withRetry(fn, { maxAttempts: 3, delay: 1000 });
+      const resultPromise = withRetry(fn, { maxAttempts: CONST_OPERATION_CONFIG.retryAttempts, delay: CONST_OPERATION_CONFIG.retryDelay });
 
       // Wait for all retries
       await vi.advanceTimersByTimeAsync(4000);
@@ -55,7 +56,7 @@ describe('retry', () => {
         .mockRejectedValueOnce(new Error('fail'))
         .mockResolvedValue('success');
 
-      const resultPromise = withRetry(fn, { maxAttempts: 3, delay: 1000, onRetry });
+      const resultPromise = withRetry(fn, { maxAttempts: CONST_OPERATION_CONFIG.retryAttempts, delay: CONST_OPERATION_CONFIG.retryDelay, onRetry });
 
       await vi.advanceTimersByTimeAsync(2000);
       await resultPromise;
@@ -68,7 +69,7 @@ describe('retry', () => {
       const fn = vi.fn().mockRejectedValue(new Error('network'));
 
       const result = await withRetry(fn, {
-        maxAttempts: 3,
+        maxAttempts: CONST_OPERATION_CONFIG.retryAttempts,
         delay: 100,
         retryOn: (error) => error.message !== 'network',
       });
@@ -84,7 +85,7 @@ describe('retry', () => {
         .mockRejectedValueOnce(new Error('fail'))
         .mockResolvedValue('success');
 
-      const resultPromise = withRetry(fn, { maxAttempts: 2, delay: 1000 });
+      const resultPromise = withRetry(fn, { maxAttempts: 2, delay: CONST_OPERATION_CONFIG.retryDelay });
 
       await vi.advanceTimersByTimeAsync(2000);
       const result = await resultPromise;
@@ -97,7 +98,7 @@ describe('retry', () => {
     it('wraps function with retry logic', async () => {
       const myFn = vi.fn().mockResolvedValue('wrapped');
 
-      const safeFn = withRetryWrapper(myFn, { maxAttempts: 3 });
+      const safeFn = withRetryWrapper(myFn, { maxAttempts: CONST_OPERATION_CONFIG.retryAttempts });
       const result = await safeFn();
 
       expect(result.success).toBe(true);

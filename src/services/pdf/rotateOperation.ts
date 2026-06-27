@@ -2,6 +2,7 @@ import { PDFDocument, degrees } from 'pdf-lib';
 import { PageRotation } from './types';
 import { validatePDF, validatePageIndex } from './pdfValidation';
 import { ProgressCallback, loadPDFFromArrayBuffer } from './pdfOperations';
+import { CONST_ERROR_MESSAGES, CONST_MIME_TYPES } from '../../config';
 
 export async function rotatePdf(
   file: File,
@@ -11,7 +12,7 @@ export async function rotatePdf(
   // Validate PDF structure using full validation
   const validationResult = await validatePDF(file, 'full');
   if (!validationResult.valid) {
-    throw new Error(`"${file.name}" is not a valid PDF: ${validationResult.errors.join('; ')}`);
+    throw new Error(CONST_ERROR_MESSAGES.invalidPdf(file.name, validationResult.errors.join('; ')));
   }
 
   const arrayBuffer = await file.arrayBuffer();
@@ -41,7 +42,7 @@ export async function rotatePdf(
       const { type, degrees: deg } = pageRotation;
 
       if (type === 'mirror') {
-        throw new Error('Mirror rotation is not supported by this operation');
+        throw new Error(CONST_ERROR_MESSAGES.unsupportedRotation);
       }
 
       if (type === 'rotate' && deg !== undefined) {
@@ -61,5 +62,5 @@ export async function rotatePdf(
   }
 
   const pdfBytes = await newPdf.save();
-  return new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' });
+  return new Blob([new Uint8Array(pdfBytes)], { type: CONST_MIME_TYPES.pdf });
 }

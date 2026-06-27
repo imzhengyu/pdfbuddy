@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import path from 'path';
+import { CONST_TEST_CONFIG } from '../../src/config/constants';
 
 const testFiles = {
   merge: [
@@ -115,11 +116,8 @@ test.describe('PDF Merge E2E', () => {
     await expect(previewBtn).toBeEnabled();
     await previewBtn.click();
 
-    // Wait for preview to load
-    await page.waitForTimeout(500);
-
-    // Modal should open - use heading level 3 since modal uses h3
-    await expect(page.getByRole('heading', { level: 3 })).toBeVisible();
+    // Wait for preview modal to open
+    await expect(page.getByTestId('preview-modal-header')).toBeVisible();
   });
 
   test('Merge button disabled when less than 2 files', async ({ page }) => {
@@ -145,10 +143,10 @@ test.describe('PDF Split E2E', () => {
     await expect(page.getByText('split-source.pdf')).toBeVisible();
 
     // Wait for thumbnails to load
-    await page.waitForSelector('[class*="thumbnail"]', { timeout: 10000 }).catch(() => {});
+    await page.waitForSelector('[data-testid="thumbnail-item"]', { timeout: CONST_TEST_CONFIG.e2eDefaultTimeout }).catch(() => {});
 
     // Click on first page to select it
-    const thumbnails = page.locator('[class*="thumbnail"]');
+    const thumbnails = page.locator('[data-testid="thumbnail-item"]');
     await thumbnails.first().click();
 
     // Export button should be enabled
@@ -169,19 +167,16 @@ test.describe('PDF Split E2E', () => {
     await expect(page.getByText('split-source.pdf')).toBeVisible();
 
     // Wait for thumbnails to load and multiple pages to be selectable
-    await page.waitForSelector('[class*="thumbnail"]', { timeout: 10000 }).catch(() => {});
+    await page.waitForSelector('[data-testid="thumbnail-item"]', { timeout: CONST_TEST_CONFIG.e2eDefaultTimeout }).catch(() => {});
     await page.waitForFunction(() => {
-      const thumbnails = document.querySelectorAll('[class*="thumbnail"]');
+      const thumbnails = document.querySelectorAll('[data-testid="thumbnail-item"]');
       return thumbnails.length >= 2;
-    }, { timeout: 10000 }).catch(() => {});
+    }, { timeout: CONST_TEST_CONFIG.e2eDefaultTimeout }).catch(() => {});
 
     // Select first 2 pages - use first() and nth(1) to get two different pages
-    const thumbnails = page.locator('[class*="thumbnail"]');
+    const thumbnails = page.locator('[data-testid="thumbnail-item"]');
     await thumbnails.first().click();
     await thumbnails.nth(1).click();
-
-    // Wait for selection to update
-    await page.waitForTimeout(300);
 
     // Verify selection count
     await expect(page.getByText(/2 selected/)).toBeVisible();
@@ -223,10 +218,10 @@ test.describe('PDF Split E2E', () => {
     await uploadFile(page, testFiles.split);
     await expect(page.getByText('split-source.pdf')).toBeVisible();
 
-    await page.waitForSelector('[class*="thumbnail"]', { timeout: 10000 }).catch(() => {});
+    await page.waitForSelector('[data-testid="thumbnail-item"]', { timeout: CONST_TEST_CONFIG.e2eDefaultTimeout }).catch(() => {});
 
     // Select a page
-    const thumbnails = page.locator('[class*="thumbnail"]');
+    const thumbnails = page.locator('[data-testid="thumbnail-item"]');
     await thumbnails.first().click();
 
     await expect(page.getByText(/1 selected/)).toBeVisible();
@@ -242,10 +237,10 @@ test.describe('PDF Split E2E', () => {
     await uploadFile(page, testFiles.split);
     await expect(page.getByText('split-source.pdf')).toBeVisible();
 
-    await page.waitForSelector('[class*="thumbnail"]', { timeout: 10000 }).catch(() => {});
+    await page.waitForSelector('[data-testid="thumbnail-item"]', { timeout: CONST_TEST_CONFIG.e2eDefaultTimeout }).catch(() => {});
 
     // Select a page
-    const thumbnails = page.locator('[class*="thumbnail"]');
+    const thumbnails = page.locator('[data-testid="thumbnail-item"]');
     await thumbnails.first().click();
     await expect(page.getByText(/1 selected/)).toBeVisible();
 
@@ -270,11 +265,8 @@ test.describe('PDF Rotate E2E', () => {
     await expect(page.getByText('rotate-test.pdf')).toBeVisible();
 
     // Wait for thumbnails
-    await page.waitForSelector('[class*="thumbnail"]', { timeout: 10000 }).catch(() => {});
-    await page.waitForFunction(() => {
-      const loading = document.querySelector('[class*="loading"]');
-      return !loading || loading.textContent === '';
-    }, { timeout: 10000 }).catch(() => {});
+    await page.waitForSelector('[data-testid="thumbnail-item"]', { timeout: CONST_TEST_CONFIG.e2eDefaultTimeout }).catch(() => {});
+    await page.waitForSelector('[data-testid="thumbnail-loading"]', { state: 'detached', timeout: CONST_TEST_CONFIG.e2eDefaultTimeout }).catch(() => {});
 
     // Click rotate button on first thumbnail - CSS modules hash class names
     const rotateButtons = page.locator('button[title="Rotate 90°"]');
@@ -282,29 +274,26 @@ test.describe('PDF Rotate E2E', () => {
       await rotateButtons.first().click();
     } else {
       // Fallback: click on thumbnail to select
-      const thumbnails = page.locator('[class*="thumbnail"]');
+      const thumbnails = page.locator('[data-testid="thumbnail-item"]');
       await thumbnails.first().click();
     }
 
-    // Wait for rotation to be applied
-    await page.waitForTimeout(500);
-
-    // Apply Rotation button should now be enabled
-    const applyBtn = page.getByRole('button', { name: 'Apply Rotation' });
-    // Note: may still be disabled depending on implementation
-
-    // Preview should be enabled if rotation was applied
-    const previewBtn = page.getByRole('button', { name: 'Preview' });
-
-    // Set up download handler
-    const downloadPromise = page.waitForEvent('download');
-
-    // Click Apply Rotation if enabled, otherwise just verify state
-    if (await applyBtn.isEnabled()) {
-      await applyBtn.click();
+    // Click rotate button on first thumbnail
+    const rotateButtons = page.locator('button[title="Rotate 90°"]');
+    if (await rotateButtons.count() > 0) {
+      await rotateButtons.first().click();
+    } else {
+      // Fallback: click on thumbnail to select
+      const thumbnails = page.locator('[data-testid="thumbnail-item"]');
+      await thumbnails.first().click();
     }
 
-    // Wait for download
+    const applyBtn = page.getByRole('button', { name: 'Apply Rotation' });
+    await expect(applyBtn).toBeEnabled({ timeout: 5000 });
+
+    const downloadPromise = page.waitForEvent('download');
+    await applyBtn.click();
+
     const download = await downloadPromise;
     expect(download.suggestedFilename()).toMatch(/rotated.*\.pdf$/i);
   });
@@ -313,11 +302,8 @@ test.describe('PDF Rotate E2E', () => {
     await uploadFile(page, testFiles.rotate);
     await expect(page.getByText('rotate-test.pdf')).toBeVisible();
 
-    await page.waitForSelector('[class*="thumbnail"]', { timeout: 10000 }).catch(() => {});
-    await page.waitForFunction(() => {
-      const loading = document.querySelector('[class*="loading"]');
-      return !loading || loading.textContent === '';
-    }, { timeout: 10000 }).catch(() => {});
+    await page.waitForSelector('[data-testid="thumbnail-item"]', { timeout: CONST_TEST_CONFIG.e2eDefaultTimeout }).catch(() => {});
+    await page.waitForSelector('[data-testid="thumbnail-loading"]', { state: 'detached', timeout: CONST_TEST_CONFIG.e2eDefaultTimeout }).catch(() => {});
 
     // Clear button should be disabled when no rotation applied
     const clearBtn = page.getByRole('button', { name: 'Clear' });
@@ -332,14 +318,12 @@ test.describe('PDF Rotate E2E', () => {
     await uploadFile(page, testFiles.rotate);
     await expect(page.getByText('rotate-test.pdf')).toBeVisible();
 
-    await page.waitForSelector('[class*="thumbnail"]', { timeout: 10000 }).catch(() => {});
+    await page.waitForSelector('[data-testid="thumbnail-item"]', { timeout: CONST_TEST_CONFIG.e2eDefaultTimeout }).catch(() => {});
 
     const previewBtn = page.getByRole('button', { name: 'Preview' });
     if (await previewBtn.isEnabled()) {
       await previewBtn.click();
-      // Wait for preview to load
-      await page.waitForTimeout(500);
-      await expect(page.getByRole('heading', { level: 3 })).toBeVisible();
+      await expect(page.getByTestId('preview-modal-header')).toBeVisible();
     }
   });
 
@@ -350,17 +334,11 @@ test.describe('PDF Rotate E2E', () => {
     await expect(page.getByText('rotate-test.pdf')).toBeVisible();
 
     // Wait for thumbnails to load
-    await page.waitForSelector('[class*="thumbnail"]', { timeout: 10000 }).catch(() => {});
-    await page.waitForFunction(() => {
-      const loading = document.querySelector('[class*="loading"]');
-      return !loading || loading.textContent === '';
-    }, { timeout: 10000 }).catch(() => {});
+    await page.waitForSelector('[data-testid="thumbnail-item"]', { timeout: CONST_TEST_CONFIG.e2eDefaultTimeout }).catch(() => {});
+    await page.waitForSelector('[data-testid="thumbnail-loading"]', { state: 'detached', timeout: CONST_TEST_CONFIG.e2eDefaultTimeout }).catch(() => {});
 
     // Resize viewport to narrow width (400px - triggers single column layout)
     await page.setViewportSize({ width: 400, height: 800 });
-
-    // Wait for layout to update
-    await page.waitForTimeout(300);
 
     // Both Apply Rotation and Preview buttons should be visible and not covered by thumbnails
     const applyBtn = page.getByRole('button', { name: 'Apply Rotation' });
@@ -423,8 +401,7 @@ test.describe('PDF Compress E2E', () => {
     // Click compress
     await compressBtn.click();
 
-    // Wait a bit for state to update, then check button is disabled during processing
-    await page.waitForTimeout(100);
+    // Button should be disabled during processing
     await expect(compressBtn).toBeDisabled();
 
     // Wait for download to complete
@@ -438,9 +415,7 @@ test.describe('PDF Compress E2E', () => {
     const previewBtn = page.getByRole('button', { name: 'Preview' });
     if (await previewBtn.isEnabled()) {
       await previewBtn.click();
-      // Wait for preview to load
-      await page.waitForTimeout(500);
-      await expect(page.getByRole('heading', { level: 3 })).toBeVisible();
+      await expect(page.getByTestId('preview-modal-header')).toBeVisible();
     }
   });
 
@@ -468,11 +443,8 @@ test.describe('PDF Convert E2E', () => {
 
     await uploadFile(page, imageFiles.jpeg);
 
-    // Wait for file to appear
-    await page.waitForTimeout(500);
-
     const convertBtn = page.getByRole('button', { name: /Convert 1 Image to PDF/i });
-    await expect(convertBtn).toBeEnabled({ timeout: 10000 });
+    await expect(convertBtn).toBeEnabled({ timeout: CONST_TEST_CONFIG.e2eDefaultTimeout });
 
     const downloadPromise = page.waitForEvent('download');
     await convertBtn.click();
@@ -486,11 +458,8 @@ test.describe('PDF Convert E2E', () => {
 
     await uploadFile(page, imageFiles.png);
 
-    // Wait for file to appear
-    await page.waitForTimeout(500);
-
     const convertBtn = page.getByRole('button', { name: /Convert 1 Image to PDF/i });
-    await expect(convertBtn).toBeEnabled({ timeout: 15000 });
+    await expect(convertBtn).toBeEnabled({ timeout: CONST_TEST_CONFIG.e2eButtonTimeout });
 
     const downloadPromise = page.waitForEvent('download');
     await convertBtn.click();
@@ -504,11 +473,8 @@ test.describe('PDF Convert E2E', () => {
 
     await uploadFiles(page, [imageFiles.jpeg, 'test-inputs/test-image3.jpg']);
 
-    // Wait for files to appear
-    await page.waitForTimeout(500);
-
     const convertBtn = page.getByRole('button', { name: /Convert 2 Images to PDF/i });
-    await expect(convertBtn).toBeEnabled({ timeout: 15000 });
+    await expect(convertBtn).toBeEnabled({ timeout: CONST_TEST_CONFIG.e2eButtonTimeout });
 
     const downloadPromise = page.waitForEvent('download');
     await convertBtn.click();
@@ -528,20 +494,16 @@ test.describe('PDF Organize E2E', () => {
     await uploadFile(page, testFiles.organize);
     await expect(page.getByText('test-3pages.pdf')).toBeVisible();
 
-    await page.waitForSelector('[class*="thumbnail"]', { timeout: 10000 }).catch(() => {});
-    await page.waitForFunction(() => {
-      const loading = document.querySelector('[class*="loading"]');
-      return !loading || loading.textContent === '';
-    }, { timeout: 10000 }).catch(() => {});
+    await page.waitForSelector('[data-testid="thumbnail-item"]', { timeout: CONST_TEST_CONFIG.e2eDefaultTimeout }).catch(() => {});
+    await page.waitForSelector('[data-testid="thumbnail-loading"]', { state: 'detached', timeout: CONST_TEST_CONFIG.e2eDefaultTimeout }).catch(() => {});
 
     // Select all pages
-    const thumbnails = page.locator('[class*="thumbnail"]');
+    const thumbnails = page.locator('[data-testid="thumbnail-item"]');
     const count = await thumbnails.count();
     expect(count).toBeGreaterThan(0);
 
     for (let i = 0; i < count; i++) {
       await thumbnails.nth(i).click({ force: true });
-      await page.waitForTimeout(100);
     }
 
     // Should show selection
@@ -558,14 +520,12 @@ test.describe('PDF Organize E2E', () => {
     await uploadFile(page, testFiles.organize);
     await expect(page.getByText('test-3pages.pdf')).toBeVisible();
 
-    await page.waitForSelector('[class*="thumbnail"]', { timeout: 10000 }).catch(() => {});
+    await page.waitForSelector('[data-testid="thumbnail-item"]', { timeout: CONST_TEST_CONFIG.e2eDefaultTimeout }).catch(() => {});
 
     const previewBtn = page.getByRole('button', { name: 'Preview PDF' });
     if (await previewBtn.isEnabled()) {
       await previewBtn.click();
-      // Wait for preview to load
-      await page.waitForTimeout(500);
-      await expect(page.getByRole('heading', { level: 3 })).toBeVisible();
+      await expect(page.getByTestId('preview-modal-header')).toBeVisible();
     }
   });
 });
@@ -579,19 +539,10 @@ test.describe('Error Handling E2E', () => {
     const input = page.locator('input[type="file"]').first();
     await input.setInputFiles(path.resolve('test-inputs/test-text.txt'));
 
-    // Should show error or file should not be accepted
-    await page.waitForTimeout(500);
-    // Either error is shown or file is rejected
+    // Either error is shown or file is rejected and dropzone remains visible
     const errorText = page.getByText(/invalid|error|pdf/i);
-    const dropzoneVisible = await page.getByText(/drag and drop.*pdf/i).isVisible();
-    // Either error is shown or we're still on dropzone (file rejected)
-    const errorVisible = await errorText.isVisible().catch(() => false);
-    if (errorVisible) {
-      // Error is displayed as expected
-    } else {
-      // Or file was rejected and dropzone is still visible
-      expect(dropzoneVisible).toBe(true);
-    }
+    const dropzoneText = page.getByText(/drag and drop.*pdf/i);
+    await expect(errorText.or(dropzoneText)).toBeVisible();
   });
 
   test('Large file upload shows loading state', async ({ page }) => {
@@ -601,9 +552,7 @@ test.describe('Error Handling E2E', () => {
 
     await uploadFile(page, 'test-inputs/test-10pages.pdf');
 
-    // Should show loading state or file info
-    await page.waitForTimeout(1000);
-    await expect(page.getByText(/test-10pages\.pdf/)).toBeVisible();
+    await expect(page.getByText(/test-10pages\.pdf/)).toBeVisible({ timeout: CONST_TEST_CONFIG.e2eDefaultTimeout });
   });
 
   test('Navigation preserves state correctly', async ({ page }) => {
@@ -631,7 +580,7 @@ test.describe('Performance E2E', () => {
 
     const startTime = Date.now();
     await uploadFile(page, 'test-inputs/test-10pages.pdf');
-    await page.waitForSelector('[class*="thumbnail"]', { timeout: 15000 }).catch(() => {});
+    await page.waitForSelector('[data-testid="thumbnail-item"]', { timeout: CONST_TEST_CONFIG.e2eButtonTimeout }).catch(() => {});
     const loadTime = Date.now() - startTime;
 
     // Should load within 10 seconds
@@ -653,6 +602,6 @@ test.describe('Performance E2E', () => {
     const mergeTime = Date.now() - startTime;
 
     // Should complete within 15 seconds
-    expect(mergeTime).toBeLessThan(15000);
+    expect(mergeTime).toBeLessThan(CONST_TEST_CONFIG.e2ePerformanceThresholdMs);
   });
 });

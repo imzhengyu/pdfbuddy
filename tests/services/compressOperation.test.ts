@@ -3,14 +3,10 @@ import { compressPdf } from '../../src/services/pdf/compressOperation';
 import { createMockFile, createValidPDFContent } from '../utils/testHelpers';
 import { PDFDocument } from 'pdf-lib';
 
-vi.mock('pdf-lib', () => ({
-  PDFDocument: {
-    load: vi.fn().mockResolvedValue({
-      getPageCount: vi.fn().mockReturnValue(1),
-      save: vi.fn().mockResolvedValue(new Uint8Array([1, 2, 3]))
-    })
-  }
-}));
+vi.mock('pdf-lib', async () => {
+  const { createMockPDFLib } = await import('../mocks/pdfLib');
+  return createMockPDFLib({ pageCount: 1 });
+});
 
 // Valid PDF content with magic bytes
 const VALID_PDF_CONTENT = createValidPDFContent();

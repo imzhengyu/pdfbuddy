@@ -3,6 +3,7 @@ import { PageRange } from './types';
 import { validatePDF, validatePageRange } from './pdfValidation';
 import { ProgressCallback, loadPDFFromArrayBuffer } from './pdfOperations';
 import { withPDFLibFallback } from './pdfFallback';
+import { CONST_ERROR_MESSAGES, CONST_MIME_TYPES } from '../../config';
 
 export async function splitPdf(
   file: File,
@@ -12,7 +13,7 @@ export async function splitPdf(
   // Validate PDF structure using full validation
   const validationResult = await validatePDF(file, 'full');
   if (!validationResult.valid) {
-    throw new Error(`"${file.name}" is not a valid PDF: ${validationResult.errors.join('; ')}`);
+    throw new Error(CONST_ERROR_MESSAGES.invalidPdf(file.name, validationResult.errors.join('; ')));
   }
 
   const arrayBuffer = await file.arrayBuffer();
@@ -47,7 +48,7 @@ export async function splitPdf(
     }
 
     const pdfBytes = await newPdf.save();
-    results.push(new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' }));
+    results.push(new Blob([new Uint8Array(pdfBytes)], { type: CONST_MIME_TYPES.pdf }));
 
     onProgress?.({
       current: i + 1,

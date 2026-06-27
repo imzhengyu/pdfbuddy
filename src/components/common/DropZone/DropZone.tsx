@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useDropzone, FileRejection } from 'react-dropzone';
+import { CONST_PDF_CONFIG } from '../../../config';
 import { PDFProcessingError } from '../../../services/pdf/types';
 import styles from './DropZone.module.css';
 
@@ -15,10 +16,10 @@ interface DropZoneProps {
 export function DropZone({
   onFilesDropped,
   onError,
-  accept = { 'application/pdf': ['.pdf'] },
+  accept = { [CONST_PDF_CONFIG.supportedMimeTypes[0]]: [...CONST_PDF_CONFIG.supportedExtensions] },
   multiple = true,
   message = 'Drag and drop PDF files here, or click to select',
-  maxSize = 20 * 1024 * 1024
+  maxSize = CONST_PDF_CONFIG.dropzoneMaxSize
 }: DropZoneProps) {
   const [isDragOver, setIsDragOver] = useState(false);
 
