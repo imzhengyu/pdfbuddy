@@ -164,7 +164,7 @@ describe('OrganizeView', () => {
     fireEvent.click(previewBtn);
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { level: 3 })).toBeInTheDocument();
+      expect(screen.getByTestId('preview-modal-header')).toBeInTheDocument();
     });
   });
 });

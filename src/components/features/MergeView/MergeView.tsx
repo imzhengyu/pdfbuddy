@@ -9,7 +9,7 @@ import { ErrorBanner } from '../../common/ErrorBanner';
 import { useMerge } from '../../../hooks/useMerge';
 import { usePreview } from '../../../hooks/usePreview';
 import { downloadBlob } from '../../../utils/downloadUtils';
-import { CONST_ERROR_MESSAGES, CONST_LIMITS_CONFIG } from '../../../config';
+import { CONST_ERROR_MESSAGES, CONST_LIMITS_CONFIG, CONST_PDF_CONFIG } from '../../../config';
 import shellStyles from '../../common/FeatureViewShell/FeatureViewShell.module.css';
 import styles from './MergeView.module.css';
 
@@ -17,6 +17,19 @@ interface FileItem {
   id: string;
   file: File;
 }
+
+const USAGE_STEPS = [
+  'Drop two or more PDFs, or click to browse.',
+  'Drag the rows to set the order — the merge follows it.',
+  'Preview Files shows the merged result.',
+  'Click Merge N Files to download it.',
+];
+
+const LIMITS = [
+  `Up to ${CONST_LIMITS_CONFIG.maxFilesPerOperation} files at once`,
+  `Up to ${CONST_LIMITS_CONFIG.maxPagesPerDocument} pages per file`,
+  `Up to ${Math.round(CONST_PDF_CONFIG.dropzoneMaxSize / 1024 / 1024)} MB per file`,
+];
 
 export function MergeView() {
   const [files, setFiles] = useState<FileItem[]>([]);
@@ -139,6 +152,8 @@ export function MergeView() {
     <FeatureViewShell
       title="Merge PDFs"
       description="Combine multiple PDF files into a single document. Drag to reorder files before merging."
+      usage={USAGE_STEPS}
+      limits={LIMITS}
       isEmpty={files.length === 0}
       emptyView={
         <DropZone

@@ -12,9 +12,21 @@ import { usePreview } from '../../../hooks/usePreview';
 import { downloadBlob } from '../../../utils/downloadUtils';
 import { getPageCount } from '../../../utils/fileUtils';
 import { PageOrder } from '../../../services/pdf/types';
-import { CONST_ERROR_MESSAGES } from '../../../config';
+import { CONST_ERROR_MESSAGES, CONST_LIMITS_CONFIG } from '../../../config';
 import shellStyles from '../../common/FeatureViewShell/FeatureViewShell.module.css';
 import styles from './OrganizeView.module.css';
+
+const USAGE_STEPS = [
+  'Drop a PDF, or click to browse.',
+  'Drag a page to move it where you want it.',
+  'Click a page to mark it for deletion (click again to keep it).',
+  'Download the organized PDF — the order and deletions you see are used.',
+];
+
+const LIMITS = [
+  `Up to ${CONST_LIMITS_CONFIG.maxPagesPerDocument} pages per document`,
+  'At least one page must remain',
+];
 
 /**
  * Moves `fromPage` to sit where `toPage` currently is.
@@ -124,6 +136,8 @@ export function OrganizeView() {
     <FeatureViewShell
       title="Organize PDF"
       description="Reorder and delete pages in your PDF."
+      usage={USAGE_STEPS}
+      limits={LIMITS}
       isEmpty={!file}
       emptyView={
         <DropZone

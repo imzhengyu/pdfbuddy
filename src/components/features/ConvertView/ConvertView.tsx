@@ -16,9 +16,23 @@ import {
   CONST_ERROR_MESSAGES,
   CONST_LIMITS_CONFIG,
   CONST_MIME_TYPES,
+  CONST_PDF_CONFIG,
 } from '../../../config';
 import shellStyles from '../../common/FeatureViewShell/FeatureViewShell.module.css';
 import styles from './ConvertView.module.css';
+
+const USAGE_STEPS = [
+  'Add JPEG or PNG images, or click to browse.',
+  'Choose the page size, orientation, margin and how images are fitted.',
+  'Click Convert to PDF — images are placed in the order shown.',
+  'Preview or download the finished document.',
+];
+
+const LIMITS = [
+  `Up to ${CONST_LIMITS_CONFIG.maxFilesPerOperation} images at once`,
+  'JPEG and PNG only',
+  `Up to ${Math.round(CONST_PDF_CONFIG.dropzoneMaxSize / 1024 / 1024)} MB per image`,
+];
 
 interface FileItem {
   id: string;
@@ -134,6 +148,8 @@ export function ConvertView() {
     <FeatureViewShell
       title="Convert to PDF"
       description="Convert images (PNG, JPEG) to a PDF document."
+      usage={USAGE_STEPS}
+      limits={LIMITS}
       isEmpty={files.length === 0}
       emptyView={
         <DropZone

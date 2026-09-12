@@ -11,9 +11,25 @@ import { useRotate } from '../../../hooks/useRotate';
 import { usePreview } from '../../../hooks/usePreview';
 import { downloadBlob } from '../../../utils/downloadUtils';
 import { PageRotation, RotationType } from '../../../services/pdf/types';
-import { CONST_ROTATION_CONFIG, CONST_MIME_TYPES, CONST_DOWNLOAD_CONFIG } from '../../../config';
+import {
+  CONST_LIMITS_CONFIG,
+  CONST_ROTATION_CONFIG,
+  CONST_MIME_TYPES,
+  CONST_DOWNLOAD_CONFIG,
+} from '../../../config';
 import shellStyles from '../../common/FeatureViewShell/FeatureViewShell.module.css';
 import styles from './RotateView.module.css';
+
+const USAGE_STEPS = [
+  'Drop a PDF, or click to browse.',
+  'Hover a page and click its rotate button; each click turns it 90°.',
+  'Repeat for every page you want to turn.',
+  'Click Apply Rotation, then Preview or Download the result.',
+];
+
+const LIMITS = [
+  `Up to ${CONST_LIMITS_CONFIG.maxPagesPerDocument} pages per document`,
+];
 
 export function RotateView() {
   const [file, setFile] = useState<File | null>(null);
@@ -97,6 +113,8 @@ export function RotateView() {
     <FeatureViewShell
       title="Rotate PDF"
       description="Click the rotate button on any page to rotate it 90°. Preview and download when done."
+      usage={USAGE_STEPS}
+      limits={LIMITS}
       isEmpty={!file}
       emptyView={
         <DropZone

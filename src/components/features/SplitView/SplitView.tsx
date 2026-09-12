@@ -20,6 +20,18 @@ import styles from './SplitView.module.css';
 
 type SelectionMode = 'visual' | 'range';
 
+const USAGE_STEPS = [
+  'Drop a PDF, or click to browse.',
+  'Choose Visual Selection to click pages, or Page Ranges to type them (e.g. 1-3, 5).',
+  'Preview Selected shows the result before you commit.',
+  'Export Selected Pages downloads one PDF, or a ZIP and images when several pages are chosen.',
+];
+
+const LIMITS = [
+  `Up to ${CONST_LIMITS_CONFIG.maxPagesPerDocument} pages per document`,
+  `Up to ${CONST_LIMITS_CONFIG.maxImageExportPages} pages per image export`,
+];
+
 export function SplitView() {
   const [file, setFile] = useState<File | null>(null);
   const [pageCount, setPageCount] = useState<number>(0);
@@ -207,6 +219,8 @@ export function SplitView() {
     <FeatureViewShell
       title="Split PDF"
       description="Select pages to export using visual selection or page ranges. Preview shows the result after split."
+      usage={USAGE_STEPS}
+      limits={LIMITS}
       isEmpty={!file}
       emptyView={
         <DropZone

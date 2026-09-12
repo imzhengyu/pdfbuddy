@@ -168,7 +168,7 @@ describe('MergeView', () => {
       clickButton('Preview Files');
 
       await waitFor(() => {
-        expect(screen.getByRole('heading', { level: 3 })).toBeInTheDocument();
+        expect(screen.getByTestId('preview-modal-header')).toBeInTheDocument();
       });
     });
 
@@ -194,7 +194,7 @@ describe('MergeView', () => {
       clickButton('Preview Files');
 
       await waitFor(() => {
-        expect(screen.getByRole('heading', { level: 3 })).toBeInTheDocument();
+        expect(screen.getByTestId('preview-modal-header')).toBeInTheDocument();
       });
 
       expect(mergeMock).toHaveBeenCalledTimes(1);
@@ -214,7 +214,7 @@ describe('MergeView', () => {
       await waitFor(() => expect(screen.getByText('second.pdf')).toBeInTheDocument());
 
       clickButton('Preview Files');
-      await waitFor(() => expect(screen.getByRole('heading', { level: 3 })).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByTestId('preview-modal-header')).toBeInTheDocument());
       expect(mergeMock).toHaveBeenCalledTimes(1);
 
       // Drag the second file onto the first: the preview must follow the new
@@ -235,7 +235,7 @@ describe('MergeView', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByRole('heading', { level: 3 })).toBeInTheDocument();
+        expect(screen.getByTestId('preview-modal-header')).toBeInTheDocument();
       });
 
       await waitFor(() => {
