@@ -1,15 +1,18 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
 import { MergeView } from '../../src/components/features/MergeView/MergeView';
 import { uploadFileToDropzone } from '../utils/testHelpers';
+import { CONST_LIMITS_CONFIG } from '../../src/config';
 
 vi.mock('../../src/utils/downloadUtils', () => ({
   downloadBlob: vi.fn()
 }));
 
+const { mergeMock } = vi.hoisted(() => ({ mergeMock: vi.fn() }));
+
 vi.mock('../../src/hooks/useMerge', () => ({
   useMerge: () => ({
-    merge: vi.fn().mockResolvedValue(new Blob(['mock pdf'], { type: 'application/pdf' })),
+    merge: mergeMock,
     isProcessing: false,
     progress: null,
     error: null,
@@ -19,6 +22,11 @@ vi.mock('../../src/hooks/useMerge', () => ({
 
 describe('MergeView', () => {
   describe('Add More Files', () => {
+    beforeEach(() => {
+      mergeMock.mockReset();
+      mergeMock.mockResolvedValue(new Blob(['mock pdf'], { type: 'application/pdf' }));
+    });
+
     const createFile = (name: string) => {
       return new File(['test'], name, { type: 'application/pdf' });
     };
@@ -164,18 +172,23 @@ describe('MergeView', () => {
       });
     });
 
-    it('preview opens quickly without calling full merge', async () => {
-      const mergeMock = vi.fn().mockResolvedValue(new Blob(['mock pdf'], { type: 'application/pdf' }));
-
-      // Override the mock for this test
-      const { useMerge } = await import('../../src/hooks/useMerge');
-
+    it('previews the merged document, not just the first file', async () => {
       render(<MergeView />);
 
-      await uploadFileToDropzone(document.body, createFile('test.pdf'));
+      await uploadFileToDropzone(document.body, createFile('first.pdf'));
 
       await waitFor(() => {
-        expect(screen.getByText('test.pdf')).toBeInTheDocument();
+        expect(screen.getByText('first.pdf')).toBeInTheDocument();
+      });
+
+      clickButton('Add More Files');
+      await waitFor(() => {
+        expect(screen.getByText('Add more PDF files')).toBeInTheDocument();
+      });
+      await uploadFileToDropzone(document.body, createFile('second.pdf'));
+
+      await waitFor(() => {
+        expect(screen.getByText('second.pdf')).toBeInTheDocument();
       });
 
       clickButton('Preview Files');
@@ -184,8 +197,70 @@ describe('MergeView', () => {
         expect(screen.getByRole('heading', { level: 3 })).toBeInTheDocument();
       });
 
-      // merge should not be called for lightweight preview
-      expect(mergeMock).not.toHaveBeenCalled();
+      expect(mergeMock).toHaveBeenCalledTimes(1);
+      const mergedNames = mergeMock.mock.calls[0][0].map((file: File) => file.name);
+      expect(mergedNames).toEqual(['first.pdf', 'second.pdf']);
+    });
+
+    it('rebuilds an open preview when the files are reordered', async () => {
+      render(<MergeView />);
+
+      await uploadFileToDropzone(document.body, createFile('first.pdf'));
+      await waitFor(() => expect(screen.getByText('first.pdf')).toBeInTheDocument());
+
+      clickButton('Add More Files');
+      await waitFor(() => expect(screen.getByText('Add more PDF files')).toBeInTheDocument());
+      await uploadFileToDropzone(document.body, createFile('second.pdf'));
+      await waitFor(() => expect(screen.getByText('second.pdf')).toBeInTheDocument());
+
+      clickButton('Preview Files');
+      await waitFor(() => expect(screen.getByRole('heading', { level: 3 })).toBeInTheDocument());
+      expect(mergeMock).toHaveBeenCalledTimes(1);
+
+      // Drag the second file onto the first: the preview must follow the new
+      // order instead of closing or keeping the old one.
+      const items = document.querySelectorAll('[draggable=true]');
+      expect(items.length).toBe(2);
+
+      // Separate acts: the drag handlers store state between events, and
+      // batching them together leaves dragOverIndex unset.
+      act(() => {
+        fireEvent.dragStart(items[1]);
+      });
+      act(() => {
+        fireEvent.dragOver(items[0]);
+      });
+      act(() => {
+        fireEvent.dragEnd(items[1]);
+      });
+
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { level: 3 })).toBeInTheDocument();
+      });
+
+      await waitFor(() => {
+        expect(mergeMock).toHaveBeenCalledTimes(2);
+      });
+
+      const reorderedNames = mergeMock.mock.calls[1][0].map((file: File) => file.name);
+      expect(reorderedNames).toEqual(['second.pdf', 'first.pdf']);
+    });
+
+    it('caps how many files it will accept at once', async () => {
+      render(<MergeView />);
+
+      const limit = CONST_LIMITS_CONFIG.maxFilesPerOperation;
+      const files = Array.from({ length: limit + 1 }, (_, index) =>
+        createFile(`file-${index}.pdf`)
+      );
+
+      const input = screen.getByTestId('dropzone').querySelector('input') as HTMLInputElement;
+      fireEvent.change(input, { target: { files } });
+
+      await waitFor(() => {
+        expect(screen.getByText(new RegExp(`Up to ${limit} files`))).toBeInTheDocument();
+      });
+      expect(document.querySelectorAll('[draggable=true]')).toHaveLength(limit);
     });
   });
 });

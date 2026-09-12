@@ -5,7 +5,6 @@ test-results/
 testpdf-output/
 test-output/
 test-inputs/
-tests/e2e/
 *.log
 .vite/
 .vitest/
@@ -15,3 +14,10 @@ tool.md
 test-output.txt
 test-result.txt
 playwright-report/
+
+# Agent scratch / local tool state (not part of the app)
+.claude/
+.superpowers/
+.remember/
+.playwright-mcp/
+.vscode/

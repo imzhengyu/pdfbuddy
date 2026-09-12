@@ -56,14 +56,9 @@ export const CONST_ERROR_CODES = {
   UNKNOWN_ERROR: 'E999',
 } as const;
 
-export const CONST_QUALITY_PRESETS = {
-  low: { label: 'Low', value: 0.3, description: 'Smaller file, lower quality' },
-  medium: { label: 'Medium', value: 0.6, description: 'Balanced size and quality' },
-  high: { label: 'High', value: 0.85, description: 'Larger file, high quality' },
-} as const;
-
 export const CONST_MIME_TYPES = {
   pdf: 'application/pdf',
+  zip: 'application/zip',
   png: 'image/png',
   jpeg: 'image/jpeg',
 } as const;
@@ -80,7 +75,22 @@ export const CONST_ERROR_MESSAGES = {
       ? `"${name}" is not a valid PDF: ${reason}`
       : `"${name}" is not a valid PDF`,
   defaultError: 'An unexpected error occurred',
+  pdfLoadFailed: 'The PDF could not be loaded',
   reorganizeEmptyOrder: 'At least one page must be in the new order',
+  pageCountFailed: (name: string) =>
+    `Could not read the pages of "${name}". Try another file.`,
+  previewFailed: 'Could not build the preview. Try selecting fewer pages.',
+  unsupportedFiles: (names: string) => `Unsupported file(s): ${names}`,
+  oversizedFiles: (names: string, maxMb: number) =>
+    `${names} exceeds the ${maxMb}MB limit`,
+  pageLimitExceeded: (pages: number, limit: number) =>
+    `This PDF has ${pages} pages; the browser version handles up to ${limit} pages at once. Split it into smaller files first.`,
+  fileLimitExceeded: (limit: number) =>
+    `Up to ${limit} files can be processed at once. Remove some and try again.`,
+  thumbnailLimitReached: (limit: number) =>
+    `Showing the first ${limit} pages only.`,
+  imageExportLimitExceeded: (limit: number) =>
+    `Up to ${limit} pages can be exported as images at once. Select fewer pages.`,
   unsupportedRotation: 'Mirror rotation is not supported by this operation',
   failedToProcess: (name: string, message: string) => `Failed to process "${name}": ${message}`,
 } as const;
@@ -88,6 +98,18 @@ export const CONST_ERROR_MESSAGES = {
 export const CONST_CACHE_CONFIG = {
   pdfCacheCapacity: 5,
   validationCacheSize: 16,
+  /**
+   * Bytes sampled from the head *and* the tail of a file when building a cache
+   * key. Hashing only the head let two same-size PDFs with a shared prefix
+   * collide, so the cache could hand back the wrong document.
+   */
+  contentHashSampleSize: 4096,
+  /**
+   * How many rendered preview pages may stay cached. Each entry is a base64
+   * data URL, so this bound is what keeps previewing many documents from
+   * growing memory without limit.
+   */
+  previewImageCacheCapacity: 12,
 } as const;
 
 export const CONST_THUMBNAIL_CONFIG = {
@@ -128,10 +150,50 @@ export const CONST_SANITIZE_CONFIG = {
 
 export const CONST_DOWNLOAD_CONFIG = {
   defaultFilename: 'document.pdf',
+  /**
+   * Extensions a download may keep, keyed by the blob's MIME type. A ZIP of
+   * split pages must stay `.zip`, and exported page images must stay `.png`
+   * or `.jpg`; forcing the PDF extension here silently mislabels them.
+   */
+  extensionsByMimeType: {
+    [CONST_MIME_TYPES.pdf]: ['.pdf'],
+    [CONST_MIME_TYPES.zip]: ['.zip'],
+    [CONST_MIME_TYPES.png]: ['.png'],
+    [CONST_MIME_TYPES.jpeg]: ['.jpg', '.jpeg'],
+  },
+  /** Extensions accepted when the blob carries no usable MIME type. */
+  safeExtensions: ['.pdf', '.zip', '.png', '.jpg', '.jpeg'],
+  /** Used when neither the MIME type nor the requested extension is known. */
+  fallbackExtensions: ['.pdf'],
+  /**
+   * How long a blob URL stays alive after the download link is clicked.
+   * Revoking it immediately can cancel a download that has not started reading
+   * the blob yet (large PDFs) and makes headless Chromium die between tests.
+   */
+  urlRevokeDelayMs: 10000,
 } as const;
 
 export const CONST_ROTATION_CONFIG = {
   stepDegrees: 90,
+} as const;
+
+/**
+ * Hard ceilings for client-side work.
+ *
+ * Everything here runs in a browser tab, on one machine, with no server to fall
+ * back on. Past these sizes the UI stops being usable (and on a low-end machine
+ * the tab can be killed), so operations refuse the work with an explanatory
+ * message instead of hanging.
+ */
+export const CONST_LIMITS_CONFIG = {
+  /** Pages a single document operation will process. */
+  maxPagesPerDocument: 50,
+  /** Pages rasterised into the thumbnail grid. */
+  maxThumbnailPages: 50,
+  /** Pages converted to images in one export. */
+  maxImageExportPages: 50,
+  /** Files accepted by one multi-file operation (merge, images -> PDF). */
+  maxFilesPerOperation: 20,
 } as const;
 
 export const CONST_TEST_CONFIG = {
@@ -143,4 +205,3 @@ export const CONST_TEST_CONFIG = {
 } as const;
 
 export type ErrorCode = typeof CONST_ERROR_CODES[keyof typeof CONST_ERROR_CODES];
-export type QualityPreset = keyof typeof CONST_QUALITY_PRESETS;

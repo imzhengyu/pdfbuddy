@@ -1,5 +1,30 @@
 import { sanitizeFilename, sanitizeExtension, isValidFilename } from './sanitize';
-import { CONST_DOWNLOAD_CONFIG, CONST_PDF_CONFIG } from '../config';
+import { CONST_DOWNLOAD_CONFIG } from '../config';
+
+type ExtensionMap = Record<string, readonly string[]>;
+
+/**
+ * Picks the extensions a download is allowed to keep.
+ *
+ * The blob's MIME type wins, so a ZIP of split pages stays `.zip` and exported
+ * page images stay `.png` / `.jpg`. When the blob has no usable type, the
+ * caller's requested extension is honoured if it is on the safe list, and a
+ * PDF is assumed otherwise.
+ */
+function resolveAllowedExtensions(blob: Blob, filename: string): string[] {
+  const byMimeType = (CONST_DOWNLOAD_CONFIG.extensionsByMimeType as ExtensionMap)[blob.type];
+  if (byMimeType) {
+    return [...byMimeType];
+  }
+
+  const requested = `.${filename.split('.').pop()?.toLowerCase() ?? ''}`;
+  const safeExtensions = CONST_DOWNLOAD_CONFIG.safeExtensions as readonly string[];
+  if (safeExtensions.indexOf(requested) !== -1) {
+    return [requested];
+  }
+
+  return [...CONST_DOWNLOAD_CONFIG.fallbackExtensions];
+}
 
 /**
  * Downloads a Blob as a file with sanitized filename.
@@ -29,7 +54,7 @@ export function downloadBlob(
   const sanitized = sanitizeFilename(filename);
 
   // Validate extension is safe
-  const safeExtension = sanitizeExtension(sanitized, [...CONST_PDF_CONFIG.supportedExtensions]);
+  const safeExtension = sanitizeExtension(sanitized, resolveAllowedExtensions(blob, sanitized));
   const baseName = sanitized.replace(/\.[^.]+$/, '');
   const finalFilename = baseName + safeExtension;
 
@@ -42,7 +67,11 @@ export function downloadBlob(
     link.click();
   } finally {
     document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    // Revoke later, not now: the browser reads the blob asynchronously, and
+    // revoking it in the same tick can cancel a download that is still starting
+    // (most visible with large PDFs). Headless Chromium also died between E2E
+    // tests when the URL was revoked immediately after the click.
+    window.setTimeout(() => URL.revokeObjectURL(url), CONST_DOWNLOAD_CONFIG.urlRevokeDelayMs);
   }
 }
 
@@ -51,17 +80,16 @@ export async function downloadBlobsAsZip(
   zipFilename: string,
   options: { rejectInvalid?: boolean } = {}
 ): Promise<void> {
-  const JSZip = (await import('jszip')).default;
-  const zip = new JSZip();
-
   // Sanitize each blob name to prevent path traversal in zip entries
-  for (const { name, blob } of blobs) {
+  const entries = blobs.map(({ name, blob }) => {
     const sanitizedName = sanitizeFilename(name);
-    const safeExtension = sanitizeExtension(sanitizedName, [...CONST_PDF_CONFIG.supportedExtensions]);
+    const safeExtension = sanitizeExtension(sanitizedName, resolveAllowedExtensions(blob, sanitizedName));
     const baseName = sanitizedName.replace(/\.[^.]+$/, '');
-    zip.file(baseName + safeExtension, blob);
-  }
+    return { name: baseName + safeExtension, blob };
+  });
 
-  const zipBlob = await zip.generateAsync({ type: 'blob' });
+  // Imported here, not at module scope, so JSZip stays out of the download path.
+  const { createZipBlob } = await import('./zipUtils');
+  const zipBlob = await createZipBlob(entries);
   downloadBlob(zipBlob, zipFilename, options);
 }

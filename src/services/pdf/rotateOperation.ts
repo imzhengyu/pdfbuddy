@@ -1,58 +1,51 @@
 import { PDFDocument, degrees } from 'pdf-lib';
 import { PageRotation } from './types';
 import { validatePDF, validatePageIndex } from './pdfValidation';
-import { ProgressCallback, loadPDFFromArrayBuffer } from './pdfOperations';
-import { CONST_ERROR_MESSAGES, CONST_MIME_TYPES } from '../../config';
+import { ProgressCallback, savePDFToBlob } from './pdfOperations';
+import { CONST_ERROR_MESSAGES } from '../../config';
 
+/**
+ * Applies per-page rotations, preserving page order.
+ *
+ * All input is validated before any page is copied, so an unsupported request
+ * fails up front instead of after half the document has been built.
+ */
 export async function rotatePdf(
   file: File,
   rotations: PageRotation[],
   onProgress?: ProgressCallback
 ): Promise<Blob> {
-  // Validate PDF structure using full validation
-  const validationResult = await validatePDF(file, 'full');
-  if (!validationResult.valid) {
-    throw new Error(CONST_ERROR_MESSAGES.invalidPdf(file.name, validationResult.errors.join('; ')));
+  const validation = await validatePDF(file, 'full');
+  if (!validation.valid || !validation.document) {
+    throw new Error(CONST_ERROR_MESSAGES.invalidPdf(file.name, validation.errors.join('; ')));
   }
 
-  const arrayBuffer = await file.arrayBuffer();
-  const sourcePdf = await loadPDFFromArrayBuffer(arrayBuffer);
+  const sourcePdf = validation.document;
   const pageCount = sourcePdf.getPageCount();
 
-  // Validate all page indices first
-  for (const rotation of rotations) {
-    validatePageIndex(rotation.pageIndex, pageCount, 'rotate');
-  }
-
-  // Build a map of pageIndex -> rotation for quick lookup
   const rotationMap = new Map<number, PageRotation>();
   for (const rotation of rotations) {
+    validatePageIndex(rotation.pageIndex, pageCount, 'rotate');
+    if (rotation.type === 'mirror') {
+      throw new Error(CONST_ERROR_MESSAGES.unsupportedRotation);
+    }
     rotationMap.set(rotation.pageIndex, rotation);
   }
 
-  // Create a new PDF with all pages in correct order, applying transformations
   const newPdf = await PDFDocument.create();
+  const indices = Array.from({ length: pageCount }, (_, i) => i);
+  const copiedPages = await newPdf.copyPages(sourcePdf, indices);
 
-  // Process pages in order, inserting rotated pages in their original positions
-  for (let i = 0; i < pageCount; i++) {
-    const [copiedPage] = await newPdf.copyPages(sourcePdf, [i]);
+  for (let i = 0; i < copiedPages.length; i++) {
+    const page = copiedPages[i];
+    const rotation = rotationMap.get(i);
 
-    const pageRotation = rotationMap.get(i);
-    if (pageRotation) {
-      const { type, degrees: deg } = pageRotation;
-
-      if (type === 'mirror') {
-        throw new Error(CONST_ERROR_MESSAGES.unsupportedRotation);
-      }
-
-      if (type === 'rotate' && deg !== undefined) {
-        const currentRotation = copiedPage.getRotation().angle;
-        const newRotation = (currentRotation + deg) % 360;
-        copiedPage.setRotation(degrees(newRotation));
-      }
+    if (rotation?.type === 'rotate' && rotation.degrees !== undefined) {
+      const currentRotation = page.getRotation().angle;
+      page.setRotation(degrees((currentRotation + rotation.degrees) % 360));
     }
 
-    newPdf.addPage(copiedPage);
+    newPdf.addPage(page);
 
     onProgress?.({
       current: i + 1,
@@ -61,6 +54,5 @@ export async function rotatePdf(
     });
   }
 
-  const pdfBytes = await newPdf.save();
-  return new Blob([new Uint8Array(pdfBytes)], { type: CONST_MIME_TYPES.pdf });
+  return savePDFToBlob(newPdf);
 }

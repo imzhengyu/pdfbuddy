@@ -77,7 +77,13 @@ describe('sanitize', () => {
     });
 
     it('returns first allowed when no extension', () => {
-      expect(sanitizeExtension('file', ['.pdf'])).toBe('.pdf');
+    expect(sanitizeExtension('file', ['.pdf'])).toBe('.pdf');
+
+    // The fallback is the first allowed extension, so callers must pass a list
+    // derived from the payload they are writing (CR.md Issue 6).
+    expect(sanitizeExtension('file.zip', ['.zip'])).toBe('.zip');
+    expect(sanitizeExtension('file.jpeg', ['.jpg', '.jpeg'])).toBe('.jpeg');
+    expect(sanitizeExtension('file.png', ['.jpg', '.jpeg'])).toBe('.jpg');
     });
   });
 

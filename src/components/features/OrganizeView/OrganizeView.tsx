@@ -12,8 +12,31 @@ import { usePreview } from '../../../hooks/usePreview';
 import { downloadBlob } from '../../../utils/downloadUtils';
 import { getPageCount } from '../../../utils/fileUtils';
 import { PageOrder } from '../../../services/pdf/types';
+import { CONST_ERROR_MESSAGES } from '../../../config';
 import shellStyles from '../../common/FeatureViewShell/FeatureViewShell.module.css';
 import styles from './OrganizeView.module.css';
+
+/**
+ * Moves `fromPage` to sit where `toPage` currently is.
+ *
+ * Both arguments are original page indices (what the thumbnail drag handlers
+ * report), while `order` is indexed by on-screen position, so the positions have
+ * to be looked up rather than used directly.
+ *
+ * @returns A new order array, or the original one when the move is a no-op
+ */
+export function movePage(order: number[], fromPage: number, toPage: number): number[] {
+  const from = order.indexOf(fromPage);
+  const to = order.indexOf(toPage);
+  if (from === -1 || to === -1 || from === to) {
+    return order;
+  }
+
+  const next = [...order];
+  const [moved] = next.splice(from, 1);
+  next.splice(to, 0, moved);
+  return next;
+}
 
 export function OrganizeView() {
   const [file, setFile] = useState<File | null>(null);
@@ -22,6 +45,7 @@ export function OrganizeView() {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const { isPreviewOpen, previewFile, openPreview, closePreview } = usePreview();
   const { reorganize, isProcessing, progress, error, clearError } = useOrganize();
 
@@ -30,11 +54,15 @@ export function OrganizeView() {
       const f = files[0];
       setFile(f);
       setSelectedPages([]);
+      setLoadError(null);
       try {
         const count = await getPageCount(f);
         setPageOrder(Array.from({ length: count }, (_, i) => i));
       } catch {
         setPageOrder([]);
+        // Distinguish "the file could not be read" from "every page was
+        // deleted": both used to surface as "No pages left after deletion".
+        setLoadError(CONST_ERROR_MESSAGES.pageCountFailed(f.name));
       }
     }
   }, []);
@@ -46,7 +74,7 @@ export function OrganizeView() {
   }, []);
 
   const handleOrganize = useCallback(async () => {
-    if (!file) return;
+    if (!file || loadError) return;
 
     const deletedSet = new Set(selectedPages);
     const order: PageOrder[] = pageOrder
@@ -61,7 +89,7 @@ export function OrganizeView() {
     if (result) {
       downloadBlob(result, `organized_${file.name}`);
     }
-  }, [file, pageOrder, selectedPages, reorganize]);
+  }, [file, loadError, pageOrder, selectedPages, reorganize]);
 
   const handleDragStart = useCallback((_e: React.DragEvent, pageIndex: number) => {
     setDragIndex(pageIndex);
@@ -77,10 +105,7 @@ export function OrganizeView() {
   const handleDragEnd = useCallback(() => {
     if (dragIndex !== null && dragOverIndex !== null && dragIndex !== dragOverIndex) {
       setPageOrder(prev => {
-        const newOrder = [...prev];
-        const [removed] = newOrder.splice(dragIndex, 1);
-        newOrder.splice(dragOverIndex, 0, removed);
-        return newOrder;
+        return movePage(prev, dragIndex, dragOverIndex);
       });
     }
     setDragIndex(null);
@@ -91,6 +116,7 @@ export function OrganizeView() {
     setFile(null);
     setSelectedPages([]);
     setPageOrder([]);
+    setLoadError(null);
     closePreview();
   }, [closePreview]);
 
@@ -117,6 +143,7 @@ export function OrganizeView() {
             file={file!}
             onSelect={handlePageSelect}
             selectedPages={selectedPages}
+            order={pageOrder}
             onPageDragStart={handleDragStart}
             onPageDragOver={handleDragOver}
             onPageDragEnd={handleDragEnd}
@@ -135,6 +162,8 @@ export function OrganizeView() {
 
           <ErrorBanner message={error} onDismiss={clearError} />
 
+          <ErrorBanner message={loadError} onDismiss={() => setLoadError(null)} />
+
           {warning && (
             <div className={styles.warning}>
               <span>{warning}</span>
@@ -143,7 +172,7 @@ export function OrganizeView() {
           )}
 
           <div className={shellStyles.actions}>
-            <Button label="Download Organized PDF" variant="primary" onClick={handleOrganize} disabled={isProcessing} loading={isProcessing} />
+            <Button label="Download Organized PDF" variant="primary" onClick={handleOrganize} disabled={isProcessing || !!loadError} loading={isProcessing} />
           </div>
 
           <PreviewModal

@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useDropzone, FileRejection } from 'react-dropzone';
-import { CONST_PDF_CONFIG } from '../../../config';
+import { CONST_ERROR_MESSAGES, CONST_PDF_CONFIG } from '../../../config';
 import { PDFProcessingError } from '../../../services/pdf/types';
 import styles from './DropZone.module.css';
 
@@ -26,8 +26,9 @@ export function DropZone({
   const onDrop = useCallback(
     (acceptedFiles: File[], rejectedFiles: FileRejection[]) => {
       if (rejectedFiles.length > 0) {
+        const rejectedNames = rejectedFiles.map((rejection) => rejection.file.name).join(', ');
         const error = new PDFProcessingError(
-          `File type not accepted or file too large`,
+          CONST_ERROR_MESSAGES.unsupportedFiles(rejectedNames),
           'FILE_VALIDATION',
           'Please check the file format and size'
         );
@@ -37,10 +38,11 @@ export function DropZone({
       if (acceptedFiles.length > 0) {
         const oversized = acceptedFiles.filter(f => f.size > maxSize);
         if (oversized.length > 0) {
+          const oversizedNames = oversized.map((f) => f.name).join(', ');
           const error = new PDFProcessingError(
-            `File(s) too large. Maximum size is ${Math.round(maxSize / 1024 / 1024)}MB`,
+            CONST_ERROR_MESSAGES.oversizedFiles(oversizedNames, Math.round(maxSize / 1024 / 1024)),
             'FILE_SIZE',
-            'Try compressing the file or splitting it into smaller parts'
+            'Try splitting the file into smaller parts'
           );
           onError?.(error);
           return;

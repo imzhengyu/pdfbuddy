@@ -1,6 +1,6 @@
 # PDF Buddy
 
-A colorful, friendly web app for PDF manipulation - merge, split, compress, rotate, convert, and organize your PDFs. All processing happens **client-side in your browser** - your files never leave your device.
+A colorful, friendly web app for PDF manipulation - merge, split, rotate, convert, and organize your PDFs. All processing happens **client-side in your browser** - your files never leave your device.
 
 **Live Demo:**  https://pdfbuddy.goodvibez.cn/
 
@@ -11,12 +11,6 @@ Combine multiple PDF files into one. Drag to reorder before merging.
 
 ### Split PDF
 Extract specific pages from a PDF or split by page ranges (e.g., "1-3, 4-6, 7-end").
-
-### Compress PDF
-Reduce file size with quality options:
-- **Low** - Maximum compression (smaller file)
-- **Medium** - Balanced compression
-- **High** - Best quality (larger file)
 
 ### Rotate PDF
 Rotate individual pages by 90°, 180°, or 270°. Mirror pages horizontally or vertically.

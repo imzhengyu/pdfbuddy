@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { validatePDFFile, validatePageRange, validatePageIndex, validateImageFile, validateImageFormat, validatePDF, validatePDFFull } from '../../src/services/pdf/pdfValidation';
+import { validatePDFFile, validatePageRange, validatePageIndex, validateImageFile, validateImageFormat, validatePDF, validatePDFFull, clearValidationCache } from '../../src/services/pdf/pdfValidation';
 import { PDFProcessingError } from '../../src/services/pdf/types';
 import { PDFDocument } from 'pdf-lib';
 import { createMockFile, createMockPDFFile, createValidPDFContent } from '../utils/testHelpers';
+import { CONST_LIMITS_CONFIG } from '../../src/config';
 
 vi.mock('pdf-lib', async () => {
   const { createMockPDFLib } = await import('../mocks/pdfLib');
@@ -96,6 +97,10 @@ describe('pdfValidation', () => {
   describe('validatePDF cache', () => {
     beforeEach(() => {
       vi.clearAllMocks();
+      // The cache is module-level and keyed by name/size/lastModified, so
+      // equivalent mock files from earlier tests would otherwise leak in and
+      // make the call-count assertions depend on timing.
+      clearValidationCache();
     });
 
     it('reuses cached full validation result for the same file', async () => {
@@ -134,6 +139,40 @@ describe('pdfValidation', () => {
       await validatePDF(file, 'full');
 
       expect(PDFDocument.load).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('page limit', () => {
+    beforeEach(() => {
+      clearValidationCache();
+    });
+
+    it('rejects a document with more pages than the client-side limit', async () => {
+      const overLimit = CONST_LIMITS_CONFIG.maxPagesPerDocument + 1;
+      vi.mocked(PDFDocument.load).mockResolvedValueOnce({
+        getPageCount: () => overLimit,
+      } as any);
+
+      const file = createMockPDFFile(createValidPDFContent(), 'huge.pdf');
+      const result = await validatePDFFull(file);
+
+      expect(result.valid).toBe(false);
+      expect(result.errors.join(' ')).toContain(
+        `${overLimit} pages; the browser version handles up to ${CONST_LIMITS_CONFIG.maxPagesPerDocument} pages`
+      );
+    });
+
+    it('accepts a document exactly at the limit', async () => {
+      const atLimit = CONST_LIMITS_CONFIG.maxPagesPerDocument;
+      vi.mocked(PDFDocument.load).mockResolvedValueOnce({
+        getPageCount: () => atLimit,
+      } as any);
+
+      const file = createMockPDFFile(createValidPDFContent(), 'at-limit.pdf');
+      const result = await validatePDFFull(file);
+
+      expect(result.valid).toBe(true);
+      expect(result.pdfInfo?.pageCount).toBe(atLimit);
     });
   });
 });

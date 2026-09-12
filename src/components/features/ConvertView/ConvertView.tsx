@@ -11,7 +11,12 @@ import { usePreview } from '../../../hooks/usePreview';
 import { downloadBlob } from '../../../utils/downloadUtils';
 import { validateImageFile } from '../../../utils/fileUtils';
 import { ConvertToPDFOptions } from '../../../services/pdf/convertOperation';
-import { CONST_CONVERT_CONFIG, CONST_MIME_TYPES } from '../../../config';
+import {
+  CONST_CONVERT_CONFIG,
+  CONST_ERROR_MESSAGES,
+  CONST_LIMITS_CONFIG,
+  CONST_MIME_TYPES,
+} from '../../../config';
 import shellStyles from '../../common/FeatureViewShell/FeatureViewShell.module.css';
 import styles from './ConvertView.module.css';
 
@@ -40,6 +45,7 @@ const FIT_MODE_OPTIONS: { value: ConvertToPDFOptions['fitMode']; label: string }
 export function ConvertView() {
   const [files, setFiles] = useState<FileItem[]>([]);
   const [isAddingMore, setIsAddingMore] = useState(false);
+  const [fileLimitError, setFileLimitError] = useState<string | null>(null);
   const [convertOptions, setConvertOptions] = useState<ConvertToPDFOptions>({
     pageSize: 'a4',
     orientation: 'portrait',
@@ -80,9 +86,18 @@ export function ConvertView() {
       id: `${Date.now()}-${index}`,
       file
     }));
-    setFiles(prev => [...prev, ...newFiles]);
+    const limit = CONST_LIMITS_CONFIG.maxFilesPerOperation;
+    const combined = [...files, ...newFiles];
+
+    if (combined.length > limit) {
+      setFiles(combined.slice(0, limit));
+      setFileLimitError(CONST_ERROR_MESSAGES.fileLimitExceeded(limit));
+    } else {
+      setFiles(combined);
+      setFileLimitError(null);
+    }
     setIsAddingMore(false);
-  }, []);
+  }, [files]);
 
   const handleRemoveFile = useCallback((id: string) => {
     setFiles(prev => prev.filter(f => f.id !== id));
@@ -191,6 +206,8 @@ export function ConvertView() {
           {isProcessing && progress && <ProgressBar progress={progress} />}
 
           <ErrorBanner message={error} onDismiss={reset} />
+
+          <ErrorBanner message={fileLimitError} onDismiss={() => setFileLimitError(null)} />
 
           <div className={shellStyles.actions}>
             {isAddingMore ? (

@@ -1,9 +1,15 @@
 import { PDFDocument } from 'pdf-lib';
 import { validatePDF } from './pdfValidation';
-import { ProgressCallback, loadPDFFromArrayBuffer } from './pdfOperations';
+import { ProgressCallback, savePDFToBlob } from './pdfOperations';
 import { withPDFLibFallback, PDFLibError } from './pdfFallback';
-import { CONST_ERROR_MESSAGES, CONST_MIME_TYPES } from '../../config';
+import { CONST_ERROR_MESSAGES } from '../../config';
 
+/**
+ * Merges the given PDFs, in order, into a single document.
+ *
+ * `validatePDF(..., 'full')` already parses the file to check its structure, so
+ * the parsed document is reused here instead of loading it a second time.
+ */
 export async function mergePdfs(
   files: File[],
   onProgress?: ProgressCallback
@@ -18,25 +24,18 @@ export async function mergePdfs(
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
 
-    // Validate PDF structure using full validation
-    const validationResult = await validatePDF(file, 'full');
-    if (!validationResult.valid) {
-      throw new Error(CONST_ERROR_MESSAGES.invalidPdf(file.name, validationResult.errors.join('; ')));
+    const validation = await validatePDF(file, 'full');
+    if (!validation.valid || !validation.document) {
+      throw new Error(CONST_ERROR_MESSAGES.invalidPdf(file.name, validation.errors.join('; ')));
     }
 
-    let pdf;
+    const sourcePdf = validation.document;
+
     try {
-      const arrayBuffer = await file.arrayBuffer();
-
-      pdf = await withPDFLibFallback(
-        async () => loadPDFFromArrayBuffer(arrayBuffer),
-        undefined,
-        'PDFKit merge'
+      const pages = await withPDFLibFallback(() =>
+        mergedPdf.copyPages(sourcePdf, sourcePdf.getPageIndices())
       );
-
-      // copyPages can also throw PDFDict2 errors
-      const pages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
-      pages.forEach(page => mergedPdf.addPage(page));
+      pages.forEach((page) => mergedPdf.addPage(page));
     } catch (err) {
       let errorMessage: string = CONST_ERROR_MESSAGES.defaultError;
       if (err instanceof PDFLibError && err.originalError) {
@@ -54,6 +53,5 @@ export async function mergePdfs(
     });
   }
 
-  const pdfBytes = await mergedPdf.save();
-  return new Blob([new Uint8Array(pdfBytes)], { type: CONST_MIME_TYPES.pdf });
+  return savePDFToBlob(mergedPdf);
 }

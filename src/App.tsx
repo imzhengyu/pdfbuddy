@@ -1,18 +1,26 @@
-import { useMemo } from 'react';
+import { useMemo, Suspense, lazy } from 'react';
 import { AppProvider, useApp, View } from './context/AppContext';
-import { MergeView } from './components/features/MergeView/MergeView';
-import { SplitView } from './components/features/SplitView/SplitView';
-import { CompressView } from './components/features/CompressView/CompressView';
-import { RotateView } from './components/features/RotateView/RotateView';
-import { ConvertView } from './components/features/ConvertView/ConvertView';
-import { OrganizeView } from './components/features/OrganizeView/OrganizeView';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import styles from './App.module.css';
+
+const MergeView = lazy(() => import('./components/features/MergeView/MergeView').then(m => ({ default: m.MergeView })));
+const SplitView = lazy(() => import('./components/features/SplitView/SplitView').then(m => ({ default: m.SplitView })));
+const RotateView = lazy(() => import('./components/features/RotateView/RotateView').then(m => ({ default: m.RotateView })));
+const ConvertView = lazy(() => import('./components/features/ConvertView/ConvertView').then(m => ({ default: m.ConvertView })));
+const OrganizeView = lazy(() => import('./components/features/OrganizeView/OrganizeView').then(m => ({ default: m.OrganizeView })));
+
+function ViewLoader() {
+  return (
+    <div className={styles.viewLoader}>
+      <div className={styles.spinner} data-testid="view-loader" />
+      <span>Loading view...</span>
+    </div>
+  );
+}
 
 const VIEWS: { key: View; label: string }[] = [
   { key: 'merge', label: 'Merge' },
   { key: 'split', label: 'Split' },
-  { key: 'compress', label: 'Compress' },
   { key: 'rotate', label: 'Rotate' },
   { key: 'convert', label: 'Convert' },
   { key: 'organize', label: 'Organize' }
@@ -27,7 +35,6 @@ function AppContent() {
     switch (state.currentView) {
       case 'merge': return <MergeView />;
       case 'split': return <SplitView />;
-      case 'compress': return <CompressView />;
       case 'rotate': return <RotateView />;
       case 'convert': return <ConvertView />;
       case 'organize': return <OrganizeView />;
@@ -82,7 +89,7 @@ function AppContent() {
       </header>
       <main className={styles.main}>
         <ErrorBoundary>
-          {viewElement}
+          <Suspense fallback={<ViewLoader />}>{viewElement}</Suspense>
         </ErrorBoundary>
       </main>
       <footer className={styles.footer}>

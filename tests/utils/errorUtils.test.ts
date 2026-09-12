@@ -52,7 +52,7 @@ describe('errorUtils', () => {
     });
 
     it('returns false for FILE_SIZE code', () => {
-      const error = new PDFProcessingError('Too large', 'FILE_SIZE', 'Compress');
+      const error = new PDFProcessingError('Too large', 'FILE_SIZE', 'Split');
       expect(isRetryable(error)).toBe(false);
     });
 

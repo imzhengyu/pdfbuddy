@@ -37,7 +37,7 @@ describe('useBenchmark hook', () => {
           success: true,
         });
         result.current.recordBenchmark({
-          operation: 'compress',
+          operation: 'merge',
           startTime: 2000,
           endTime: 2500,
           duration: 500,
@@ -93,7 +93,7 @@ describe('useBenchmark hook', () => {
           success: true,
         });
         result.current.recordBenchmark({
-          operation: 'compress',
+          operation: 'merge',
           startTime: 2000,
           endTime: 2500,
           duration: 500,

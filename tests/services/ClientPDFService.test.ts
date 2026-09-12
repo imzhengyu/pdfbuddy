@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ClientPDFService } from '../../src/services/pdf/ClientPDFService';
 import * as mergeOperation from '../../src/services/pdf/mergeOperation';
 import * as splitOperation from '../../src/services/pdf/splitOperation';
-import * as compressOperation from '../../src/services/pdf/compressOperation';
 import * as rotateOperation from '../../src/services/pdf/rotateOperation';
 import * as convertOperation from '../../src/services/pdf/convertOperation';
 import * as reorganizeOperation from '../../src/services/pdf/reorganizeOperation';
@@ -91,13 +90,6 @@ describe('ClientPDFService', () => {
     });
   });
 
-  describe('compress', () => {
-    it('throws error for non-PDF files', async () => {
-      const txtFile = createMockFile('', 'test.txt', 'text/plain');
-      await expect(service.compress(txtFile, 'medium')).rejects.toThrow('not a valid PDF');
-    });
-  });
-
   describe('rotate', () => {
     it('throws error for non-PDF files', async () => {
       const txtFile = createMockFile('', 'test.txt', 'text/plain');
@@ -145,19 +137,6 @@ describe('ClientPDFService', () => {
 
       expect(result).toHaveLength(1);
       expect(splitSpy).toHaveBeenCalledTimes(2);
-    });
-
-    it('retries compress when underlying operation fails transiently', async () => {
-      const compressSpy = vi.spyOn(compressOperation, 'compressPdf')
-        .mockRejectedValueOnce(new Error('transient failure'))
-        .mockResolvedValueOnce(new Blob(['compressed'], { type: 'application/pdf' }));
-
-      const file = createValidPDFFile('test.pdf');
-
-      const result = await service.compress(file, 'medium');
-
-      expect(result).toBeInstanceOf(Blob);
-      expect(compressSpy).toHaveBeenCalledTimes(2);
     });
 
     it('retries rotate when underlying operation fails transiently', async () => {

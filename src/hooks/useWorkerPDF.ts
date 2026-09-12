@@ -36,6 +36,23 @@ export function useWorkerPDF(options: UseWorkerPDFOptions = {}): UseWorkerPDFRet
   const workerRef = useRef<Worker | null>(null);
   const currentIdRef = useRef<string | null>(null);
 
+  // Store callbacks in refs so getWorker can have a stable dependency array
+  const onProgressRef = useRef(onProgress);
+  const onErrorRef = useRef(onError);
+  const onSuccessRef = useRef(onSuccess);
+
+  useEffect(() => {
+    onProgressRef.current = onProgress;
+  }, [onProgress]);
+
+  useEffect(() => {
+    onErrorRef.current = onError;
+  }, [onError]);
+
+  useEffect(() => {
+    onSuccessRef.current = onSuccess;
+  }, [onSuccess]);
+
   // Initialize worker once and reuse across operations
   const getWorker = useCallback(() => {
     if (workerRef.current) {
@@ -58,21 +75,21 @@ export function useWorkerPDF(options: UseWorkerPDFOptions = {}): UseWorkerPDFRet
         case 'progress': {
           const progressMsg = message as WorkerProgressMessage;
           setProgress(progressMsg.progress);
-          onProgress?.(progressMsg.progress);
+          onProgressRef.current?.(progressMsg.progress);
           break;
         }
         case 'success': {
           const successMsg = message as WorkerSuccessMessage;
           setResult(successMsg.result);
           setIsProcessing(false);
-          onSuccess?.(successMsg.result);
+          onSuccessRef.current?.(successMsg.result);
           break;
         }
         case 'error': {
           const errorMsg = message as WorkerErrorMessage;
           setError(errorMsg.error);
           setIsProcessing(false);
-          onError?.(errorMsg.error);
+          onErrorRef.current?.(errorMsg.error);
           break;
         }
       }
@@ -81,12 +98,12 @@ export function useWorkerPDF(options: UseWorkerPDFOptions = {}): UseWorkerPDFRet
     worker.onerror = (err) => {
       setError(err.message || 'Worker error occurred');
       setIsProcessing(false);
-      onError?.(err.message || 'Worker error occurred');
+      onErrorRef.current?.(err.message || 'Worker error occurred');
     };
 
     workerRef.current = worker;
     return worker;
-  }, [onProgress, onError, onSuccess]);
+  }, []);
 
   // Cleanup worker on unmount
   useEffect(() => {

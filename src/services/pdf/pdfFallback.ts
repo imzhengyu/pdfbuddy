@@ -1,5 +1,7 @@
-import { PDFDocument, PDFPage } from 'pdf-lib';
-
+/**
+ * Error raised when pdf-lib cannot process a document, with the failure
+ * classified so callers can give the user something actionable.
+ */
 export class PDFLibError extends Error {
   constructor(
     message: string,
@@ -9,10 +11,6 @@ export class PDFLibError extends Error {
     super(message);
     this.name = 'PDFLibError';
   }
-}
-
-export function isPDFLibError(error: unknown): error is PDFLibError {
-  return error instanceof PDFLibError;
 }
 
 export function isPDFDict2Error(error: unknown): boolean {
@@ -31,18 +29,19 @@ export function isEncryptionError(error: unknown): boolean {
   return false;
 }
 
-export async function withPDFLibFallback<T>(
-  pdfLibOperation: () => Promise<T>,
-  fallbackOperation?: () => Promise<T>,
-  _fallbackName?: string
-): Promise<T> {
+/**
+ * Runs a pdf-lib operation and translates its failures into a PDFLibError with
+ * a user-facing message.
+ *
+ * There is no second engine to fall back to: a previous revision accepted a
+ * `fallbackOperation` and a `_fallbackName` that no call site ever supplied,
+ * left over from a pdfkit integration that was never implemented.
+ */
+export async function withPDFLibFallback<T>(pdfLibOperation: () => Promise<T>): Promise<T> {
   try {
     return await pdfLibOperation();
   } catch (error) {
     if (isPDFDict2Error(error)) {
-      if (fallbackOperation) {
-        return await fallbackOperation();
-      }
       throw new PDFLibError(
         'This PDF has a non-standard structure that pdf-lib cannot process. The PDF may be corrupted or use advanced features not supported by pdf-lib.',
         'PDFDICT2',
@@ -64,30 +63,4 @@ export async function withPDFLibFallback<T>(
       error instanceof Error ? error : undefined
     );
   }
-}
-
-export async function loadPDFWithFallback(
-  file: File,
-  fallbackLoad?: (file: File) => Promise<PDFDocument>
-): Promise<PDFDocument> {
-  return withPDFLibFallback(
-    async () => {
-      const arrayBuffer = await file.arrayBuffer();
-      return PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
-    },
-    fallbackLoad ? () => fallbackLoad(file) : undefined,
-    'PDFKit fallback'
-  );
-}
-
-export async function copyPagesWithFallback(
-  sourcePdf: PDFDocument,
-  targetPdf: PDFDocument,
-  indices: number[]
-): Promise<PDFPage[]> {
-  return withPDFLibFallback(
-    async () => targetPdf.copyPages(sourcePdf, indices),
-    undefined,
-    'PDFKit copyPages fallback'
-  );
 }

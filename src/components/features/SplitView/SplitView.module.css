@@ -53,6 +53,7 @@
 .input { padding: var(--space-sm) var(--space-md); border: 1px solid var(--color-border); border-radius: var(--radius-md); font-size: var(--font-size-base); }
 .input:focus { outline: none; border-color: var(--color-primary); }
 .rangeHint { font-size: var(--font-size-xs); color: var(--color-text-secondary); margin: 0; }
+.rangeError { font-size: var(--font-size-xs); color: var(--color-error); margin: 0; }
 
 @media (max-width: 768px) {
   .splitContainer { flex-direction: column; height: auto; min-height: auto; }

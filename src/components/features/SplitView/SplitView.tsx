@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { DropZone } from '../../common/DropZone/DropZone';
 import { Button } from '../../common/Button/Button';
 import { ProgressBar } from '../../common/ProgressBar/ProgressBar';
@@ -13,6 +13,8 @@ import { downloadBlob } from '../../../utils/downloadUtils';
 import { ClientPDFService } from '../../../services/pdf/ClientPDFService';
 import { PageRange } from '../../../services/pdf/types';
 import { getPageCount } from '../../../utils/fileUtils';
+import { parsePageRangeInput } from '../../../utils/pageRangeUtils';
+import { CONST_ERROR_MESSAGES, CONST_LIMITS_CONFIG } from '../../../config';
 import shellStyles from '../../common/FeatureViewShell/FeatureViewShell.module.css';
 import styles from './SplitView.module.css';
 
@@ -25,6 +27,8 @@ export function SplitView() {
   const [pageRanges, setPageRanges] = useState<string>('');
   const [selectionMode, setSelectionMode] = useState<SelectionMode>('visual');
   const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const { isPreviewOpen, previewFile, openPreview, closePreview } = usePreview();
   const { split, isProcessing, progress, error, clearError } = useSplit();
 
@@ -68,14 +72,21 @@ export function SplitView() {
     setSelectedPages([]);
   }, []);
 
+  const rangeResult = useMemo(
+    () => parsePageRangeInput(pageRanges, pageCount),
+    [pageRanges, pageCount]
+  );
+
   const getSelectedPageNumbers = useCallback((): number[] | null => {
     if (selectionMode === 'range' && pageRanges.trim()) {
-      return parsePageRanges(pageRanges, pageCount);
+      // An input that matches nothing is not a selection: returning the empty
+      // array here used to leave the export buttons enabled but inert.
+      return rangeResult.pages.length > 0 ? rangeResult.pages : null;
     } else if (selectedPages.length > 0) {
       return selectedPages.map(p => p + 1);
     }
     return null;
-  }, [selectionMode, pageRanges, pageCount, selectedPages]);
+  }, [selectionMode, pageRanges, rangeResult, selectedPages]);
 
   const handlePreview = useCallback(async () => {
     if (!file) return;
@@ -83,6 +94,7 @@ export function SplitView() {
     const pagesToPreview = getSelectedPageNumbers();
     if (!pagesToPreview) return;
 
+    setPreviewError(null);
     try {
       const service = new ClientPDFService();
       const ranges = pagesToPreview.map(page => ({ start: page, end: page }));
@@ -100,31 +112,10 @@ export function SplitView() {
         openPreview(previewFileObj);
       }
     } catch (err) {
-      // Preview failures are silently ignored; the user can retry via the UI.
+      // Preview failures used to be swallowed, leaving a click with no effect.
+      setPreviewError(err instanceof Error ? err.message : CONST_ERROR_MESSAGES.previewFailed);
     }
   }, [file, getSelectedPageNumbers, openPreview]);
-
-  const parsePageRanges = (input: string, maxPages: number): number[] => {
-    const pages: number[] = [];
-    const parts = input.split(',');
-    for (const part of parts) {
-      const trimmed = part.trim();
-      if (trimmed.includes('-')) {
-        const [start, end] = trimmed.split('-').map(s => parseInt(s.trim(), 10));
-        if (!isNaN(start) && !isNaN(end)) {
-          for (let i = start; i <= Math.min(end, maxPages); i++) {
-            if (!pages.includes(i)) pages.push(i);
-          }
-        }
-      } else {
-        const num = parseInt(trimmed, 10);
-        if (!isNaN(num) && num >= 1 && num <= maxPages && !pages.includes(num)) {
-          pages.push(num);
-        }
-      }
-    }
-    return pages.sort((a, b) => a - b);
-  };
 
   const handleExport = useCallback(async () => {
     if (!file) return;
@@ -153,8 +144,21 @@ export function SplitView() {
     const pagesToExport = getSelectedPageNumbers();
     if (!pagesToExport) return;
 
+    const limit = CONST_LIMITS_CONFIG.maxImageExportPages;
+    if (pagesToExport.length > limit) {
+      setActionError(CONST_ERROR_MESSAGES.imageExportLimitExceeded(limit));
+      return;
+    }
+    setActionError(null);
+
     const service = new ClientPDFService();
-    const images = await service.convertToImages(file, { format: 'png', scale: 2 });
+    // Render only the selected pages; sending the selection keeps the output
+    // correct and avoids rasterising pages the user did not ask for.
+    const images = await service.convertToImages(file, {
+      format: 'png',
+      scale: 2,
+      pages: pagesToExport,
+    });
 
     if (images && images.length > 0) {
       const baseName = file.name.replace('.pdf', '');
@@ -162,7 +166,7 @@ export function SplitView() {
         downloadBlob(images[0], `${baseName}_page_${pagesToExport[0]}.png`);
       } else {
         const zipBlobs = images.map((blob, i) => ({
-          name: `page_${i + 1}.png`,
+          name: `page_${pagesToExport[i]}.png`,
           blob
         }));
         const { downloadBlobsAsZip } = await import('../../../utils/downloadUtils');
@@ -304,6 +308,11 @@ export function SplitView() {
                   className={styles.input}
                 />
                 <p className={styles.rangeHint}>Enter page numbers or ranges separated by commas (max: {pageCount})</p>
+                {rangeResult.errors.length > 0 && (
+                  <p className={styles.rangeError} role="alert">
+                    {rangeResult.errors.join('; ')}
+                  </p>
+                )}
               </div>
             </div>
           )}
@@ -316,6 +325,10 @@ export function SplitView() {
           {isProcessing && progress && <ProgressBar progress={progress} />}
 
           <ErrorBanner message={error} onDismiss={clearError} />
+
+          <ErrorBanner message={previewError} onDismiss={() => setPreviewError(null)} />
+
+          <ErrorBanner message={actionError} onDismiss={() => setActionError(null)} />
 
           <div className={`${shellStyles.actions} ${styles.actionsStretch}`}>
             <Button label="Export Selected Pages" variant="primary" onClick={handleExport} disabled={!hasSelection || isProcessing} loading={isProcessing} />

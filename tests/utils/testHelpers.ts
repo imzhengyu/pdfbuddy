@@ -1,7 +1,7 @@
 import { vi } from 'vitest';
 import { act, fireEvent } from '@testing-library/react';
 import { CONST_MIME_TYPES, CONST_TEST_CONFIG } from '../../src/config/constants';
-import type { ProcessingProgress, PageRange, PageRotation, PageOrder, CompressionQuality } from '../../src/services/pdf/types';
+import type { ProcessingProgress, PageRange, PageRotation, PageOrder } from '../../src/services/pdf/types';
 
 /**
  * Creates a mock File object with all necessary methods properly mocked.
@@ -123,11 +123,6 @@ export interface MockClientPDFServiceConfig {
     error?: Error;
     delay?: number;
   };
-  compress?: {
-    result?: Blob;
-    error?: Error;
-    delay?: number;
-  };
   rotate?: {
     result?: Blob;
     error?: Error;
@@ -190,19 +185,6 @@ export function createMockClientPDFService(config: MockClientPDFServiceConfig = 
       // Default: return single blob, call progress if provided
       if (onProgress) onProgress({ current: 1, total: 1, progress: 100 });
       return [new Blob(['split'], { type: CONST_MIME_TYPES.pdf })];
-    }),
-    compress: vi.fn().mockImplementation(async (file: File, quality: CompressionQuality, onProgress?: (progress: ProcessingProgress) => void) => {
-      if (config.compress?.delay) {
-        return createDelayedPromise(config.compress.result || new Blob(), config.compress.delay);
-      }
-      if (config.compress?.error) {
-        throw config.compress.error;
-      }
-      if (config.compress?.result) {
-        return config.compress.result;
-      }
-      if (onProgress) onProgress({ current: 1, total: 1, progress: 100 });
-      return new Blob(['compressed'], { type: CONST_MIME_TYPES.pdf });
     }),
     rotate: vi.fn().mockImplementation(async (file: File, rotations: PageRotation[], onProgress?: (progress: ProcessingProgress) => void) => {
       if (config.rotate?.delay) {

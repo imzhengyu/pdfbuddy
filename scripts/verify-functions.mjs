@@ -9,7 +9,6 @@ const DOWNLOAD_DIR = 'test-output';
 const testFiles = {
   merge: ['test-inputs/merge-1.pdf', 'test-inputs/merge-2.pdf', 'test-inputs/merge-3.pdf'],
   split: 'test-inputs/split-source.pdf',
-  compress: 'test-inputs/test-5pages.pdf',
   rotate: 'test-inputs/rotate-test.pdf',
   organize: 'test-inputs/test-3pages.pdf'
 };
@@ -139,36 +138,8 @@ async function runTests() {
       failed++;
     }
 
-    // Test 3: Compress
-    console.log('\n[Test 3] COMPRESS - Compressing PDF');
-    console.log('-'.repeat(50));
-    await page.goto(BASE_URL);
-    await page.getByRole('button', { name: 'Compress' }).click();
-    await page.waitForTimeout(300);
-
-    await uploadFile(page, testFiles.compress);
-    await page.waitForTimeout(500);
-
-    const compressBtn = page.getByRole('button', { name: 'Compress PDF' });
-    const compressEnabled = await compressBtn.isEnabled();
-    console.log(`  Compress button enabled: ${compressEnabled}`);
-
-    if (compressEnabled) {
-      const compressResult = await clickAndWaitForDownload(page, 'Compress PDF', DOWNLOAD_DIR);
-      if (compressResult.success) {
-        console.log(`  Result: PASS - Downloaded ${compressResult.filename}`);
-        passed++;
-      } else {
-        console.log(`  Result: FAIL - No download triggered`);
-        failed++;
-      }
-    } else {
-      console.log(`  Result: FAIL - Compress button disabled`);
-      failed++;
-    }
-
-    // Test 4: Rotate - Need to select pages first
-    console.log('\n[Test 4] ROTATE - Rotating PDF');
+    // Test 3: Rotate - Need to select pages first
+    console.log('\n[Test 3] ROTATE - Rotating PDF');
     console.log('-'.repeat(50));
     await page.goto(BASE_URL);
     await page.getByRole('button', { name: 'Rotate' }).click();
@@ -216,8 +187,8 @@ async function runTests() {
       failed++;
     }
 
-    // Test 5: Organize
-    console.log('\n[Test 5] ORGANIZE - Reordering PDF pages');
+    // Test 4: Organize
+    console.log('\n[Test 4] ORGANIZE - Reordering PDF pages');
     console.log('-'.repeat(50));
     await page.goto(BASE_URL);
     await page.getByRole('button', { name: 'Organize' }).click();
@@ -244,9 +215,9 @@ async function runTests() {
       failed++;
     }
 
-    // Test 6: Convert - Note: Convert is for IMAGES to PDF, not PDF to PDF
+    // Test 5: Convert - Note: Convert is for IMAGES to PDF, not PDF to PDF
     // Skipping this test as it requires image files, not PDFs
-    console.log('\n[Test 6] CONVERT - Skipped (Convert feature requires images, not PDFs)');
+    console.log('\n[Test 5] CONVERT - Skipped (Convert feature requires images, not PDFs)');
     console.log('-'.repeat(50));
     console.log('  Convert View accepts PNG/JPEG images only');
     console.log('  Result: SKIPPED');

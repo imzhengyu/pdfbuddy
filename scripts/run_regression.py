@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Run the full regression suite: lint -> unit tests -> build -> e2e."""
+"""Run the full regression suite: lint -> unit tests -> build -> e2e.
+
+This is the commit-time check. Do not run it after ordinary edits - the
+per-change check is `python scripts/run_sanity.py` (lint + critical tests), and
+the E2E step here is intentionally heavy.
+"""
 
 import subprocess
 import sys
@@ -8,10 +13,10 @@ from pathlib import Path
 
 
 STEPS = [
-    ("Lint", ["python", "scripts/run_lint.py"]),
-    ("Unit Tests", ["python", "scripts/run_unit_tests.py"]),
-    ("Build", ["python", "scripts/run_build.py"]),
-    ("E2E Tests", ["python", "scripts/run_e2e_tests.py"]),
+    ("Lint", ["scripts/run_lint.py"]),
+    ("Unit Tests", ["scripts/run_unit_tests.py"]),
+    ("Build", ["scripts/run_build.py"]),
+    ("E2E Tests", ["scripts/run_e2e_tests.py"]),
 ]
 
 
@@ -30,7 +35,9 @@ def main() -> int:
         print(f"{'=' * 40}")
 
         start = time.time()
-        result = subprocess.run(" ".join(cmd), cwd=repo_root, shell=True)
+        # Always re-enter through the same interpreter that started this script,
+        # so `python` on PATH is not required (and never `python3` on Windows).
+        result = subprocess.run([sys.executable] + cmd, cwd=repo_root)
         elapsed = time.time() - start
         elapsed_str = format_elapsed(elapsed)
 

@@ -1,7 +1,6 @@
-import { IPDFService, PageRange, PageRotation, PageOrder, ProcessingProgress, CompressionQuality } from './types';
+import { IPDFService, PageRange, PageRotation, PageOrder, ProcessingProgress } from './types';
 import { mergePdfs } from './mergeOperation';
 import { splitPdf } from './splitOperation';
-import { compressPdf } from './compressOperation';
 import { rotatePdf } from './rotateOperation';
 import { convertImagesToPdf, ConvertToPDFOptions, convertPdfToImages, ConvertToImagesOptions } from './convertOperation';
 import { reorganizePdf } from './reorganizeOperation';
@@ -71,20 +70,6 @@ export class ClientPDFService implements IPDFService {
   }
 
   /**
-   * Compresses a PDF file with specified quality level.
-   * @param file - PDF File to compress
-   * @param quality - Compression quality level ('low', 'medium', 'high')
-   * @param onProgress - Optional callback for progress updates
-   * @returns Promise resolving to compressed PDF blob
-   */
-  async compress(file: File, quality: CompressionQuality, onProgress?: (progress: ProcessingProgress) => void): Promise<Blob> {
-    return this.executeWithRetry(
-      () => compressPdf(file, quality, onProgress),
-      CONST_ERROR_CODES.PROCESSING_FAILED
-    );
-  }
-
-  /**
    * Rotates specified pages in a PDF file.
    * @param file - PDF File containing pages to rotate
    * @param rotations - Array of PageRotation specifying pages and rotation degrees
@@ -142,4 +127,17 @@ export class ClientPDFService implements IPDFService {
       CONST_ERROR_CODES.PROCESSING_FAILED
     );
   }
+}
+
+let clientPDFServiceInstance: ClientPDFService | null = null;
+
+/**
+ * Returns a singleton ClientPDFService instance.
+ * The service has no mutable instance state, so a single instance can be reused.
+ */
+export function getClientPDFService(): ClientPDFService {
+  if (!clientPDFServiceInstance) {
+    clientPDFServiceInstance = new ClientPDFService();
+  }
+  return clientPDFServiceInstance;
 }

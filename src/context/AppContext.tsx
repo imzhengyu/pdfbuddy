@@ -1,7 +1,7 @@
 import { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
 import { CONST_UI_CONFIG, CONST_STORAGE_KEYS } from '../config';
 
-export type View = 'merge' | 'split' | 'compress' | 'rotate' | 'convert' | 'organize';
+export type View = 'merge' | 'split' | 'rotate' | 'convert' | 'organize';
 
 export type Theme = 'light' | 'dark' | 'system';
 

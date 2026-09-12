@@ -84,6 +84,28 @@ describe('convertOperation', () => {
       expect(result.length).toBe(2);
       expect(result[0]).toBe(mockBlob);
     });
+
+    it('renders only the requested pages, in ascending order', async () => {
+      const mockBlob = new Blob(['fake-image'], { type: 'image/png' });
+      HTMLCanvasElement.prototype.toBlob = vi.fn((callback: BlobCallback | null) => {
+        if (callback) callback(mockBlob);
+      }) as any;
+
+      const pdfjs = await import('pdfjs-dist');
+      const doc = await (pdfjs.getDocument as any)().promise;
+      const getPageMock = doc.getPage as ReturnType<typeof vi.fn>;
+      getPageMock.mockClear();
+
+      const pdfFile = createMockPDFFile('test.pdf');
+
+      // Page 2 requested twice plus an out-of-range page: request is clamped,
+      // de-duplicated and sorted, and only those pages get rasterised.
+      const result = await convertPdfToImages(pdfFile, undefined, { pages: [2, 2, 99] });
+
+      expect(getPageMock).toHaveBeenCalledTimes(1);
+      expect(getPageMock).toHaveBeenCalledWith(2);
+      expect(result.length).toBe(1);
+    });
   });
 
   describe('pdfToImagesNotSupported', () => {

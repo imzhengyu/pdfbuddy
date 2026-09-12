@@ -12,7 +12,6 @@ This document contains the comprehensive test plan for the PDF Tool application,
 |---------|------------|-----------|--------|
 | Merge | ✅ Complete | ✅ Complete | Done |
 | Split | ✅ Complete | ✅ Complete | Done |
-| Compress | ✅ Complete | ✅ Complete | Done |
 | Rotate | ✅ Complete | ✅ Complete | Done |
 | Convert | ✅ Complete | ⚠️ Partial | Done |
 | Organize | ✅ Complete | ✅ Complete | Done |
@@ -126,54 +125,7 @@ This document contains the comprehensive test plan for the PDF Tool application,
 
 ---
 
-## 3. Compress Feature
-
-### Overview
-**Page:** `src/components/features/CompressView/CompressView.tsx`
-**Hook:** `src/hooks/useCompress.ts`
-**Service:** `src/services/pdf/compressOperation.ts`
-
-### Unit Tests
-
-**File:** `tests/hooks/useCompress.test.ts`
-
-| Test | Cases | Status |
-|------|-------|--------|
-| compress called | with file and quality | ✅ |
-| isProcessing | false → true → false | ✅ |
-| progress | null → {current,total,percent} → null | ✅ |
-| error handling | err.message set | ✅ |
-| clearError | clears error state | ✅ |
-
-**File:** `tests/components/CompressView.test.tsx`
-
-| Test | Cases | Status |
-|------|-------|--------|
-| renders empty dropzone | when no file | ✅ |
-| accepts file via dropzone | updates state | ✅ |
-| quality selection works | Low/Medium/High | ✅ |
-| Compress button disabled | when no file | ✅ |
-| Compress button enabled | when file selected | ✅ |
-| shows Preview button | after file selected | ✅ |
-| opens PreviewModal | when Preview clicked | ✅ |
-| displays error | when error occurs | ✅ |
-| Change File resets state | when clicked | ✅ |
-
-### E2E Tests
-
-| Test ID | Test Case | Status |
-|---------|-----------|--------|
-| E2E-C1 | Upload test-5pages.pdf → Select Low Quality → Compress → Verify download | ✅ |
-| E2E-C2 | Select Medium Quality → Compress → Verify download | ✅ |
-| E2E-C3 | Select High Quality → Compress → Verify download | ✅ |
-| E2E-C4 | Preview button opens preview modal | ✅ |
-
-### Test Data
-- `test-inputs/test-5pages.pdf` (5 pages, orange background)
-
----
-
-## 4. Rotate Feature
+## 3. Rotate Feature
 
 ### Overview
 **Page:** `src/components/features/RotateView/RotateView.tsx`
@@ -215,7 +167,7 @@ This document contains the comprehensive test plan for the PDF Tool application,
 
 ---
 
-## 5. Convert Feature
+## 4. Convert Feature
 
 ### Overview
 **Page:** `src/components/features/ConvertView/ConvertView.tsx`
@@ -255,7 +207,7 @@ This document contains the comprehensive test plan for the PDF Tool application,
 
 ---
 
-## 6. Organize Feature
+## 5. Organize Feature
 
 ### Overview
 **Page:** `src/components/features/OrganizeView/OrganizeView.tsx`
@@ -324,7 +276,6 @@ This document contains the comprehensive test plan for the PDF Tool application,
 |--------|-----------|-------|--------|
 | useMerge | `tests/hooks/useMerge.test.ts` | 6 | ✅ |
 | useSplit | `tests/hooks/useSplit.test.ts` | 7 | ✅ |
-| useCompress | `tests/hooks/useCompress.test.ts` | 5 | ✅ |
 | useRotate | `tests/hooks/useRotate.test.ts` | 6 | ✅ |
 | useConvert | `tests/hooks/useConvert.test.ts` | 6 | ✅ |
 | useOrganize | `tests/hooks/useOrganize.test.ts` | 5 | ✅ |
@@ -345,7 +296,6 @@ This document contains the comprehensive test plan for the PDF Tool application,
 | pdfCache | `tests/services/pdfCache.test.ts` | 7 | ✅ |
 | mergeOperation | `tests/services/mergeOperation.test.ts` | 6 | ✅ |
 | splitOperation | `tests/services/splitOperation.test.ts` | 5 | ✅ |
-| compressOperation | `tests/services/compressOperation.test.ts` | 4 | ✅ |
 | rotateOperation | `tests/services/rotateOperation.test.ts` | 4 | ✅ |
 | reorganizeOperation | `tests/services/reorganizeOperation.test.ts` | 4 | ✅ |
 | convertOperation | `tests/services/convertOperation.test.ts` | 5 | ✅ |

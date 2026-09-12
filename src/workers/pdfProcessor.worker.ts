@@ -7,9 +7,11 @@ import {
   MergePayload,
   SplitPayload,
   ConvertPayload,
+  ConvertToImagesPayload,
   ProcessingProgress,
 } from './workerTypes';
-import { convertImagesToPdf } from '../services/pdf/convertOperation';
+import { convertImagesToPdf } from '../services/pdf/convertImagesToPdf';
+import { getPdfjsLib } from '../services/pdf/pdfjsInitializer';
 
 // Track cancelled operation IDs
 const cancelledIds = new Set<string>();
@@ -156,6 +158,89 @@ async function convertToPDF(payload: ConvertPayload, id: string): Promise<void> 
   }
 }
 
+async function convertToImages(payload: ConvertToImagesPayload, id: string): Promise<void> {
+  const { file, options } = payload;
+
+  if (typeof OffscreenCanvas === 'undefined') {
+    sendError(id, 'OffscreenCanvas is not supported in this environment');
+    return;
+  }
+
+  try {
+    const pdfjsLib = await getPdfjsLib();
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+    const format = options?.format ?? 'png';
+    const quality = options?.quality ?? 0.92;
+    const scale = options?.scale ?? 2;
+    const mimeType = format === 'jpeg' ? 'image/jpeg' : 'image/png';
+
+    // Only rasterise what was asked for: rendering is the expensive half of this
+    // operation, and callers pass the user's page selection.
+    const requested = options?.pages && options.pages.length > 0
+      ? [...new Set(options.pages)]
+          .filter((pageNumber) => pageNumber >= 1 && pageNumber <= pdf.numPages)
+          .sort((a, b) => a - b)
+      : Array.from({ length: pdf.numPages }, (_, index) => index + 1);
+
+    const total = requested.length;
+    const concurrencyLimit = 4;
+    const images: Blob[] = new Array(total).fill(null);
+
+    async function renderPage(position: number): Promise<void> {
+      if (isCancelled(id)) return;
+
+      const pageNum = requested[position];
+      const page = await pdf.getPage(pageNum);
+      const viewport = page.getViewport({ scale });
+
+      const canvas = new OffscreenCanvas(viewport.width, viewport.height);
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        throw new Error('Failed to create OffscreenCanvas context');
+      }
+
+      await page.render({ canvasContext: ctx as any, viewport }).promise;
+
+      const blob = await canvas.convertToBlob({
+        type: mimeType,
+        quality: format === 'jpeg' ? quality : undefined,
+      });
+
+      images[position] = blob;
+
+      sendProgress(id, {
+        current: images.filter(Boolean).length,
+        total,
+        percent: Math.round((images.filter(Boolean).length / total) * 100),
+      });
+    }
+
+    // Process pages with a concurrency limit
+    let nextPosition = 0;
+    async function worker(): Promise<void> {
+      while (nextPosition < total) {
+        const position = nextPosition++;
+        await renderPage(position);
+      }
+    }
+
+    const workers = Array.from({ length: concurrencyLimit }, () => worker());
+    await Promise.all(workers);
+
+    if (isCancelled(id)) {
+      clearCancelled(id);
+      sendError(id, 'Operation cancelled');
+      return;
+    }
+
+    sendSuccess(id, images);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    sendError(id, message);
+  }
+}
 self.onmessage = async (event: MessageEvent<WorkerRequest>) => {
   const { id, operation, payload } = event.data;
   // Clear any stale cancellation for this id before starting
@@ -171,6 +256,9 @@ self.onmessage = async (event: MessageEvent<WorkerRequest>) => {
         break;
       case 'convert':
         await convertToPDF(payload as ConvertPayload, id);
+        break;
+      case 'convertToImages':
+        await convertToImages(payload as ConvertToImagesPayload, id);
         break;
       default:
         sendError(id, `Unknown operation: ${operation}`);

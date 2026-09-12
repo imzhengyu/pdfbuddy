@@ -1,13 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { OrganizeView } from '../../src/components/features/OrganizeView/OrganizeView';
+import { OrganizeView, movePage } from '../../src/components/features/OrganizeView/OrganizeView';
+import { getPageCount } from '../../src/utils/fileUtils';
 
 vi.mock('../../src/utils/downloadUtils', () => ({
   downloadBlob: vi.fn()
 }));
 
 vi.mock('../../src/utils/fileUtils', () => ({
-  getPageCount: vi.fn().mockResolvedValue(3)
+  getPageCount: vi.fn().mockResolvedValue(3),
+  getFileId: vi.fn().mockReturnValue('mock-file-id')
 }));
 
 const mockUseOrganize = vi.fn();
@@ -32,6 +34,36 @@ describe('OrganizeView', () => {
     render(<OrganizeView />);
     expect(screen.getByText('Organize PDF')).toBeInTheDocument();
     expect(screen.getByTestId('dropzone')).toBeInTheDocument();
+  });
+
+  it('moves a dragged page to the position it was dropped on (B-1)', () => {
+    // Original page 0 is dragged onto original page 2: the order array is
+    // indexed by position, so a naive splice by page index would corrupt it.
+    expect(movePage([0, 1, 2], 0, 2)).toEqual([1, 2, 0]);
+    // Page 1 sits at position 2 of [2, 0, 1]; dragging it onto page 2 (position
+    // 0) puts it first.
+    expect(movePage([2, 0, 1], 1, 2)).toEqual([1, 2, 0]);
+    expect(movePage([0, 1, 2], 1, 1)).toEqual([0, 1, 2]);
+    expect(movePage([0, 1, 2], 9, 1)).toEqual([0, 1, 2]);
+  });
+
+  it('reports a page-count failure instead of blaming page deletion (B-7)', async () => {
+    vi.mocked(getPageCount).mockRejectedValueOnce(new Error('unreadable'));
+
+    render(<OrganizeView />);
+
+    const input = screen.getByTestId('dropzone').querySelector('input');
+    if (input) {
+      const file = new File(['test'], 'broken.pdf', { type: 'application/pdf' });
+      fireEvent.change(input, { target: { files: [file] } });
+    }
+
+    await waitFor(() => {
+      expect(screen.getByText(/Could not read the pages of "broken.pdf"/)).toBeInTheDocument();
+    });
+
+    expect(screen.getByRole('button', { name: 'Download Organized PDF' })).toBeDisabled();
+    expect(screen.queryByText('No pages left after deletion')).toBeNull();
   });
 
   it('shows dropzone when no file selected', () => {

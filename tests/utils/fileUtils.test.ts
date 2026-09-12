@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { formatFileSize, getFileExtension, validatePDFFile, validateImageFile, createObjectURL, revokeObjectURL } from '../../src/utils/fileUtils';
+import { formatFileSize, getFileExtension, validatePDFFile, validateImageFile, createObjectURL, revokeObjectURL, getFileId } from '../../src/utils/fileUtils';
 
 describe('fileUtils', () => {
   beforeEach(() => {
@@ -96,6 +96,37 @@ describe('fileUtils', () => {
     it('revokes object URL', () => {
       revokeObjectURL('blob:test-url');
       expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:test-url');
+    });
+  });
+
+  describe('getFileId', () => {
+    it('returns the same ID for the same File instance', () => {
+      const file = new File(['content'], 'test.pdf', { type: 'application/pdf' });
+      const id1 = getFileId(file);
+      const id2 = getFileId(file);
+      expect(id1).toBe(id2);
+    });
+
+    it('returns different IDs for different File instances', () => {
+      const file1 = new File(['content1'], 'a.pdf', { type: 'application/pdf' });
+      const file2 = new File(['content2'], 'b.pdf', { type: 'application/pdf' });
+      const id1 = getFileId(file1);
+      const id2 = getFileId(file2);
+      expect(id1).not.toBe(id2);
+    });
+
+    it('generates a valid UUID string', () => {
+      const file = new File(['x'], 'doc.pdf', { type: 'application/pdf' });
+      const id = getFileId(file);
+      expect(typeof id).toBe('string');
+      expect(id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+    });
+
+    it('does not mutate standard File properties', () => {
+      const file = new File(['data'], 'sample.pdf', { type: 'application/pdf' });
+      const originalKeys = Object.keys(file);
+      getFileId(file);
+      expect(Object.keys(file)).toEqual(originalKeys);
     });
   });
 });

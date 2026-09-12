@@ -53,10 +53,15 @@ export function sanitizeFilename(filename: string): string {
  * sanitizeExtension('document.pdf', ['.pdf']) // Returns '.pdf'
  * sanitizeExtension('document.PDF', ['.pdf']) // Returns '.pdf'
  * sanitizeExtension('document.txt', ['.pdf']) // Returns '.pdf' (fallback)
+ *
+ * The allow-list is required: every caller must decide which extensions are
+ * safe for the payload it is writing. Passing the wrong list silently renames
+ * the file instead of failing, which is exactly how ZIP and PNG exports were
+ * once shipped as ".pdf" (see CR.md Issue 6).
  */
 export function sanitizeExtension(
   filename: string,
-  allowedExtensions: string[] = ['.pdf']
+  allowedExtensions: string[]
 ): string {
   const ext = filename.split('.').pop()?.toLowerCase() ?? '';
 

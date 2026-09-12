@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { PreviewModal } from './PreviewModal';
 
 HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue({
@@ -25,19 +25,21 @@ HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue({
   measureText: vi.fn().mockReturnValue({ width: 0 })
 });
 
-vi.mock('pdfjs-dist', () => ({
-  getDocument: vi.fn().mockImplementation(() => ({
-    promise: Promise.resolve({
-      numPages: 5,
-      getPage: vi.fn().mockResolvedValue({
-        getViewport: vi.fn().mockReturnValue({ width: 100, height: 100 }),
-        render: vi.fn().mockResolvedValue(undefined)
+vi.mock('../../../services/pdf/pdfjsInitializer', () => ({
+  getPdfjsLib: vi.fn().mockResolvedValue({
+    getDocument: vi.fn().mockImplementation(() => ({
+      promise: Promise.resolve({
+        numPages: 5,
+        getPage: vi.fn().mockResolvedValue({
+          getViewport: vi.fn().mockReturnValue({ width: 100, height: 100 }),
+          render: vi.fn().mockResolvedValue(undefined)
+        })
       })
-    })
-  })),
-  GlobalWorkerOptions: {
-    workerSrc: ''
-  }
+    })),
+    GlobalWorkerOptions: {
+      workerSrc: ''
+    }
+  })
 }));
 
 vi.mock('pdf-lib', () => ({
@@ -52,6 +54,12 @@ const mockFile = new File(['mock pdf'], 'test.pdf', { type: 'application/pdf' })
 Object.defineProperty(mockFile, 'arrayBuffer', {
   writable: true,
   value: vi.fn().mockResolvedValue(new ArrayBuffer(10))
+});
+Object.defineProperty(mockFile, 'slice', {
+  writable: true,
+  value: vi.fn().mockReturnValue({
+    arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(10))
+  })
 });
 
 describe('PreviewModal', () => {
@@ -110,7 +118,9 @@ describe('PreviewModal', () => {
 
     await waitFor(() => {
       const closeBtn = screen.getByRole('button', { name: 'Close preview' });
-      fireEvent.click(closeBtn);
+      act(() => {
+        fireEvent.click(closeBtn);
+      });
     });
     expect(onCloseMock).toHaveBeenCalledTimes(1);
   });
@@ -129,7 +139,9 @@ describe('PreviewModal', () => {
       expect(screen.getByRole('heading', { level: 3 })).toBeInTheDocument();
     });
 
-    fireEvent.keyDown(document, { key: 'Escape' });
+    act(() => {
+      fireEvent.keyDown(document, { key: 'Escape' });
+    });
     expect(onCloseMock).toHaveBeenCalledTimes(1);
   });
 
@@ -178,11 +190,15 @@ describe('PreviewModal', () => {
     });
 
     const zoomInBtn = screen.getByRole('button', { name: 'Zoom in' });
-    fireEvent.click(zoomInBtn);
+    act(() => {
+      fireEvent.click(zoomInBtn);
+    });
     expect(screen.getByText('125%')).toBeInTheDocument();
 
     const zoomOutBtn = screen.getByRole('button', { name: 'Zoom out' });
-    fireEvent.click(zoomOutBtn);
+    act(() => {
+      fireEvent.click(zoomOutBtn);
+    });
     expect(screen.getByText('100%')).toBeInTheDocument();
   });
 
@@ -202,7 +218,9 @@ describe('PreviewModal', () => {
 
     const overlay = document.querySelector('[class*="overlay"]');
     if (overlay) {
-      fireEvent.click(overlay);
+      act(() => {
+        fireEvent.click(overlay);
+      });
     }
 
     expect(onCloseMock).toHaveBeenCalled();
@@ -250,7 +268,9 @@ describe('PreviewModal', () => {
       expect(screen.getByText('1 / 5')).toBeInTheDocument();
     });
 
-    fireEvent.keyDown(document, { key: 'ArrowRight' });
+    act(() => {
+      fireEvent.keyDown(document, { key: 'ArrowRight' });
+    });
     expect(screen.getByText('2 / 5')).toBeInTheDocument();
   });
 
@@ -267,10 +287,14 @@ describe('PreviewModal', () => {
       expect(screen.getByText('1 / 5')).toBeInTheDocument();
     });
 
-    fireEvent.keyDown(document, { key: 'ArrowRight' });
+    act(() => {
+      fireEvent.keyDown(document, { key: 'ArrowRight' });
+    });
     expect(screen.getByText('2 / 5')).toBeInTheDocument();
 
-    fireEvent.keyDown(document, { key: 'ArrowLeft' });
+    act(() => {
+      fireEvent.keyDown(document, { key: 'ArrowLeft' });
+    });
     expect(screen.getByText('1 / 5')).toBeInTheDocument();
   });
 
@@ -287,7 +311,9 @@ describe('PreviewModal', () => {
       expect(screen.getByText('1 / 5')).toBeInTheDocument();
     });
 
-    fireEvent.keyDown(document, { key: 'ArrowLeft' });
+    act(() => {
+      fireEvent.keyDown(document, { key: 'ArrowLeft' });
+    });
     expect(screen.getByText('1 / 5')).toBeInTheDocument();
   });
 
@@ -305,7 +331,9 @@ describe('PreviewModal', () => {
     });
 
     for (let i = 0; i < 10; i++) {
-      fireEvent.keyDown(document, { key: 'ArrowRight' });
+      act(() => {
+        fireEvent.keyDown(document, { key: 'ArrowRight' });
+      });
     }
     expect(screen.getByText('5 / 5')).toBeInTheDocument();
   });
@@ -338,11 +366,15 @@ describe('PreviewModal', () => {
     });
 
     const zoomInBtn = screen.getByRole('button', { name: 'Zoom in' });
-    fireEvent.click(zoomInBtn);
+    act(() => {
+      fireEvent.click(zoomInBtn);
+    });
     expect(screen.getByText('125%')).toBeInTheDocument();
 
     const fitBtn = screen.getByText('Fit');
-    fireEvent.click(fitBtn);
+    act(() => {
+      fireEvent.click(fitBtn);
+    });
     expect(screen.getByText('100%')).toBeInTheDocument();
   });
 
@@ -377,7 +409,9 @@ describe('PreviewModal', () => {
     });
 
     for (let i = 0; i < 10; i++) {
-      fireEvent.keyDown(document, { key: 'ArrowRight' });
+      act(() => {
+        fireEvent.keyDown(document, { key: 'ArrowRight' });
+      });
     }
 
     const nextBtn = screen.getByRole('button', { name: 'Next page' });
@@ -397,11 +431,15 @@ describe('PreviewModal', () => {
       expect(screen.getByText('1 / 5')).toBeInTheDocument();
     });
 
-    fireEvent.keyDown(document, { key: 'ArrowRight' });
+    act(() => {
+      fireEvent.keyDown(document, { key: 'ArrowRight' });
+    });
     expect(screen.getByText('2 / 5')).toBeInTheDocument();
 
     const prevBtn = screen.getByRole('button', { name: 'Previous page' });
-    fireEvent.click(prevBtn);
+    act(() => {
+      fireEvent.click(prevBtn);
+    });
     expect(screen.getByText('1 / 5')).toBeInTheDocument();
   });
 
@@ -419,7 +457,9 @@ describe('PreviewModal', () => {
     });
 
     const nextBtn = screen.getByRole('button', { name: 'Next page' });
-    fireEvent.click(nextBtn);
+    act(() => {
+      fireEvent.click(nextBtn);
+    });
     expect(screen.getByText('2 / 5')).toBeInTheDocument();
   });
 

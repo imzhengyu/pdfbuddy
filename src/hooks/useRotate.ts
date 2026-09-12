@@ -40,7 +40,7 @@ export function useRotate(): UseRotateResult {
   const { operation, isProcessing, progress, error, clearError } = usePDFOperation<{
     file: File;
     rotations: PageRotation[];
-  }>({
+  }, Blob>({
     validate: ({ rotations }) => {
       if (!rotations.length) {
         return 'Please select at least one page to rotate';

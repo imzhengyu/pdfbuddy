@@ -115,7 +115,7 @@ describe('performance utilities', () => {
     });
 
     it('includes optional fields when provided', () => {
-      const benchmark = createBenchmark('compress', 1000, 2000, {
+      const benchmark = createBenchmark('merge', 1000, 2000, {
         memoryBefore: 1000000,
         memoryAfter: 1500000,
         fileSize: 5000000,

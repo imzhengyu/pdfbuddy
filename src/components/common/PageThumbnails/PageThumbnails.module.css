@@ -213,3 +213,9 @@
 .errorIcon {
   font-size: 2rem;
 }
+.limitNote {
+  grid-column: 1 / -1;
+  margin: 0 0 var(--space-sm) 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}

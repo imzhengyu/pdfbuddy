@@ -1,28 +1,29 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
-import { PageThumbnails } from '../../src/components/common/PageThumbnails/PageThumbnails';
+import { PageThumbnails, ThumbnailItem } from '../../src/components/common/PageThumbnails/PageThumbnails';
 import React from 'react';
 import { createMockPDFFile, createMockPDFJSDocument } from '../utils/testHelpers';
+import { pdfCache } from '../../src/services/pdf/pdfCache';
+import { CONST_LIMITS_CONFIG } from '../../src/config';
 
-// Import getDocument from pdfjs-dist for mocking
-import { getDocument } from 'pdfjs-dist';
-
-// Mock pdfjs-dist before importing the component
-vi.mock('pdfjs-dist', () => ({
-  getDocument: vi.fn().mockReturnValue({
-    promise: Promise.resolve({
-      numPages: 3,
-      getPage: vi.fn().mockResolvedValue({
-        getViewport: vi.fn().mockReturnValue({ width: 100, height: 140 }),
-        render: vi.fn().mockReturnValue({
-          promise: Promise.resolve()
+// Mock getPdfjsLib so we don't rely on dynamic import interception
+vi.mock('../../src/services/pdf/pdfjsInitializer', () => ({
+  getPdfjsLib: vi.fn().mockResolvedValue({
+    getDocument: vi.fn().mockReturnValue({
+      promise: Promise.resolve({
+        numPages: 3,
+        getPage: vi.fn().mockResolvedValue({
+          getViewport: vi.fn().mockReturnValue({ width: 100, height: 140 }),
+          render: vi.fn().mockReturnValue({
+            promise: Promise.resolve()
+          })
         })
       })
-    })
-  }),
-  GlobalWorkerOptions: {
-    workerSrc: ''
-  }
+    }),
+    GlobalWorkerOptions: {
+      workerSrc: ''
+    }
+  })
 }));
 
 // Mock canvas toDataURL
@@ -33,6 +34,7 @@ const mockFile = createMockPDFFile('mock pdf content', 'test.pdf');
 describe('PageThumbnails', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    pdfCache.clear();
   });
 
   it('renders loading state initially', () => {
@@ -72,6 +74,103 @@ describe('PageThumbnails', () => {
     });
   });
 
+  it('renders the pages in the order it is given (B-1)', async () => {
+    render(
+      <PageThumbnails
+        file={mockFile}
+        onSelect={() => {}}
+        selectedPages={[]}
+        order={[2, 0, 1]}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.queryAllByTestId('thumbnail-item')).toHaveLength(3);
+    });
+
+    const items = screen.queryAllByTestId('thumbnail-item');
+    expect(items.map((item) => item.getAttribute('data-page-index'))).toEqual(['2', '0', '1']);
+    // Labels follow the on-screen position, not the original page number.
+    expect(items.map((item) => item.getAttribute('data-page-position'))).toEqual(['0', '1', '2']);
+    expect(items[0]).toHaveTextContent('Page 1');
+    expect(items[2]).toHaveTextContent('Page 3');
+  });
+
+  it('does not reuse the previous document when the file changes (B-6)', async () => {
+    const { getPdfjsLib } = await import('../../src/services/pdf/pdfjsInitializer');
+
+    const { rerender } = render(
+      <PageThumbnails file={mockFile} onSelect={() => {}} selectedPages={[]} />
+    );
+
+    await waitFor(() => {
+      expect(screen.queryAllByTestId('thumbnail-item')).toHaveLength(3);
+    });
+
+    // Second file has a different page count: if the parsed document were kept,
+    // the grid would still show three pages.
+    (getPdfjsLib as any).mockResolvedValueOnce({
+      getDocument: vi.fn().mockReturnValue({
+        promise: Promise.resolve({
+          numPages: 2,
+          getPage: vi.fn().mockResolvedValue({
+            getViewport: vi.fn().mockReturnValue({ width: 100, height: 140 }),
+            render: vi.fn().mockReturnValue({ promise: Promise.resolve() })
+          })
+        })
+      }),
+      GlobalWorkerOptions: { workerSrc: '' }
+    });
+
+    const otherFile = createMockPDFFile('other pdf content', 'other.pdf');
+    rerender(<PageThumbnails file={otherFile} onSelect={() => {}} selectedPages={[]} />);
+
+    await waitFor(() => {
+      expect(screen.queryAllByTestId('thumbnail-item')).toHaveLength(2);
+    });
+  });
+
+  it('caps the grid at the thumbnail limit and says so', async () => {
+    const { getPdfjsLib } = await import('../../src/services/pdf/pdfjsInitializer');
+    const pageCount = CONST_LIMITS_CONFIG.maxThumbnailPages + 10;
+
+    (getPdfjsLib as any).mockResolvedValueOnce({
+      getDocument: vi.fn().mockReturnValue({
+        promise: Promise.resolve({
+          numPages: pageCount,
+          getPage: vi.fn().mockResolvedValue({
+            getViewport: vi.fn().mockReturnValue({ width: 100, height: 140 }),
+            render: vi.fn().mockReturnValue({ promise: Promise.resolve() })
+          })
+        })
+      }),
+      GlobalWorkerOptions: { workerSrc: '' }
+    });
+
+    render(
+      <PageThumbnails
+        file={createMockPDFFile('large pdf', 'large.pdf')}
+        onSelect={() => {}}
+        selectedPages={[]}
+      />
+    );
+
+    await waitFor(
+      () => {
+        expect(screen.queryAllByTestId('thumbnail-item')).toHaveLength(
+          CONST_LIMITS_CONFIG.maxThumbnailPages
+        );
+      },
+      { timeout: 15000 }
+    );
+
+    expect(
+      screen.getByText(
+        `Showing the first ${CONST_LIMITS_CONFIG.maxThumbnailPages} pages only.`
+      )
+    ).toBeInTheDocument();
+  });
+
   it('shows selected pages as selected', async () => {
     render(
       <PageThumbnails
@@ -102,8 +201,12 @@ describe('PageThumbnails', () => {
   });
 
   it('handles error when loading PDF fails', async () => {
-    (getDocument as any).mockReturnValueOnce({
-      promise: Promise.reject(new Error('Failed to load PDF'))
+    const { getPdfjsLib } = await import('../../src/services/pdf/pdfjsInitializer');
+    (getPdfjsLib as any).mockResolvedValueOnce({
+      getDocument: vi.fn().mockReturnValue({
+        get promise() { return Promise.reject(new Error('Failed to load PDF')); }
+      }),
+      GlobalWorkerOptions: { workerSrc: '' }
     });
 
     const errorFile = createMockPDFFile('bad pdf', 'error.pdf');
@@ -122,14 +225,18 @@ describe('PageThumbnails', () => {
   });
 
   it('renders only visible thumbnails with virtual scrolling', async () => {
-    (getDocument as any).mockReturnValueOnce({
-      promise: Promise.resolve({
-        numPages: 50,
-        getPage: vi.fn().mockResolvedValue({
-          getViewport: vi.fn().mockReturnValue({ width: 100, height: 140 }),
-          render: vi.fn().mockReturnValue({ promise: Promise.resolve() })
+    const { getPdfjsLib } = await import('../../src/services/pdf/pdfjsInitializer');
+    (getPdfjsLib as any).mockResolvedValueOnce({
+      getDocument: vi.fn().mockReturnValue({
+        promise: Promise.resolve({
+          numPages: 50,
+          getPage: vi.fn().mockResolvedValue({
+            getViewport: vi.fn().mockReturnValue({ width: 100, height: 140 }),
+            render: vi.fn().mockReturnValue({ promise: Promise.resolve() })
+          })
         })
-      })
+      }),
+      GlobalWorkerOptions: { workerSrc: '' }
     });
 
     const largePdfFile = createMockPDFFile('large pdf content', 'large.pdf');
@@ -252,11 +359,15 @@ describe('PageThumbnails', () => {
       render: vi.fn().mockReturnValue({ promise: Promise.resolve() })
     });
 
-    (getDocument as any).mockReturnValueOnce({
-      promise: Promise.resolve({
-        numPages: 15,
-        getPage: getPageMock
-      })
+    const { getPdfjsLib } = await import('../../src/services/pdf/pdfjsInitializer');
+    (getPdfjsLib as any).mockResolvedValueOnce({
+      getDocument: vi.fn().mockReturnValue({
+        promise: Promise.resolve({
+          numPages: 15,
+          getPage: getPageMock
+        })
+      }),
+      GlobalWorkerOptions: { workerSrc: '' }
     });
 
     const largePdfFile = createMockPDFFile('large pdf content', 'large.pdf');
@@ -273,7 +384,59 @@ describe('PageThumbnails', () => {
       expect(screen.queryByText('Loading pages...')).toBeNull();
     });
 
-    // All 15 pages should be rendered despite throttling
-    expect(getPageMock).toHaveBeenCalledTimes(15);
+    // All 15 pages should be rendered despite throttling. Rendering yields
+    // between chunks now, so this has to wait rather than assert immediately.
+    await waitFor(() => {
+      expect(getPageMock).toHaveBeenCalledTimes(15);
+    }, { timeout: 5000 });
+  });
+
+  it('ThumbnailItem memo prevents unnecessary re-renders when props are unchanged', () => {
+    const onClick = vi.fn();
+    const onKeyDown = vi.fn();
+    const onDragStart = vi.fn();
+    const onDragOver = vi.fn();
+    const onDragEnd = vi.fn();
+
+    const { rerender } = render(
+      <ThumbnailItem
+        index={0}
+        src="data:image/png;base64,mock"
+        fileId="file-123"
+        selected={false}
+        dragOver={false}
+        rotated={0}
+        showChangedIndicator={false}
+        onClick={onClick}
+        onKeyDown={onKeyDown}
+        onDragStart={onDragStart}
+        onDragOver={onDragOver}
+        onDragEnd={onDragEnd}
+        draggable={false}
+      />
+    );
+
+    // Re-render with identical props; memo should skip the update
+    rerender(
+      <ThumbnailItem
+        index={0}
+        src="data:image/png;base64,mock"
+        fileId="file-123"
+        selected={false}
+        dragOver={false}
+        rotated={0}
+        showChangedIndicator={false}
+        onClick={onClick}
+        onKeyDown={onKeyDown}
+        onDragStart={onDragStart}
+        onDragOver={onDragOver}
+        onDragEnd={onDragEnd}
+        draggable={false}
+      />
+    );
+
+    // The item should still be present and functional
+    const item = screen.getByRole('button', { name: 'Select page 1' });
+    expect(item).toBeInTheDocument();
   });
 });

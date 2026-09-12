@@ -1,4 +1,63 @@
+> Comprehensive, phase-by-phase changelog of completed work.
+> For the short per-issue log required when fixing bugs, see [CR.md](../CR.md) in the repository root.
+
 # Changelog / Bug Fixes
+
+## 2026-09-12
+
+### Phase 3: Code-review follow-through (performance, robustness, accessibility)
+
+**Context:** a full source review (`docs/improvement-plan.md`,
+`docs/bug-fix-plan.md`) produced a prioritised list of improvements and defects.
+Everything in this phase was implemented and covered by tests; per-issue detail
+for the defects lives in `CR.md` (Issues 9-16).
+
+**Performance / memory**
+- `PreviewModal`'s module-level page-image cache is now an LRU bounded by
+  `CONST_CACHE_CONFIG.previewImageCacheCapacity` (12). Previously it grew with
+  every previewed page and was never evicted.
+- `PageThumbnails` yields between render chunks (`setTimeout(0)`) so rendering a
+  long document no longer blocks the main thread from first page to last.
+- `vite.config.ts` declares `vendor-pdf-lib` and `vendor-jszip` manual chunks:
+  the chunk that used to be 520 kB (dominated by pdf-lib) is now an 85 kB
+  download utility plus separate, lazily loaded vendor chunks.
+- `scripts/run_build.py` enforces a 400 kB budget on application chunks and
+  reports vendor/worker bundles separately, so bundle growth is caught in CI.
+
+**Robustness**
+- `pdfCache` hashes the head *and* tail of a file, so two same-size PDFs sharing
+  a prefix can no longer collide and serve the wrong document.
+- `PageThumbnails` keys its parsed document by file id and resets thumbnails on
+  file change, instead of reusing the previous document.
+- `parsePageRangeInput()` reports malformed page ranges instead of silently
+  dropping pages; the Split view surfaces the message and keeps export disabled
+  when nothing matches.
+- `usePDFOperation` is generic over its result (`<TParams, TResult>`), removing
+  `Promise<any>` from all five feature hooks; `PageThumbnails` types its pdf.js
+  document instead of `any`.
+- `DropZone` rejection messages now name the offending files.
+
+**Accessibility**
+- `PreviewModal` is a proper dialog (`role="dialog"`, `aria-modal`,
+  `aria-labelledby`), moves focus inside on open, restores it on close, and
+  traps Tab within the dialog.
+
+**Developer experience**
+- `scripts/run_unit_tests.py --sanity` runs 17 critical test files (~11 s) as
+  the per-change check; the full suite runs at commit time. The unit wrapper
+  enforces `--maxWorkers=3` and the E2E wrapper enforces `--workers=1`
+  (plus one retry) so the resource limits do not depend on the operator.
+- `tests/services/pdfIndex.test.ts` guards the `src/services/pdf/index.ts`
+  barrel, and `tests/config/viteConfig.test.ts` guards `worker.format: 'es'`.
+- Build output is warning-free. The only warning left was Rollup's `EVAL`
+  report for `pdfjs-dist/build/pdf.js:1982`, which is `eval("require")(...)` in
+  pdf.js's Node-only "fake worker" fallback - dead code in a browser bundle. It
+  is filtered by exact code and module in `vite.config.ts` so genuine warnings
+  still surface.
+
+**Not done in this phase:** routing Merge/Split/Rotate/Organize through
+`pdfProcessor.worker.ts` (only Convert uses it today) and cross-browser/mobile
+verification; both remain in `docs/improvement-plan.md`.
 
 ## 2026-06-27
 

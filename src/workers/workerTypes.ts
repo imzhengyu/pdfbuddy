@@ -1,8 +1,8 @@
-import { ProcessingProgress, PageRange, PageRotation, PageOrder, CompressionQuality } from '../services/pdf/types';
-import type { ConvertToPDFOptions } from '../services/pdf/convertOperation';
+import { ProcessingProgress, PageRange, PageRotation, PageOrder } from '../services/pdf/types';
+import type { ConvertToPDFOptions, ConvertToImagesOptions } from '../services/pdf/convertOperation';
 
 // Re-export for worker convenience
-export type { ProcessingProgress, ConvertToPDFOptions };
+export type { ProcessingProgress, ConvertToPDFOptions, ConvertToImagesOptions };
 
 // Worker message types
 export interface WorkerMessage {
@@ -15,9 +15,9 @@ export type WorkerOperationType =
   | 'merge'
   | 'split'
   | 'convert'
-  | 'compress'
   | 'rotate'
-  | 'reorganize';
+  | 'reorganize'
+  | 'convertToImages';
 
 export interface MergePayload {
   files: File[];
@@ -33,9 +33,9 @@ export interface ConvertPayload {
   options?: ConvertToPDFOptions;
 }
 
-export interface CompressPayload {
+export interface ConvertToImagesPayload {
   file: File;
-  quality: CompressionQuality;
+  options?: ConvertToImagesOptions;
 }
 
 export interface RotatePayload {

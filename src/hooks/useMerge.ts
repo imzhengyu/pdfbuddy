@@ -37,7 +37,7 @@ interface UseMergeResult {
  * ```
  */
 export function useMerge(): UseMergeResult {
-  const { operation, isProcessing, progress, error, clearError } = usePDFOperation<File[]>({
+  const { operation, isProcessing, progress, error, clearError } = usePDFOperation<File[], Blob>({
     validate: (files) => {
       if (files.length < 2) {
         return 'Please select at least 2 PDF files to merge';

@@ -1,21 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { PDFLibError, isPDFLibError, isPDFDict2Error, isEncryptionError, withPDFLibFallback } from '../../src/services/pdf/pdfFallback';
+import { PDFLibError, isPDFDict2Error, isEncryptionError, withPDFLibFallback } from '../../src/services/pdf/pdfFallback';
 
 describe('pdfFallback', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-  });
-
-  describe('isPDFLibError', () => {
-    it('returns true for PDFLibError instances', () => {
-      const error = new PDFLibError('test', 'UNKNOWN');
-      expect(isPDFLibError(error)).toBe(true);
-    });
-
-    it('returns false for regular Error', () => {
-      const error = new Error('test');
-      expect(isPDFLibError(error)).toBe(false);
-    });
   });
 
   describe('isPDFDict2Error', () => {
@@ -53,65 +41,40 @@ describe('pdfFallback', () => {
   });
 
   describe('withPDFLibFallback', () => {
-    it('returns result when pdfLibOperation succeeds', async () => {
+    it('returns the result when the operation succeeds', async () => {
       const result = await withPDFLibFallback(async () => 'success');
       expect(result).toBe('success');
     });
 
-    it('returns result when fallbackOperation succeeds after PDFDict2 error', async () => {
-      const pdfDict2Error = new Error('PDFDict2 parsing failed');
-      const fallback = async () => 'fallback-success';
-
-      const result = await withPDFLibFallback(
-        async () => { throw pdfDict2Error; },
-        fallback,
-        'test operation'
-      );
-
-      expect(result).toBe('fallback-success');
-    });
-
-    it('throws PDFLibError with PDFDICT2 code when fallback is not provided', async () => {
-      const pdfDict2Error = new Error('PDFDict2 parsing failed');
-
+    it('classifies a PDFDict2 failure as PDFDICT2', async () => {
       await expect(
-        withPDFLibFallback(async () => { throw pdfDict2Error; }, undefined, 'test operation')
-      ).rejects.toThrow(PDFLibError);
-
-      await expect(
-        withPDFLibFallback(async () => { throw pdfDict2Error; }, undefined, 'test operation')
+        withPDFLibFallback(async () => { throw new Error('PDFDict2 parsing failed'); })
       ).rejects.toMatchObject({ code: 'PDFDICT2' });
     });
 
-    it('throws PDFLibError with ENCRYPTED code when encryption error occurs', async () => {
-      const encryptionError = new Error('PDF is encrypted');
-
+    it('classifies an encryption failure as ENCRYPTED', async () => {
       await expect(
-        withPDFLibFallback(async () => { throw encryptionError; }, undefined, 'test operation')
-      ).rejects.toThrow(PDFLibError);
-
-      await expect(
-        withPDFLibFallback(async () => { throw encryptionError; }, undefined, 'test operation')
+        withPDFLibFallback(async () => { throw new Error('PDF is encrypted'); })
       ).rejects.toMatchObject({ code: 'ENCRYPTED' });
     });
 
-    it('throws PDFLibError with UNKNOWN code for unknown errors', async () => {
-      const unknownError = new Error('Some unknown error');
-
+    it('classifies an unknown failure as UNKNOWN', async () => {
       await expect(
-        withPDFLibFallback(async () => { throw unknownError; }, undefined, 'test operation')
+        withPDFLibFallback(async () => { throw new Error('Some unknown error'); })
       ).rejects.toMatchObject({ code: 'UNKNOWN' });
     });
 
-    it('preserves original error in PDFLibError', async () => {
+    it('preserves the original error', async () => {
       const pdfDict2Error = new Error('PDFDict2 parsing failed');
-
       await expect(
-        withPDFLibFallback(async () => { throw pdfDict2Error; }, undefined, 'test operation')
-      ).rejects.toMatchObject({
-        code: 'PDFDICT2',
-        originalError: pdfDict2Error
-      });
+        withPDFLibFallback(async () => { throw pdfDict2Error; })
+      ).rejects.toMatchObject({ code: 'PDFDICT2', originalError: pdfDict2Error });
+    });
+
+    it('always throws a PDFLibError', async () => {
+      await expect(
+        withPDFLibFallback(async () => { throw new Error('nope'); })
+      ).rejects.toThrow(PDFLibError);
     });
   });
 });

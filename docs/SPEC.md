@@ -25,17 +25,7 @@ A colorful, friendly React web app for PDF manipulation with client-side process
 - Preview shows result AFTER split (not before)
 - Download only exports selected pages
 
-### 3. Compress PDF
-- Select single PDF file
-- Choose compression quality:
-  - **Low** - Maximum compression, lower quality
-  - **Medium** - Balanced (default)
-  - **High** - Minimum compression, best quality
-- **Preview file before/after compression** ← NEW
-- Show size reduction percentage
-- Download compressed PDF
-
-### 4. Rotate PDF
+### 3. Rotate PDF
 - Select single PDF file
 - Visual page thumbnails in grid
 - Click pages to select them
@@ -44,12 +34,12 @@ A colorful, friendly React web app for PDF manipulation with client-side process
 - Preview shows result AFTER transformation
 - Download button to export transformed PDF
 
-### 5. Convert
+### 4. Convert
 - **Images to PDF**: Select images (PNG, JPEG), reorder, download PDF
 - **Default page size: A4** (595 x 842 points) - Images are scaled to fit A4 with margins
 - **Preview button** - Preview converted PDF before download
 
-### 6. Organize PDF
+### 5. Organize PDF
 - Select single PDF file
 - Visual page thumbnails in grid
 - Select pages and delete them
@@ -91,7 +81,6 @@ Each feature view must display a **Preview Box** after a PDF file is selected. T
 |------|--------------|--------|
 | Merge | "Preview Files" | Shows file list with page counts |
 | Split | "Preview Pages" | Opens page thumbnail grid |
-| Compress | "Preview" | Shows before/after size comparison |
 | Rotate | "Preview PDF" | Opens full PDF preview modal |
 | Convert | "Preview" | Shows image/PDF preview |
 | Organize | "Preview" | Opens full PDF preview modal |
@@ -166,10 +155,10 @@ Detailed UI design guidelines (Smallpdf-inspired typography, spacing, color syst
 
 ## Success Criteria
 
-- [x] All 6 features functional with client-side processing
+- [x] All 5 features functional with client-side processing
 - [x] Drag and drop works reliably
 - [x] Files up to 20MB process without crashing
-- [x] Preview feature implemented on all views (Merge, Split, Rotate, Compress, Organize, Convert)
+- [x] Preview feature implemented on all views (Merge, Split, Rotate, Organize, Convert)
 - [x] Preview modal component created and tested
 - [x] E2E tests pass for core workflows (20 tests passing)
 - [x] Unit tests pass (254 tests passing)
@@ -209,7 +198,6 @@ pdf-tool/
 │   │   └── features/
 │   │       ├── MergeView/           # Merge multiple PDFs (drag-to-reorder files)
 │   │       ├── SplitView/           # Split PDF (visual selection + page ranges)
-│   │       ├── CompressView/        # Compress PDF (Low/Medium/High quality)
 │   │       ├── RotateView/          # Rotate PDF (90°/180°/270°/Mirror H/Mirror V)
 │   │       ├── ConvertView/         # Convert: Images→PDF (PNG/JPEG to PDF)
 │   │       └── OrganizeView/        # Reorganize PDF (select & delete pages, drag-reorder)
@@ -222,14 +210,12 @@ pdf-tool/
 │   │   ├── pdfFallback.ts           # Fallback strategies
 │   │   ├── mergeOperation.ts        # Merge multiple PDFs
 │   │   ├── splitOperation.ts        # Split PDF by selection/ranges
-│   │   ├── compressOperation.ts     # Compress with quality levels
 │   │   ├── rotateOperation.ts       # Rotate/mirror pages
 │   │   ├── convertOperation.ts      # Images↔PDF conversion
 │   │   └── reorganizeOperation.ts   # Reorder/delete pages
 │   └── hooks/
 │       ├── useMerge.ts              # Merge state management
 │       ├── useSplit.ts              # Split state management
-│       ├── useCompress.ts           # Compress state management
 │       ├── useRotate.ts             # Rotate state management
 │       ├── useConvert.ts            # Convert state management
 │       └── useOrganize.ts           # Organize state management

@@ -68,52 +68,15 @@ describe('mergeOperation', () => {
   // now parses the PDF before the operation, consuming the mock in the process.
   // This is actually correct behavior - we want validation to fail first.
 
-  it('handles PDFDict2 error from PDFDocument.load with fallback', async () => {
-    const badFileName = 'dict2-error.pdf';
+  it('surfaces an encryption failure from parsing', async () => {
+    (PDFDocument.load as any).mockImplementationOnce(() =>
+      Promise.reject(new Error('Input document to PDFDocument.load is encrypted'))
+    );
 
-    // First call (validation) succeeds, second call (load in merge) throws PDFDict2
-    let callCount = 0;
-    (PDFDocument.load as any).mockImplementation(() => {
-      callCount++;
-      if (callCount === 1) {
-        return Promise.resolve({
-          getPageIndices: vi.fn().mockReturnValue([0]),
-          getPageCount: vi.fn().mockReturnValue(1),
-          getPages: vi.fn().mockReturnValue([]),
-          copyPages: vi.fn().mockResolvedValue([{ addPage: vi.fn() }])
-        });
-      }
-      return Promise.reject(new Error('Expected instance of PDFDict2, but got instance of undefined'));
-    });
-
-    const badFile = createValidPDFFile(badFileName);
+    const badFile = createValidPDFFile('encrypted.pdf');
     const goodFile = createValidPDFFile('valid-file.pdf');
-
     const result = mergePdfs([badFile, goodFile]);
-    await expect(result).rejects.toThrow('Failed to process "dict2-error.pdf"');
-  });
 
-  it('handles encryption error from PDFDocument.load with fallback', async () => {
-    const badFileName = 'encrypted.pdf';
-
-    let callCount = 0;
-    (PDFDocument.load as any).mockImplementation(() => {
-      callCount++;
-      if (callCount === 1) {
-        return Promise.resolve({
-          getPageIndices: vi.fn().mockReturnValue([0]),
-          getPageCount: vi.fn().mockReturnValue(1),
-          getPages: vi.fn().mockReturnValue([]),
-          copyPages: vi.fn().mockResolvedValue([{ addPage: vi.fn() }])
-        });
-      }
-      return Promise.reject(new Error('Input document to PDFDocument.load is encrypted'));
-    });
-
-    const badFile = createValidPDFFile(badFileName);
-    const goodFile = createValidPDFFile('valid-file.pdf');
-
-    const result = mergePdfs([badFile, goodFile]);
     await expect(result).rejects.toThrow('encrypted');
   });
 });

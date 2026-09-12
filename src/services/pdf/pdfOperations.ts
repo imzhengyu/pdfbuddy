@@ -1,56 +1,26 @@
-import { PDFDocument, PDFPage } from 'pdf-lib';
+import { PDFDocument } from 'pdf-lib';
 import { ProcessingProgress } from './types';
 import { CONST_MIME_TYPES } from '../../config';
 
 export type ProgressCallback = (progress: ProcessingProgress) => void;
 
-export function createProgressCallback(
-  current: number,
-  total: number
-): ProgressCallback {
-  return (progress: ProcessingProgress) => {
-    progress.current = current;
-    progress.total = total;
-    progress.percent = Math.round((current / total) * 100);
-  };
-}
-
+/**
+ * Loads a PDF from an ArrayBuffer.
+ *
+ * Encryption is tolerated so we can still read documents whose permissions
+ * allow it; anything pdf-lib genuinely cannot parse surfaces as an error.
+ */
 export async function loadPDFFromArrayBuffer(arrayBuffer: ArrayBuffer): Promise<PDFDocument> {
   return PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
 }
 
-export const loadPDF = loadPDFFromArrayBuffer;
-
-export function savePDF(pdf: PDFDocument): Promise<Blob> {
-  return savePDFWithOptions(pdf, {});
-}
-
-export function savePDFWithOptions(pdf: PDFDocument, options: object): Promise<Blob> {
-  return pdf.save(options).then(bytes =>
-    new Blob([new Uint8Array(bytes)], { type: CONST_MIME_TYPES.pdf })
-  );
-}
-
-export function getPDFPageCount(pdf: PDFDocument): number {
-  return pdf.getPageCount();
-}
-
-export function getPDFPages(pdf: PDFDocument): PDFPage[] {
-  return pdf.getPages();
-}
-
-export async function copyPages(
-  sourcePdf: PDFDocument,
-  targetPdf: PDFDocument,
-  indices: number[]
-): Promise<PDFPage[]> {
-  return targetPdf.copyPages(sourcePdf, indices);
-}
-
-export function addPage(pdf: PDFDocument, page: PDFPage): void {
-  pdf.addPage(page);
-}
-
-export function createPDF(): Promise<PDFDocument> {
-  return PDFDocument.create();
+/**
+ * Serialises a document to the PDF Blob shape every operation returns.
+ *
+ * This used to be copy-pasted into all five operation modules as
+ * `new Blob([new Uint8Array(await pdf.save())], { type: 'application/pdf' })`.
+ */
+export async function savePDFToBlob(pdf: PDFDocument, options: object = {}): Promise<Blob> {
+  const bytes = await pdf.save(options);
+  return new Blob([new Uint8Array(bytes)], { type: CONST_MIME_TYPES.pdf });
 }

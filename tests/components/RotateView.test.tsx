@@ -10,6 +10,9 @@ vi.mock('../../src/utils/downloadUtils', () => ({
 vi.mock('../../src/services/pdf/ClientPDFService', () => ({
   ClientPDFService: vi.fn().mockImplementation(() => ({
     rotate: vi.fn().mockResolvedValue(new Blob(['test'], { type: 'application/pdf' }))
+  })),
+  getClientPDFService: vi.fn().mockImplementation(() => ({
+    rotate: vi.fn().mockResolvedValue(new Blob(['test'], { type: 'application/pdf' }))
   }))
 }));
 

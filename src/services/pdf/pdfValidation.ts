@@ -1,6 +1,6 @@
 import { PDFDocument } from 'pdf-lib';
 import { PDFProcessingError } from './types';
-import { CONST_CACHE_CONFIG } from '../../config';
+import { CONST_CACHE_CONFIG, CONST_ERROR_MESSAGES, CONST_LIMITS_CONFIG } from '../../config';
 
 /**
  * Result of PDF validation with detailed information.
@@ -19,6 +19,11 @@ export interface ValidationResult {
     /** PDF version string (e.g., "1.4", "1.7") */
     version?: string;
   };
+  /**
+   * The parsed document, populated by full validation. Callers reuse this
+   * instead of loading the file a second time to work with it.
+   */
+  document?: PDFDocument;
 }
 
 /**
@@ -31,6 +36,17 @@ export type ValidationLevel = 'basic' | 'full';
 const PDF_MAGIC_BYTES = new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2D]); // %PDF-
 
 const validationCache = new Map<string, Promise<ValidationResult>>();
+
+/**
+ * Drops every cached validation result.
+ *
+ * Exported for tests: the cache is keyed by file name/size/lastModified, so two
+ * test cases that build equivalent mock files can otherwise see each other's
+ * entries and observe zero `PDFDocument.load` calls.
+ */
+export function clearValidationCache(): void {
+  validationCache.clear();
+}
 
 function getValidationCacheKey(file: File): string {
   return `${file.name}:${file.size}:${file.lastModified}`;
@@ -137,16 +153,28 @@ async function validatePDFFullUncached(file: File): Promise<ValidationResult> {
   warnings.push(...basicResult.warnings);
   pdfInfo = basicResult.pdfInfo || {};
 
+  let parsed: PDFDocument | undefined;
+
   try {
     const arrayBuffer = await file.arrayBuffer();
 
     // Try to load with pdf-lib
     const pdf = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true, updateMetadata: false });
+    parsed = pdf;
 
     // Validate page count
     const pageCount = pdf.getPageCount();
     if (pageCount === 0) {
       errors.push('PDF has no pages');
+      return { valid: false, errors, warnings, pdfInfo };
+    }
+    if (pageCount > CONST_LIMITS_CONFIG.maxPagesPerDocument) {
+      errors.push(
+        CONST_ERROR_MESSAGES.pageLimitExceeded(
+          pageCount,
+          CONST_LIMITS_CONFIG.maxPagesPerDocument
+        )
+      );
       return { valid: false, errors, warnings, pdfInfo };
     }
     pdfInfo.pageCount = pageCount;
@@ -165,7 +193,8 @@ async function validatePDFFullUncached(file: File): Promise<ValidationResult> {
     valid: errors.length === 0,
     errors,
     warnings,
-    pdfInfo
+    pdfInfo,
+    document: parsed
   };
 }
 
@@ -240,15 +269,6 @@ export function validateImageFormat(file: File): void {
     throw new PDFProcessingError(
       `Unsupported image format: ${file.type}. Only PNG and JPEG are supported.`,
       'FORMAT'
-    );
-  }
-}
-
-export function validatePageCount(pageCount: number, expected: number): void {
-  if (pageCount !== expected) {
-    throw new PDFProcessingError(
-      `Expected ${expected} pages but got ${pageCount}`,
-      'PAGE_RANGE'
     );
   }
 }

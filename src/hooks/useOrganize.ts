@@ -40,7 +40,7 @@ export function useOrganize(): UseOrganizeResult {
   const { operation, isProcessing, progress, error, clearError } = usePDFOperation<{
     file: File;
     newOrder: PageOrder[];
-  }>({
+  }, Blob>({
     validate: ({ newOrder }) => {
       if (!newOrder.length) {
         return 'Please select pages to reorganize';

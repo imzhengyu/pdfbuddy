@@ -5,7 +5,6 @@ export {
   CONST_UI_CONFIG,
   CONST_ZOOM_CONFIG,
   CONST_ERROR_CODES,
-  CONST_QUALITY_PRESETS,
   CONST_MIME_TYPES,
   CONST_SUPPORTED_IMAGE_MIME_TYPES,
   CONST_ERROR_MESSAGES,
@@ -18,7 +17,8 @@ export {
   CONST_SANITIZE_CONFIG,
   CONST_DOWNLOAD_CONFIG,
   CONST_ROTATION_CONFIG,
+  CONST_LIMITS_CONFIG,
   CONST_TEST_CONFIG,
 } from './constants';
 
-export type { ErrorCode, QualityPreset } from './constants';
+export type { ErrorCode } from './constants';

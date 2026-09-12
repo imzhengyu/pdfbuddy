@@ -1,5 +1,14 @@
 import { useEffect, useCallback, useState, useRef } from 'react';
-import { CONST_PDF_CONFIG, CONST_PREVIEW_CONFIG, CONST_ZOOM_CONFIG } from '../../../config';
+import {
+  CONST_CACHE_CONFIG,
+  CONST_ERROR_MESSAGES,
+  CONST_LIMITS_CONFIG,
+  CONST_PREVIEW_CONFIG,
+  CONST_ZOOM_CONFIG,
+} from '../../../config';
+import { getPdfjsLib } from '../../../services/pdf/pdfjsInitializer';
+import { pdfCache } from '../../../services/pdf/pdfCache';
+import { getFileId } from '../../../utils/fileUtils';
 import styles from './PreviewModal.module.css';
 
 interface PreviewModalProps {
@@ -9,8 +18,43 @@ interface PreviewModalProps {
   title?: string;
 }
 
-// Cache for parsed PDFs to avoid re-parsing
-import { pdfCache } from '../../../services/pdf/pdfCache';
+// Module-level cache for rendered page images, keyed by fileId + page number.
+// This persists across modal opens/closes so reopening the same file avoids re-rendering.
+// Bounded by CONST_CACHE_CONFIG.previewImageCacheCapacity: each entry is a base64
+// data URL, so an unbounded cache grows with every document the user previews.
+const pageImageCache = new Map<string, string>();
+
+/** Clears the module-level preview image cache. Exposed for tests. */
+export function clearPreviewImageCache(): void {
+  pageImageCache.clear();
+}
+
+/** Number of cached page images. Exposed for tests that assert the bound. */
+export function getPreviewImageCacheSize(): number {
+  return pageImageCache.size;
+}
+
+/** Reads a cached page image and marks it as most recently used. */
+function readCachedPageImage(key: string): string | undefined {
+  const cached = pageImageCache.get(key);
+  if (cached !== undefined) {
+    pageImageCache.delete(key);
+    pageImageCache.set(key, cached);
+  }
+  return cached;
+}
+
+/** Stores a page image, evicting the least recently used entry when full. */
+function cachePageImage(key: string, dataUrl: string): void {
+  pageImageCache.delete(key);
+  pageImageCache.set(key, dataUrl);
+
+  while (pageImageCache.size > CONST_CACHE_CONFIG.previewImageCacheCapacity) {
+    const oldest = pageImageCache.keys().next().value;
+    if (oldest === undefined) break;
+    pageImageCache.delete(oldest);
+  }
+}
 
 export function PreviewModal({ isOpen, onClose, file, title }: PreviewModalProps) {
   const [currentPage, setCurrentPage] = useState(1);
@@ -20,6 +64,45 @@ export function PreviewModal({ isOpen, onClose, file, title }: PreviewModalProps
   const [error, setError] = useState<string | null>(null);
   const [pageImages, setPageImages] = useState<string[]>([]);
   const pdfRef = useRef<any>(null);
+  const fileIdRef = useRef<string | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
+
+  // Move focus into the dialog while it is open and hand it back to whatever
+  // had it before, so keyboard users are not left behind the overlay.
+  useEffect(() => {
+    if (!isOpen) return;
+
+    previouslyFocusedRef.current = document.activeElement as HTMLElement | null;
+    dialogRef.current?.focus();
+
+    return () => {
+      previouslyFocusedRef.current?.focus?.();
+      previouslyFocusedRef.current = null;
+    };
+  }, [isOpen]);
+
+  const handleDialogKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== 'Tab') return;
+
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    const focusable = dialog.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    if (focusable.length === 0) return;
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }, []);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape') {
@@ -61,14 +144,13 @@ export function PreviewModal({ isOpen, onClose, file, title }: PreviewModalProps
       setError(null);
 
       try {
-        const pdfjsLib = await import('pdfjs-dist');
-        pdfjsLib.GlobalWorkerOptions.workerSrc = CONST_PDF_CONFIG.pdfJsWorkerUrl;
+        const pdfjsLib = await getPdfjsLib();
 
         // Use cache if available
         let pdf = pdfRef.current;
 
         if (!pdf) {
-          const cached = pdfCache.get(file);
+          const cached = await pdfCache.get(file);
 
           if (cached) {
             pdf = cached.pdf;
@@ -76,7 +158,7 @@ export function PreviewModal({ isOpen, onClose, file, title }: PreviewModalProps
             const arrayBuffer = await file.arrayBuffer();
             const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
             pdf = await loadingTask.promise;
-            pdfCache.set(file, { pdf });
+            await pdfCache.set(file, { pdf });
           }
 
           if (cancelled) return;
@@ -84,9 +166,35 @@ export function PreviewModal({ isOpen, onClose, file, title }: PreviewModalProps
         }
 
         const numPages = pdf.numPages;
+        if (numPages > CONST_LIMITS_CONFIG.maxPagesPerDocument) {
+          // Rendering an unbounded document in a tab is what kills the machine;
+          // the same ceiling the operations use applies to the preview.
+          setError(
+            CONST_ERROR_MESSAGES.pageLimitExceeded(
+              numPages,
+              CONST_LIMITS_CONFIG.maxPagesPerDocument
+            )
+          );
+          setTotalPages(0);
+          return;
+        }
         setTotalPages(numPages);
         setCurrentPage(1);
-        setPageImages([]);
+
+        // Pre-populate pageImages from module cache if available
+        const fileId = getFileId(file);
+        fileIdRef.current = fileId;
+        const cachedImages: string[] = [];
+        for (let i = 1; i <= numPages; i++) {
+          const cacheKey = `${fileId}-page-${i}`;
+          const cached = readCachedPageImage(cacheKey);
+          if (cached) {
+            cachedImages[i - 1] = cached;
+          }
+        }
+        if (cachedImages.length > 0) {
+          setPageImages(cachedImages);
+        }
       } catch (err: any) {
         if (!cancelled) {
           setError(err?.message || 'Failed to load PDF');
@@ -113,9 +221,17 @@ export function PreviewModal({ isOpen, onClose, file, title }: PreviewModalProps
     let cancelled = false;
     const pdf = pdfRef.current;
     const scale = CONST_PREVIEW_CONFIG.scale;
+    const fileId = fileIdRef.current;
 
-    async function loadPage(pageNum: number) {
+    async function loadPage(pageNum: number): Promise<string | null> {
       if (cancelled || pageNum < 1 || pageNum > totalPages) return null;
+
+      // Check module cache first
+      const cacheKey = `${fileId}-page-${pageNum}`;
+      const cached = readCachedPageImage(cacheKey);
+      if (cached) {
+        return cached;
+      }
 
       try {
         const page = await pdf.getPage(pageNum);
@@ -131,7 +247,12 @@ export function PreviewModal({ isOpen, onClose, file, title }: PreviewModalProps
           canvasContext: ctx,
           viewport: viewport,
         }).promise;
-        return canvas.toDataURL('image/jpeg', CONST_PREVIEW_CONFIG.jpegQuality);
+        const dataUrl = canvas.toDataURL('image/jpeg', CONST_PREVIEW_CONFIG.jpegQuality);
+
+        // Store in module cache
+        cachePageImage(cacheKey, dataUrl);
+
+        return dataUrl;
       } catch {
         return null;
       }
@@ -152,7 +273,9 @@ export function PreviewModal({ isOpen, onClose, file, title }: PreviewModalProps
         const newImages = [...prev];
         results.forEach((img, idx) => {
           const pageNum = pagesToLoad[idx];
-          newImages[pageNum - 1] = img || newImages[pageNum - 1];
+          if (img) {
+            newImages[pageNum - 1] = img;
+          }
         });
         return newImages;
       });
@@ -173,9 +296,18 @@ export function PreviewModal({ isOpen, onClose, file, title }: PreviewModalProps
 
   return (
     <div className={styles.overlay} onClick={onClose}>
-      <div className={styles.modal} onClick={e => e.stopPropagation()}>
+      <div
+        ref={dialogRef}
+        className={styles.modal}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="preview-modal-title"
+        tabIndex={-1}
+        onClick={e => e.stopPropagation()}
+        onKeyDown={handleDialogKeyDown}
+      >
         <div className={styles.header}>
-          <h3 data-testid="preview-modal-header">{title || 'Preview'}: {file.name}</h3>
+          <h3 id="preview-modal-title" data-testid="preview-modal-header">{title || 'Preview'}: {file.name}</h3>
           <button type="button" className={styles.closeBtn} onClick={onClose} aria-label="Close preview">
             ×
           </button>

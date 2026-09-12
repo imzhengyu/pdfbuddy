@@ -41,7 +41,7 @@ export function useConvert(): UseConvertResult {
   const { operation, isProcessing, progress, error, clearError } = usePDFOperation<{
     files: File[];
     options?: ConvertToPDFOptions;
-  }>({
+  }, Blob>({
     validate: ({ files }) => {
       if (!files.length) {
         return 'Please select at least one image to convert';

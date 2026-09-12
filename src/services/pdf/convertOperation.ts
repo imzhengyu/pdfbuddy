@@ -1,151 +1,11 @@
-import { PDFDocument } from 'pdf-lib';
 import { PDFProcessingError } from './types';
-import { validateImageFile, validateImageFormat } from './pdfValidation';
 import { ProgressCallback } from './pdfOperations';
-import { CONST_PDF_CONFIG, CONST_CONVERT_CONFIG, CONST_MIME_TYPES } from '../../config';
+import { CONST_CONVERT_CONFIG, CONST_MIME_TYPES } from '../../config';
+import { getPdfjsLib } from './pdfjsInitializer';
+import { WorkerOutgoingMessage } from '../../workers/workerTypes';
 
-/** Supported output page sizes. */
-export type PageSize = 'a4' | 'letter' | 'original';
-
-/** Page orientation. */
-export type PageOrientation = 'portrait' | 'landscape';
-
-/** How the image should be placed on the page. */
-export type ImageFitMode = 'fit' | 'stretch' | 'original';
-
-/** Options for converting images to PDF. */
-export interface ConvertToPDFOptions {
-  /** Page size preset. */
-  pageSize?: PageSize;
-  /** Page orientation. */
-  orientation?: PageOrientation;
-  /** Margin in points (72 DPI). */
-  margin?: number;
-  /** How images are scaled on the page. */
-  fitMode?: ImageFitMode;
-}
-
-// Page sizes in points (72 DPI)
-const PAGE_SIZES: Record<Exclude<PageSize, 'original'>, { width: number; height: number }> = {
-  a4: CONST_CONVERT_CONFIG.pageSizes.a4,
-  letter: CONST_CONVERT_CONFIG.pageSizes.letter,
-};
-
-const DEFAULT_OPTIONS: Required<ConvertToPDFOptions> = {
-  pageSize: 'a4',
-  orientation: 'portrait',
-  margin: CONST_CONVERT_CONFIG.defaultMargin,
-  fitMode: 'fit',
-};
-
-function getPageDimensions(
-  pageSize: PageSize,
-  orientation: PageOrientation,
-  imageWidth: number,
-  imageHeight: number
-): { width: number; height: number } {
-  if (pageSize === 'original') {
-    return orientation === 'landscape'
-      ? { width: Math.max(imageWidth, imageHeight), height: Math.min(imageWidth, imageHeight) }
-      : { width: Math.min(imageWidth, imageHeight), height: Math.max(imageWidth, imageHeight) };
-  }
-
-  const size = PAGE_SIZES[pageSize];
-  if (orientation === 'landscape') {
-    return { width: size.height, height: size.width };
-  }
-  return size;
-}
-
-function scaleImage(
-  imageWidth: number,
-  imageHeight: number,
-  maxWidth: number,
-  maxHeight: number,
-  fitMode: ImageFitMode
-): { width: number; height: number } {
-  if (fitMode === 'original') {
-    return { width: imageWidth, height: imageHeight };
-  }
-
-  if (fitMode === 'stretch') {
-    return { width: Math.round(maxWidth), height: Math.round(maxHeight) };
-  }
-
-  // fit mode: scale to fit while preserving aspect ratio
-  const aspectRatio = imageWidth / imageHeight;
-  let scaledWidth = maxWidth;
-  let scaledHeight = scaledWidth / aspectRatio;
-
-  if (scaledHeight > maxHeight) {
-    scaledHeight = maxHeight;
-    scaledWidth = scaledHeight * aspectRatio;
-  }
-
-  return { width: Math.round(scaledWidth), height: Math.round(scaledHeight) };
-}
-
-export async function convertImagesToPdf(
-  imageFiles: File[],
-  onProgress?: ProgressCallback,
-  options: ConvertToPDFOptions = {}
-): Promise<Blob> {
-  const opts = { ...DEFAULT_OPTIONS, ...options };
-  const mergedPdf = await PDFDocument.create();
-  const total = imageFiles.length;
-
-  for (let i = 0; i < imageFiles.length; i++) {
-    const file = imageFiles[i];
-    validateImageFile(file);
-    validateImageFormat(file);
-
-    const arrayBuffer = await file.arrayBuffer();
-    let image;
-
-    if (file.type === CONST_MIME_TYPES.png) {
-      image = await mergedPdf.embedPng(arrayBuffer);
-    } else if (file.type === CONST_MIME_TYPES.jpeg || file.type === 'image/jpg') {
-      image = await mergedPdf.embedJpg(arrayBuffer);
-    } else {
-      throw new PDFProcessingError(
-        `Unsupported image format: ${file.type}. Only PNG and JPEG are supported.`,
-        'FORMAT'
-      );
-    }
-
-    const { width: pageWidth, height: pageHeight } = getPageDimensions(
-      opts.pageSize,
-      opts.orientation,
-      image.width,
-      image.height
-    );
-
-    const maxWidth = Math.max(1, pageWidth - opts.margin * 2);
-    const maxHeight = Math.max(1, pageHeight - opts.margin * 2);
-    const scaled = scaleImage(image.width, image.height, maxWidth, maxHeight, opts.fitMode);
-
-    const page = mergedPdf.addPage([pageWidth, pageHeight]);
-
-    const x = (pageWidth - scaled.width) / 2;
-    const y = (pageHeight - scaled.height) / 2;
-
-    page.drawImage(image, {
-      x,
-      y,
-      width: scaled.width,
-      height: scaled.height
-    });
-
-    onProgress?.({
-      current: i + 1,
-      total,
-      percent: Math.round(((i + 1) / total) * 100)
-    });
-  }
-
-  const pdfBytes = await mergedPdf.save();
-  return new Blob([new Uint8Array(pdfBytes)], { type: CONST_MIME_TYPES.pdf });
-}
+export type { ConvertToPDFOptions, PageSize, PageOrientation, ImageFitMode } from './convertImagesToPdf';
+export { convertImagesToPdf } from './convertImagesToPdf';
 
 /** Options for converting PDF pages to images. */
 export interface ConvertToImagesOptions {
@@ -155,35 +15,56 @@ export interface ConvertToImagesOptions {
   quality?: number;
   /** Rendering scale factor. Higher values produce larger images. */
   scale?: number;
+  /**
+   * 1-based page numbers to render, in output order. Omit to render every page.
+   * Rendering is the expensive part of this operation, so callers should pass
+   * the user's actual selection instead of rasterising the whole document.
+   */
+  pages?: number[];
 }
 
 const DEFAULT_IMAGE_OPTIONS: Required<ConvertToImagesOptions> = {
   format: 'png',
   quality: CONST_CONVERT_CONFIG.defaultImageQuality,
   scale: CONST_CONVERT_CONFIG.defaultImageScale,
+  pages: [],
 };
+
+/**
+ * Normalises the requested pages: de-duplicated, ascending and clamped to the
+ * document. An empty request means "every page".
+ */
+function resolvePages(pages: number[] | undefined, pageCount: number): number[] {
+  if (!pages || pages.length === 0) {
+    return Array.from({ length: pageCount }, (_, index) => index + 1);
+  }
+
+  return [...new Set(pages)]
+    .filter((pageNumber) => pageNumber >= 1 && pageNumber <= pageCount)
+    .sort((a, b) => a - b);
+}
 
 /**
  * Converts a PDF file to an array of image blobs using pdfjs-dist.
  * Runs entirely in the browser.
  */
-export async function convertPdfToImages(
+async function convertPdfToImagesMainThread(
   file: File,
   onProgress?: ProgressCallback,
   options: ConvertToImagesOptions = {}
 ): Promise<Blob[]> {
   const opts = { ...DEFAULT_IMAGE_OPTIONS, ...options };
 
-  const pdfjsLib = await import('pdfjs-dist');
-  pdfjsLib.GlobalWorkerOptions.workerSrc = CONST_PDF_CONFIG.pdfJsWorkerUrl;
+  const pdfjsLib = await getPdfjsLib();
 
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-  const total = pdf.numPages;
+  const requestedPages = resolvePages(options.pages, pdf.numPages);
+  const total = requestedPages.length;
   const images: Blob[] = [];
 
-  for (let i = 1; i <= total; i++) {
-    const page = await pdf.getPage(i);
+  for (let i = 0; i < total; i++) {
+    const page = await pdf.getPage(requestedPages[i]);
     const viewport = page.getViewport({ scale: opts.scale });
 
     const canvas = document.createElement('canvas');
@@ -209,13 +90,84 @@ export async function convertPdfToImages(
     images.push(blob);
 
     onProgress?.({
-      current: i,
+      current: i + 1,
       total,
-      percent: Math.round((i / total) * 100),
+      percent: Math.round(((i + 1) / total) * 100),
     });
   }
 
   return images;
+}
+
+/**
+ * Attempts to convert a PDF to images inside a Web Worker using OffscreenCanvas.
+ * Falls back to main-thread rendering if the worker is unavailable or fails.
+ */
+async function convertPdfToImagesViaWorker(
+  file: File,
+  onProgress?: ProgressCallback,
+  options: ConvertToImagesOptions = {}
+): Promise<Blob[]> {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(
+      new URL('../../workers/pdfProcessor.worker.ts', import.meta.url),
+      { type: 'module' }
+    );
+
+    const id = crypto.randomUUID();
+
+    worker.onmessage = (event: MessageEvent<WorkerOutgoingMessage>) => {
+      const message = event.data;
+      if (message.id !== id) return;
+
+      switch (message.type) {
+        case 'progress':
+          onProgress?.(message.progress);
+          break;
+        case 'success':
+          worker.terminate();
+          resolve(message.result as Blob[]);
+          break;
+        case 'error':
+          worker.terminate();
+          reject(new Error(message.error));
+          break;
+      }
+    };
+
+    worker.onerror = (err) => {
+      worker.terminate();
+      reject(err);
+    };
+
+    worker.postMessage({
+      id,
+      operation: 'convertToImages',
+      payload: { file, options },
+    });
+  });
+}
+
+/**
+ * Converts a PDF file to an array of image blobs.
+ * Routes to a Web Worker when supported; otherwise renders on the main thread.
+ */
+export async function convertPdfToImages(
+  file: File,
+  onProgress?: ProgressCallback,
+  options: ConvertToImagesOptions = {}
+): Promise<Blob[]> {
+  const canUseWorker = typeof Worker !== 'undefined' && typeof OffscreenCanvas !== 'undefined';
+
+  if (canUseWorker) {
+    try {
+      return await convertPdfToImagesViaWorker(file, onProgress, options);
+    } catch {
+      // Fall through to main-thread rendering
+    }
+  }
+
+  return convertPdfToImagesMainThread(file, onProgress, options);
 }
 
 export function pdfToImagesNotSupported(): never {

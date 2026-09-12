@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { downloadBlob, downloadBlobsAsZip } from '../../src/utils/downloadUtils';
+import { CONST_DOWNLOAD_CONFIG } from '../../src/config';
 
 describe('downloadUtils', () => {
   beforeEach(() => {
@@ -227,5 +228,79 @@ describe('downloadUtils', () => {
       expect(firstCallArgs[0]).not.toContain('\\');
       expect(mockZip.file).toHaveBeenCalledWith(expect.any(String), expect.any(Blob));
     });
+  });
+});
+
+// Regression coverage for exported ZIP archives and page images, which used to
+// be renamed to `.pdf` because the downloader only allowed the PDF extension.
+describe('downloadBlob extension handling for exports', () => {
+  let downloads: string[];
+
+  beforeEach(() => {
+    downloads = [];
+    // Earlier tests in this file mock document.createElement and document.body;
+    // restore them so a real anchor is created and the prototype click can be
+    // observed. The earlier suite also replaces the jszip module, so undo that
+    // to exercise the real archive generation here.
+    vi.restoreAllMocks();
+    vi.doUnmock('jszip');
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+      downloads.push(this.download);
+    });
+  });
+
+  function lastFilename(): string {
+    expect(downloads.length).toBeGreaterThan(0);
+    return downloads[downloads.length - 1];
+  }
+
+  it('keeps the .zip extension for ZIP archives', () => {
+    downloadBlob(new Blob(['zip'], { type: 'application/zip' }), 'split-source_selected.zip');
+
+    expect(lastFilename()).toBe('split-source_selected.zip');
+  });
+
+  it('keeps the .png extension for PNG blobs', () => {
+    downloadBlob(new Blob(['png'], { type: 'image/png' }), 'split-source_page_1.png');
+
+    expect(lastFilename()).toBe('split-source_page_1.png');
+  });
+
+  it('keeps the .jpg extension for JPEG blobs', () => {
+    downloadBlob(new Blob(['jpg'], { type: 'image/jpeg' }), 'page_1.jpg');
+
+    expect(lastFilename()).toBe('page_1.jpg');
+  });
+
+  it('falls back to .pdf when the MIME type and the extension are both unknown', () => {
+    downloadBlob(new Blob(['bin'], { type: 'application/octet-stream' }), 'mystery.bin');
+
+    expect(lastFilename()).toBe('mystery.pdf');
+  });
+
+  it('names a ZIP of split pages with a .zip extension', async () => {
+    await downloadBlobsAsZip(
+      [{ name: 'page_1.pdf', blob: new Blob(['pdf'], { type: 'application/pdf' }) }],
+      'split-source_selected.zip'
+    );
+
+    expect(lastFilename()).toBe('split-source_selected.zip');
+  });
+
+  it('revokes the blob URL only after a delay, so the download is not cancelled', () => {
+    // restoreAllMocks() above clears the stubbed implementation, so restate it.
+    vi.mocked(URL.createObjectURL).mockReturnValue('blob:test-url');
+    const timeoutSpy = vi.spyOn(window, 'setTimeout');
+
+    downloadBlob(new Blob(['pdf'], { type: 'application/pdf' }), 'merged.pdf');
+
+    // Revoking in the same tick can abort a download that is still starting.
+    expect(URL.revokeObjectURL).not.toHaveBeenCalled();
+
+    const [callback, delay] = timeoutSpy.mock.calls[0];
+    expect(delay).toBe(CONST_DOWNLOAD_CONFIG.urlRevokeDelayMs);
+    (callback as () => void)();
+
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:test-url');
   });
 });

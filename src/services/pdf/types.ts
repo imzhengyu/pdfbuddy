@@ -82,9 +82,6 @@ export interface ConversionOptions {
   quality?: number;
 }
 
-/** Compression quality level presets */
-export type CompressionQuality = 'low' | 'medium' | 'high';
-
 /**
  * Interface for PDF operations implemented by ClientPDFService.
  * Defines the contract for all PDF manipulation operations.
@@ -106,15 +103,6 @@ export interface IPDFService {
    * @returns Array of PDF blobs, one per range
    */
   split(file: File, pageRanges: PageRange[], onProgress?: (progress: ProcessingProgress) => void): Promise<Blob[]>;
-
-  /**
-   * Compresses a PDF file with quality preset.
-   * @param file - Source PDF file
-   * @param quality - Compression quality level
-   * @param onProgress - Optional progress callback
-   * @returns Compressed PDF as a Blob
-   */
-  compress(file: File, quality: CompressionQuality, onProgress?: (progress: ProcessingProgress) => void): Promise<Blob>;
 
   /**
    * Rotates specified pages in a PDF.

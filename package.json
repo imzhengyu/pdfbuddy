@@ -5,23 +5,22 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "predev": "powershell -Command \"Get-NetTCPConnection -LocalPort 3000,3006 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; exit 0\"",
+    "predev": "node scripts/free-dev-port.mjs",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "lint": "tsc --noEmit",
-    "test": "npm run lint && vitest",
-    "pretest": "powershell -Command \"Get-NetTCPConnection -LocalPort 3000,3006 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; exit 0\"",
-    "test:coverage": "vitest --coverage",
-    "pretest:coverage": "powershell -Command \"Get-NetTCPConnection -LocalPort 3000,3006 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; exit 0\"",
+    "test": "npm run lint && vitest run",
+    "pretest": "node scripts/free-dev-port.mjs",
+    "test:coverage": "vitest run --coverage",
+    "pretest:coverage": "node scripts/free-dev-port.mjs",
     "test:e2e": "playwright test",
-    "pretest:e2e": "powershell -Command \"Get-NetTCPConnection -LocalPort 3000,3006 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; exit 0\"",
+    "pretest:e2e": "node scripts/free-dev-port.mjs",
     "prepare": "husky install"
   },
   "dependencies": {
     "jszip": "^3.10.1",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^3.11.174",
-    "pdfkit": "^0.18.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-dropzone": "^14.2.3"
@@ -32,7 +31,6 @@
     "@testing-library/react": "^14.1.0",
     "@testing-library/user-event": "^14.6.1",
     "@types/node": "^25.6.0",
-    "@types/pdfkit": "^0.17.6",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "@vitejs/plugin-react": "^4.2.0",
@@ -43,7 +41,6 @@
     "playwright": "^1.40.0",
     "typescript": "^5.3.0",
     "vite": "^5.0.0",
-    "vite-plugin-node-polyfills": "^0.26.0",
     "vitest": "^1.0.0"
   }
 }

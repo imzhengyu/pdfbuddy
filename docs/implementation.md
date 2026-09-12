@@ -25,7 +25,6 @@ This document outlines the implementation approach for the PDF Tool, following t
 |---------|--------|-------------|
 | `mergeOperation.ts` | ✅ Done | Merge multiple PDFs |
 | `splitOperation.ts` | ✅ Done | Split PDF by selection/ranges |
-| `compressOperation.ts` | ✅ Done | Compress with quality levels |
 | `rotateOperation.ts` | ✅ Done | Rotate/mirror pages |
 | `convertOperation.ts` | ✅ Done | Images→PDF conversion |
 | `reorganizeOperation.ts` | ✅ Done | Reorder/delete pages |
@@ -36,7 +35,6 @@ This document outlines the implementation approach for the PDF Tool, following t
 |------|--------|-------------|
 | `MergeView` | ✅ Done | Merge multiple PDFs with drag-to-reorder |
 | `SplitView` | ✅ Done | Split with visual/range modes |
-| `CompressView` | ✅ Done | Compress with quality picker |
 | `RotateView` | ✅ Done | Rotate/mirror transformations |
 | `ConvertView` | ✅ Done | Images→PDF conversion |
 | `OrganizeView` | ⚠️ Partial | Page deletion done; drag-reorder TODO |
@@ -47,7 +45,6 @@ This document outlines the implementation approach for the PDF Tool, following t
 |------|--------|-------------|
 | `useMerge` | ✅ Done | Merge state management |
 | `useSplit` | ✅ Done | Split state management |
-| `useCompress` | ✅ Done | Compress state management |
 | `useRotate` | ✅ Done | Rotate state management |
 | `useConvert` | ✅ Done | Convert state management |
 | `useOrganize` | ✅ Done | Organize state management |
@@ -99,7 +96,7 @@ src/context/
 ```
 
 Each feature view manages its own local state via hooks:
-- `useMerge`, `useSplit`, `useCompress`, `useRotate`, `useConvert`, `useOrganize`
+- `useMerge`, `useSplit`, `useRotate`, `useConvert`, `useOrganize`
 
 This is simpler than per-feature contexts and avoids over-architecture.
 
@@ -136,7 +133,6 @@ pdf-tool/
 │   │   └── features/
 │   │       ├── MergeView/
 │   │       ├── SplitView/
-│   │       ├── CompressView/
 │   │       ├── RotateView/
 │   │       ├── ConvertView/
 │   │       └── OrganizeView/
@@ -149,14 +145,12 @@ pdf-tool/
 │   │   ├── pdfFallback.ts
 │   │   ├── mergeOperation.ts
 │   │   ├── splitOperation.ts
-│   │   ├── compressOperation.ts
 │   │   ├── rotateOperation.ts
 │   │   ├── convertOperation.ts
 │   │   └── reorganizeOperation.ts
 │   └── hooks/
 │       ├── useMerge.ts
 │       ├── useSplit.ts
-│       ├── useCompress.ts
 │       ├── useRotate.ts
 │       ├── useConvert.ts
 │       └── useOrganize.ts
@@ -185,13 +179,13 @@ pdf-tool/
 
 | Pattern | Files Affected | Priority | Status |
 |---------|---------------|----------|--------|
-| Custom Hook Pattern | All 6 hooks | **HIGH** | ✅ Complete - `usePDFOperation` factory created |
+| Custom Hook Pattern | All 5 hooks | **HIGH** | ✅ Complete - `usePDFOperation` factory created |
 | FileItem Interface | MergeView, ConvertView | **HIGH** | ✅ Complete - Moved to shared types |
-| handleFilesDropped | All 6 views | **HIGH** | ✅ Complete - `useFileHandler` hook created |
+| handleFilesDropped | All 5 views | **HIGH** | ✅ Complete - `useFileHandler` hook created |
 | handleRemoveFile | MergeView, ConvertView | MEDIUM | ✅ Complete - Use FileList component |
 | handleClear | MergeView, ConvertView, RotateView | MEDIUM | ✅ Complete - Extended useFileHandler |
 | handlePreview | MergeView, ConvertView, SplitView | MEDIUM | ✅ Complete - `usePreview` hook created |
-| Error Display | All 6 views | **HIGH** | ✅ Complete - ErrorDisplay component used |
+| Error Display | All 5 views | **HIGH** | ✅ Complete - ErrorDisplay component used |
 | PDF Cache | PreviewModal, PageThumbnails | **HIGH** | ✅ Complete - `pdfCache` service created |
 | Drag Reorder | MergeView, OrganizeView | MEDIUM | ✅ Complete - `useDragReorder` hook created |
 | PageThumbnails Props | SplitView, RotateView, OrganizeView | LOW | ✅ Complete - Standardized prop interface |
@@ -223,18 +217,17 @@ pdf-tool/
 ---
 
 #### Step 2: Use ErrorDisplay Component in All Views
-**Goal:** Replace inline error markup in all 6 feature views with the existing ErrorDisplay component.
+**Goal:** Replace inline error markup in all 5 feature views with the existing ErrorDisplay component.
 
 **Files to Modify:**
 - `src/components/features/MergeView/MergeView.tsx`
 - `src/components/features/SplitView/SplitView.tsx`
-- `src/components/features/CompressView/CompressView.tsx`
 - `src/components/features/RotateView/RotateView.tsx`
 - `src/components/features/ConvertView/ConvertView.tsx`
 - `src/components/features/OrganizeView/OrganizeView.tsx`
 
 **Success Criteria:**
-- [x] All 6 views import ErrorDisplay
+- [x] All 5 views import ErrorDisplay
 - [x] Inline error markup replaced with `<ErrorDisplay>`
 - [x] All views work identically after refactor
 - [x] All 254 unit tests pass
@@ -242,7 +235,7 @@ pdf-tool/
 
 **Status:** ✅ Complete
 
-**Note:** ErrorDisplay component was later removed in favor of ErrorBanner (see CR.md 2026-06-26).
+**Note:** ErrorDisplay component was later removed in favor of ErrorBanner (see CHANGELOG.md 2026-06-26).
 
 ---
 
@@ -255,14 +248,13 @@ pdf-tool/
 **Files to Modify:**
 - `src/components/features/MergeView/MergeView.tsx`
 - `src/components/features/ConvertView/ConvertView.tsx`
-- `src/components/features/CompressView/CompressView.tsx`
 - `src/components/features/SplitView/SplitView.tsx`
 - `src/components/features/RotateView/RotateView.tsx`
 - `src/components/features/OrganizeView/OrganizeView.tsx`
 
 **Success Criteria:**
 - [x] `useFileHandler.ts` created with all file handling logic
-- [x] All 6 views use the shared hook
+- [x] All 5 views use the shared hook
 - [x] File handling behavior unchanged
 - [x] All 254 unit tests pass
 - [x] All 20 E2E tests pass
@@ -281,13 +273,12 @@ pdf-tool/
 - `src/components/features/MergeView/MergeView.tsx`
 - `src/components/features/ConvertView/ConvertView.tsx`
 - `src/components/features/SplitView/SplitView.tsx`
-- `src/components/features/CompressView/CompressView.tsx`
 - `src/components/features/RotateView/RotateView.tsx`
 - `src/components/features/OrganizeView/OrganizeView.tsx`
 
 **Success Criteria:**
 - [x] `usePreview.ts` created with all preview state logic
-- [x] All 6 views use the shared hook
+- [x] All 5 views use the shared hook
 - [x] Preview modal behavior unchanged
 - [x] All 254 unit tests pass
 - [x] All 20 E2E tests pass
@@ -326,14 +317,13 @@ pdf-tool/
 **Files to Modify:**
 - `src/hooks/useMerge.ts` - Use factory
 - `src/hooks/useSplit.ts` - Use factory
-- `src/hooks/useCompress.ts` - Use factory
 - `src/hooks/useRotate.ts` - Use factory
 - `src/hooks/useConvert.ts` - Use factory
 - `src/hooks/useOrganize.ts` - Use factory
 
 **Success Criteria:**
 - [x] `usePDFOperation.ts` factory created
-- [x] All 6 hooks use the factory
+- [x] All 5 hooks use the factory
 - [x] Hook behavior unchanged
 - [x] All 254 unit tests pass
 - [x] All 20 E2E tests pass
@@ -375,7 +365,6 @@ pdf-tool/
 │   │   ├── useDragReorder.ts      # ✅ Drag reorder hook
 │   │   ├── useMerge.ts            # ✅ Simplified using factory
 │   │   ├── useSplit.ts            # ✅ Simplified using factory
-│   │   ├── useCompress.ts         # ✅ Simplified using factory
 │   │   ├── useRotate.ts           # ✅ Simplified using factory
 │   │   ├── useConvert.ts          # ✅ Simplified using factory
 │   │   └── useOrganize.ts         # ✅ Simplified using factory
@@ -520,7 +509,7 @@ A vibrant, colorful design that applies the warm palette throughout for maximum 
 
 ## Success Criteria Checklist
 
-- [x] All 6 features implemented with client-side processing
+- [x] All 5 features implemented with client-side processing
 - [x] PreviewModal works on all feature views
 - [x] Drag and drop reliable for all file operations
 - [x] Files up to 20MB process without crashing

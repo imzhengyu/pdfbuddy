@@ -8,12 +8,22 @@ vi.mock('../../src/utils/downloadUtils', () => ({
 }));
 
 vi.mock('../../src/utils/fileUtils', () => ({
-  getPageCount: vi.fn().mockResolvedValue(5)
+  getPageCount: vi.fn().mockResolvedValue(5),
+  getFileId: vi.fn().mockReturnValue('mock-file-id')
+}));
+
+const { splitMock, convertToImagesMock } = vi.hoisted(() => ({
+  splitMock: vi.fn(),
+  convertToImagesMock: vi.fn()
 }));
 
 vi.mock('../../src/services/pdf/ClientPDFService', () => ({
   ClientPDFService: vi.fn().mockImplementation(() => ({
-    split: vi.fn().mockResolvedValue([new Blob(['test'], { type: 'application/pdf' })])
+    split: splitMock,
+    convertToImages: convertToImagesMock
+  })),
+  getClientPDFService: vi.fn().mockImplementation(() => ({
+    split: splitMock
   }))
 }));
 
@@ -26,6 +36,10 @@ vi.mock('../../src/hooks/useSplit', () => ({
 describe('SplitView', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    splitMock.mockReset();
+    splitMock.mockResolvedValue([new Blob(['test'], { type: 'application/pdf' })]);
+    convertToImagesMock.mockReset();
+    convertToImagesMock.mockResolvedValue([new Blob(['image'], { type: 'image/png' })]);
     mockUseSplit.mockReturnValue({
       split: vi.fn().mockResolvedValue([new Blob(['test'], { type: 'application/pdf' })]),
       isProcessing: false,
@@ -382,5 +396,100 @@ describe('SplitView', () => {
     fireEvent.click(rangeBtn);
 
     expect(screen.getByText(/max:/)).toBeInTheDocument();
+  });
+
+  it('keeps the export buttons disabled when a range matches no pages', async () => {
+    render(<SplitView />);
+
+    const input = screen.getByTestId('dropzone').querySelector('input');
+    if (input) {
+      const file = new File(['test'], 'test.pdf', { type: 'application/pdf' });
+      fireEvent.change(input, { target: { files: [file] } });
+    }
+
+    await waitFor(() => {
+      expect(screen.getByText('test.pdf')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Page Ranges'));
+    fireEvent.change(screen.getByLabelText('Page Ranges:'), { target: { value: '99-100' } });
+
+    // An empty selection used to leave these enabled but inert.
+    expect(screen.getByRole('button', { name: 'Export Selected Pages' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Export as Images' })).toBeDisabled();
+  });
+
+  it('explains a malformed range instead of silently dropping pages', async () => {
+    render(<SplitView />);
+
+    const input = screen.getByTestId('dropzone').querySelector('input');
+    if (input) {
+      const file = new File(['test'], 'test.pdf', { type: 'application/pdf' });
+      fireEvent.change(input, { target: { files: [file] } });
+    }
+
+    await waitFor(() => {
+      expect(screen.getByText('test.pdf')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Page Ranges'));
+    fireEvent.change(screen.getByLabelText('Page Ranges:'), { target: { value: '1-3-5' } });
+
+    expect(screen.getByRole('alert')).toHaveTextContent('"1-3-5" is not a valid range');
+    expect(screen.getByRole('button', { name: 'Export Selected Pages' })).toBeDisabled();
+  });
+
+  it('shows an error when building the preview fails (B-4)', async () => {
+    const { ClientPDFService } = await import('../../src/services/pdf/ClientPDFService');
+    vi.mocked(ClientPDFService).mockImplementationOnce(
+      () => ({ split: vi.fn().mockRejectedValue(new Error('corrupt page')) } as any)
+    );
+
+    render(<SplitView />);
+
+    const input = screen.getByTestId('dropzone').querySelector('input');
+    if (input) {
+      const file = new File(['test'], 'test.pdf', { type: 'application/pdf' });
+      fireEvent.change(input, { target: { files: [file] } });
+    }
+
+    await waitFor(() => {
+      expect(screen.getByText('test.pdf')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Page Ranges'));
+    fireEvent.change(screen.getByLabelText('Page Ranges:'), { target: { value: '1' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Preview Selected' }));
+
+    // Preview failures used to be swallowed with no visible feedback.
+    await waitFor(() => {
+      expect(screen.getByText('corrupt page')).toBeInTheDocument();
+    });
+  });
+
+  it('renders images for the selected pages only', async () => {
+    render(<SplitView />);
+
+    const input = screen.getByTestId('dropzone').querySelector('input');
+    if (input) {
+      const file = new File(['test'], 'test.pdf', { type: 'application/pdf' });
+      fireEvent.change(input, { target: { files: [file] } });
+    }
+
+    await waitFor(() => {
+      expect(screen.getByText('test.pdf')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Page Ranges'));
+    fireEvent.change(screen.getByLabelText('Page Ranges:'), { target: { value: '2-3' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Export as Images' }));
+
+    // Rasterising every page used to happen regardless of the selection.
+    await waitFor(() => {
+      expect(convertToImagesMock).toHaveBeenCalledWith(
+        expect.any(File),
+        expect.objectContaining({ pages: [2, 3] })
+      );
+    });
   });
 });

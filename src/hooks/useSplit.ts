@@ -40,7 +40,7 @@ export function useSplit(): UseSplitResult {
   const { operation, isProcessing, progress, error, clearError } = usePDFOperation<{
     file: File;
     pageRanges: PageRange[];
-  }>({
+  }, Blob[]>({
     validate: ({ pageRanges }) => {
       if (!pageRanges.length) {
         return 'Please specify at least one page range to split';

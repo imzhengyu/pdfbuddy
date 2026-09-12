@@ -55,39 +55,15 @@ describe('splitOperation', () => {
     expect(onProgress).toHaveBeenCalled();
   });
 
-  it('handles PDFDict2 error from PDFDocument.load with fallback', async () => {
-    let callCount = 0;
-    (PDFDocument.load as any).mockImplementation(() => {
-      callCount++;
-      if (callCount === 1) {
-        return Promise.resolve({
-          getPageCount: vi.fn().mockReturnValue(5),
-          copyPages: vi.fn().mockResolvedValue([{ addPage: vi.fn() }])
-        });
-      }
-      return Promise.reject(new Error('Expected instance of PDFDict2, but got instance of undefined'));
-    });
+  it('rejects a PDF whose structure cannot be parsed, naming the file', async () => {
+    (PDFDocument.load as any).mockImplementationOnce(() =>
+      Promise.reject(new Error('Expected instance of PDFDict2, but got instance of undefined'))
+    );
 
-    const pdfFile = createValidPDFFile('dict2-error.pdf');
+    const pdfFile = createValidPDFFile('broken.pdf');
     const result = splitPdf(pdfFile, [{ start: 1, end: 3 }]);
-    await expect(result).rejects.toThrow('non-standard structure');
-  });
 
-  it('handles encryption error from PDFDocument.load with fallback', async () => {
-    let callCount = 0;
-    (PDFDocument.load as any).mockImplementation(() => {
-      callCount++;
-      if (callCount === 1) {
-        return Promise.resolve({
-          getPageCount: vi.fn().mockReturnValue(5),
-          copyPages: vi.fn().mockResolvedValue([{ addPage: vi.fn() }])
-        });
-      }
-      return Promise.reject(new Error('Input document to PDFDocument.load is encrypted'));
-    });
-
-    const pdfFile = createValidPDFFile('encrypted.pdf');
-    const result = splitPdf(pdfFile, [{ start: 1, end: 3 }]);
-    await expect(result).rejects.toThrow('encrypted');
+    await expect(result).rejects.toThrow('PDF structure validation failed');
+    await expect(result).rejects.toThrow('broken.pdf');
   });
 });
