@@ -142,13 +142,25 @@ describe('performance utilities', () => {
 
   describe('measureTime', () => {
     it('measures async function duration', async () => {
-      const { duration } = await measureTime(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 50));
-        return 'result';
-      });
+      // Fake both the timer and the clock so the measurement is deterministic.
+      // With a real clock this assertion is flaky: a fast runner can report
+      // 49.85ms for a 50ms sleep, which is how the CI deploy failed.
+      vi.useFakeTimers({ toFake: ['setTimeout', 'performance'] });
 
-      expect(duration).toBeGreaterThanOrEqual(50);
-      expect(duration).toBeLessThan(200); // Should be under 200ms
+      try {
+        const measured = measureTime(async () => {
+          await new Promise((resolve) => setTimeout(resolve, 50));
+          return 'result';
+        });
+
+        await vi.advanceTimersByTimeAsync(50);
+        const { duration } = await measured;
+
+        expect(duration).toBeGreaterThanOrEqual(50);
+        expect(duration).toBeLessThan(200);
+      } finally {
+        vi.useRealTimers();
+      }
     });
 
     it('returns the function result', async () => {
