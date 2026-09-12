@@ -36,7 +36,11 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          VITE_BASE_PATH: /
+          # A project site is served from https://<user>.github.io/<repo>/, so the
+          # bundle must be built with that base. Building with "/" makes
+          # index.html request /assets/... at the domain root, which 404s and
+          # leaves a blank page.
+          VITE_BASE_PATH: /${{ github.event.repository.name }}/
           VITE_GIT_COMMIT: ${{ github.sha }}
 
       - name: Upload artifact
