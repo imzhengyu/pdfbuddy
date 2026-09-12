@@ -21,3 +21,8 @@ playwright-report/
 .remember/
 .playwright-mcp/
 .vscode/
+
+# Local Codex/agent state. .codex/config.toml holds API credentials and must
+# never be committed; output/ is ad-hoc working output.
+.codex/
+output/
